@@ -25,7 +25,7 @@
 #include "act.h"
 #include "handler.h" /* for is_name */
 #include "quest.h"
-
+#include "ibt.h"
 
 /* Internal Data Structures */
 /** @deprecated olc_scmd_info appears to be deprecated. Commented out for now.
@@ -172,6 +172,11 @@ void cleanup_olc(struct descriptor_data *d, byte cleanup_type)
  	break;
     }
   }
+  
+   if (OLC_IBT(d)) {
+	 free_olc_ibt(OLC_IBT(d));
+	 OLC_IBT(d) = NULL;
+   }
 
   /* Free storage if allocated (tedit, aedit, and trigedit). This is the command
    * list - it's been copied to disk already, so just free it -Welcor. */

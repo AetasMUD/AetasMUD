@@ -66,6 +66,9 @@ int file_numlines( FILE *file );
 IDXTYPE atoidx( const char *str_to_conv );
 char *strfrmt(char *str, int w, int h, int justify, int hpad, int vpad);
 char *strpaste(char *str1, char *str2, char *joiner);
+void new_affect(struct affected_type *af);
+int get_class_by_name(char *classname);
+char * convert_from_tabs(char * string);
 
 /* Public functions made available form weather.c */
 void weather_and_time(int mode);
@@ -120,7 +123,6 @@ int	perform_move(struct char_data *ch, int dir, int following);
 int	mana_gain(struct char_data *ch);
 int	hit_gain(struct char_data *ch);
 int	move_gain(struct char_data *ch);
-void	advance_level(struct char_data *ch);
 void	set_title(struct char_data *ch, char *title);
 void	gain_exp(struct char_data *ch, int gain);
 void	gain_exp_regardless(struct char_data *ch, int gain);
@@ -130,6 +132,13 @@ void	update_pos(struct char_data *victim);
 void    update_blood(void);
 void run_autowiz(void);
 char *center_text(char *txt, int len);
+int increase_gold(struct char_data *ch, int amt);
+int decrease_gold(struct char_data *ch, int amt);
+int increase_bank(struct char_data *ch, int amt);
+int decrease_bank(struct char_data *ch, int amt);
+
+/* in class.c */
+void    advance_level(struct char_data *ch);
 
 void char_from_furniture(struct char_data *ch);
 /** What ch is currently sitting on. */
@@ -634,6 +643,9 @@ do                                                              \
 #define GET_SKILL(ch, i)	CHECK_PLAYER_SPECIAL((ch), ((ch)->player_specials->saved.skills[i]))
 /** Copy the current skill level i of ch to pct. */
 #define SET_SKILL(ch, i, pct)	do { CHECK_PLAYER_SPECIAL((ch), (ch)->player_specials->saved.skills[i]) = pct; } while(0)
+   
+/** The player's default sector type when buildwalking */
+#define GET_BUILDWALK_SECTOR(ch) CHECK_PLAYER_SPECIAL((ch), ((ch)->player_specials->buildwalk_sector))
 
 /** Get obj worn in position i on ch. */
 #define GET_EQ(ch, i)		((ch)->equipment[i])
@@ -873,6 +885,13 @@ do                                                              \
 #define CAN_GO(ch, door) (EXIT(ch,door) && \
 			 (EXIT(ch,door)->to_room != NOWHERE) && \
 			 !IS_SET(EXIT(ch, door)->exit_info, EX_CLOSED))
+             
+/** True total number of directions available to move in. */
+#define DIR_COUNT ((CONFIG_DIAGONAL_DIRS) ? 10 : 6)
+ 
+/* Returns TRUE if the direction is a diagonal one */
+#define IS_DIAGONAL(dir) (((dir) == NORTHWEST) || ((dir) == NORTHEAST) || \
+		((dir) == SOUTHEAST) || ((dir) == SOUTHWEST) )
 
 /** Return the class abbreviation for ch. */
 #define CLASS_ABBR(ch) (IS_NPC(ch) ? "--" : class_abbrevs[(int)GET_CLASS(ch)])
@@ -909,6 +928,19 @@ do                                                              \
 
 /** Defines if ch is outdoors or not. */
 #define OUTSIDE(ch) (!ROOM_FLAGGED(IN_ROOM(ch), ROOM_INDOORS))
+
+/* Happy-hour defines */
+#define IS_HAPPYQP   (happy_data.qp_rate > 0)
+#define IS_HAPPYEXP  (happy_data.exp_rate > 0)
+#define IS_HAPPYGOLD (happy_data.gold_rate > 0)
+
+#define HAPPY_EXP    happy_data.exp_rate
+#define HAPPY_GOLD   happy_data.gold_rate
+#define HAPPY_QP     happy_data.qp_rate
+
+#define HAPPY_TIME   happy_data.ticks_left
+
+#define IS_HAPPYHOUR ((IS_HAPPYEXP || IS_HAPPYGOLD || IS_HAPPYQP) && (HAPPY_TIME > 0))
 
 /* OS compatibility */
 #ifndef NULL
@@ -1003,6 +1035,8 @@ do                                                              \
 #define CONFIG_NOEFFECT         config_info.play.NOEFFECT
 /** Get the display closed doors setting. */
 #define CONFIG_DISP_CLOSED_DOORS config_info.play.disp_closed_doors
+/** Get the diagonal directions setting. */
+#define CONFIG_DIAGONAL_DIRS    config_info.play.diagonal_dirs
 
 /* Map/Automap options */
 #define CONFIG_MAP             config_info.play.map_option
@@ -1073,6 +1107,10 @@ do                                                              \
 #define CONFIG_START_MESSG      config_info.operation.START_MESSG
 /** Should medit show the advnaced stats menu? */
 #define CONFIG_MEDIT_ADVANCED   config_info.operation.medit_advanced
+/** Does "bug resolve" autosave ? */
+#define CONFIG_IBT_AUTOSAVE config_info.operation.ibt_autosave
+/** Use the protocol negotiation system? */
+#define CONFIG_PROTOCOL_NEGOTIATION config_info.operation.protocol_negotiation
 
 /* Autowiz */
 /** Use autowiz or not? */

@@ -161,7 +161,7 @@ static void hedit_save_to_disk(struct descriptor_data *d)
     strip_cr(buf1);
 
     /* Forget making a buffer, lets just write the thing now. */
-    fprintf(fp, "%s#%d\n", buf1, help_table[i].min_level);
+    fprintf(fp, "%s#%d\n", convert_from_tabs(buf1), help_table[i].min_level);
   }
   /* Write final line and close. */
   fprintf(fp, "$~\n");
@@ -361,8 +361,6 @@ ACMD(do_helpcheck)
   int i, count = 0;
   size_t len = 0, nlen;
 
-  send_to_char(ch, "Commands without help entries:\r\n");
-
   for (i = 1; *(complete_cmd_info[i].command) != '\n'; i++) {
     if (complete_cmd_info[i].command_pointer != do_action && complete_cmd_info[i].minimum_level >= 0) {
       if (search_help(complete_cmd_info[i].command, LVL_IMPL) == NOWHERE) {
@@ -377,10 +375,17 @@ ACMD(do_helpcheck)
   if (count % 3 && len < sizeof(buf))
     nlen = snprintf(buf + len, sizeof(buf) - len, "\r\n");
 
-  if (ch->desc)
+  if (ch->desc) {
+	if (len == 0)
+	 send_to_char(ch, "All commands have help entries.\r\n");
+	else {
+	 send_to_char(ch, "Commands without help entries:\r\n");
+     
     page_string(ch->desc, buf, TRUE);
 
   *buf = '\0';
+    }
+  }
 }
 
 ACMD(do_hindex)

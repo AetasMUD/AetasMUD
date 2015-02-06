@@ -79,7 +79,9 @@ struct ibt_data
   char       *notes;                /**< Resolution Notes added by Administrators  */
   int        level;                 /**< Level of the person who reported this IBT */
   room_vnum  room;                  /**< Room in which this IBT was reported       */
+  long       id_num;                /**< The ID number of the player who logged it */
   int        flags[IBT_ARRAY_MAX];  /**< IBT flags                                 */
+  long       dated;                 /**< When the IBT what reported                */
 };
 
 extern  IBT_DATA       *first_bug;
@@ -97,3 +99,4 @@ void load_ibt_file(int mode);
 void ibtedit_parse(struct descriptor_data *d, char *arg);
 void ibtedit_string_cleanup(struct descriptor_data *d, int terminator);
 void free_ibt_lists();
+void free_olc_ibt(IBT_DATA *toFree);

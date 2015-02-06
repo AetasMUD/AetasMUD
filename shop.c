@@ -26,6 +26,7 @@
 #include "act.h"
 #include "modify.h"
 #include "spells.h"  /* for skill_name() */
+#include "screen.h"
 
 /* Global variables definitions used externally */
 /* Constant list for printing out who we sell to */
@@ -91,7 +92,7 @@ static char *times_message(struct obj_data *obj, char *name, int num);
 static int buy_price(struct obj_data *obj, int shop_nr, struct char_data *keeper, struct char_data *buyer);
 static int sell_price(struct obj_data *obj, int shop_nr, struct char_data *keeper, struct char_data *seller);
 static int ok_shop_room(int shop_nr, room_vnum room);
-static int add_to_list(struct shop_buy_data *list, int type, int *len, int *val);
+static int add_to_shop_list(struct shop_buy_data *list, int type, int *len, int *val);
 static int end_read_list(struct shop_buy_data *list, int len, int error);
 static void read_line(FILE *shop_f, const char *string, void *data);
 
@@ -545,6 +546,7 @@ static void shopping_buy(char *arg, struct char_data *ch, struct char_data *keep
     }
   }
   }
+  if (IS_NPC(ch) || (!IS_NPC(ch) && !PRF_FLAGGED(ch, PRF_NOHASSLE))) {
   if (IS_CARRYING_N(ch) + 1 > CAN_CARRY_N(ch)) {
     send_to_char(ch, "%s: You can't carry any more items.\r\n", fname(obj->name));
     return;
@@ -553,6 +555,8 @@ static void shopping_buy(char *arg, struct char_data *ch, struct char_data *keep
     send_to_char(ch, "%s: You can't carry that much weight.\r\n", fname(obj->name));
     return;
   }
+  }
+  
   if (OBJ_FLAGGED(obj, ITEM_QUEST)) {
     while (obj &&
            (GET_QUESTPOINTS(ch) >= GET_OBJ_COST(obj) || IS_GOD(ch))
@@ -597,7 +601,7 @@ static void shopping_buy(char *arg, struct char_data *ch, struct char_data *keep
     charged = buy_price(obj, shop_nr, keeper, ch);
     goldamt += charged;
     if (!IS_GOD(ch))
-      GET_GOLD(ch) -= charged;
+      decrease_gold(ch, charged);
 
     last_obj = obj;
     obj = get_purchase_obj(ch, arg, keeper, shop_nr, FALSE);
@@ -626,7 +630,7 @@ static void shopping_buy(char *arg, struct char_data *ch, struct char_data *keep
     do_tell(keeper, buf, cmd_tell, 0);
   }
   if (!IS_GOD(ch) && obj && !OBJ_FLAGGED(obj, ITEM_QUEST)) {
-    GET_GOLD(keeper) += goldamt;
+    increase_gold(keeper, goldamt);
     if (SHOP_USES_BANK(shop_nr))
       if (GET_GOLD(keeper) > MAX_OUTSIDE_BANK) {
         SHOP_BANK(shop_nr) += (GET_GOLD(keeper) - MAX_OUTSIDE_BANK);
@@ -787,7 +791,7 @@ static void shopping_sell(char *arg, struct char_data *ch, struct char_data *kee
 
     goldamt += charged;
     if (!IS_SET(SHOP_BITVECTOR(shop_nr), HAS_UNLIMITED_CASH))
-      GET_GOLD(keeper) -= charged;
+      decrease_gold(keeper, charged);
 
     sold++;
     obj_from_char(obj);
@@ -807,7 +811,7 @@ static void shopping_sell(char *arg, struct char_data *ch, struct char_data *kee
 
     do_tell(keeper, buf, cmd_tell, 0);
   }
-  GET_GOLD(ch) += goldamt;
+  increase_gold(ch, goldamt);
 
   strlcpy(tempstr, times_message(0, name, sold), sizeof(tempstr));
   snprintf(tempbuf, sizeof(tempbuf), "$n sells %s.", tempstr);
@@ -821,7 +825,7 @@ static void shopping_sell(char *arg, struct char_data *ch, struct char_data *kee
   if (GET_GOLD(keeper) < MIN_OUTSIDE_BANK) {
     goldamt = MIN(MAX_OUTSIDE_BANK - GET_GOLD(keeper), SHOP_BANK(shop_nr));
     SHOP_BANK(shop_nr) -= goldamt;
-    GET_GOLD(keeper) += goldamt;
+    increase_gold(keeper, goldamt);
   }
 }
 
@@ -1032,7 +1036,7 @@ int ok_damage_shopkeeper(struct char_data *ch, struct char_data *victim)
 }
 
 /* val == obj_vnum and obj_rnum (?) */
-static int add_to_list(struct shop_buy_data *list, int type, int *len, int *val)
+static int add_to_shop_list(struct shop_buy_data *list, int type, int *len, int *val)
 {
   if (*val != NOTHING && *val >= 0) { /* necessary after changing to unsigned v/rnums -- Welcor */
     if (*len < MAX_SHOP_OBJ) {
@@ -1079,12 +1083,12 @@ static int read_list(FILE *shop_f, struct shop_buy_data *list, int new_format,
       read_line(shop_f, "%d", &temp);
       if (temp < 0)	/* Always "-1" the string. */
         break;
-      error += add_to_list(list, type, &len, &temp);
+      error += add_to_shop_list(list, type, &len, &temp);
     }
   } else
     for (count = 0; count < max; count++) {
       read_line(shop_f, "%d", &temp);
-      error += add_to_list(list, type, &len, &temp);
+      error += add_to_shop_list(list, type, &len, &temp);
     }
   return (end_read_list(list, len, error));
 }
@@ -1128,7 +1132,7 @@ static int read_type_list(FILE *shop_f, struct shop_buy_data *list,
       ptr++;
     while (isspace(*(END_OF(ptr) - 1)))
       *(END_OF(ptr) - 1) = '\0';
-    error += add_to_list(list, LIST_TRADE, &len, &num);
+    error += add_to_shop_list(list, LIST_TRADE, &len, &num);
     if (*ptr)
       BUY_WORD(list[len - 1]) = strdup(ptr);
   } while (num >= 0);
@@ -1607,6 +1611,11 @@ bool shopping_identify(char *arg, struct char_data *ch, struct char_data *keeper
     send_to_char(ch, "Weight: %d, Value: %d, Rent: %d, Min. level: %d\r\n",
                      GET_OBJ_WEIGHT(obj), GET_OBJ_COST(obj), GET_OBJ_RENT(obj),
 					 GET_OBJ_LEVEL(obj));
+                     
+    send_to_char(ch, "Weight: %d, Cost to Sell: %s%d%s, Cost to Buy: %s%d%s\r\n",
+		GET_OBJ_WEIGHT(obj),
+		QYEL, sell_price(obj, shop_nr, keeper, ch), QNRM,
+		QYEL, buy_price(obj, shop_nr, keeper, ch), QNRM);
 
     switch (GET_OBJ_TYPE(obj)) {
     case ITEM_SCROLL:

@@ -308,7 +308,7 @@ SPECIAL(dump)
     if (GET_LEVEL(ch) < 3)
       gain_exp(ch, value);
     else
-      GET_GOLD(ch) += value;
+      increase_gold(ch, value);
   }
   return (TRUE);
 }
@@ -426,8 +426,8 @@ static void npc_steal(struct char_data *ch, struct char_data *victim)
     /* Steal some gold coins */
     gold = (GET_GOLD(victim) * rand_number(1, 10)) / 100;
     if (gold > 0) {
-      GET_GOLD(ch) += gold;
-      GET_GOLD(victim) -= gold;
+      increase_gold(ch, gold);
+	  decrease_gold(victim, gold);
     }
   }
 }
@@ -550,6 +550,9 @@ SPECIAL(guild_guard)
   /* find out what direction they are trying to go */ 
   for (direction = 0; direction < NUM_OF_DIRS; direction++) 
     if (!strcmp(cmd_info[cmd].command, dirs[direction])) 
+      for (direction = 0; direction < DIR_COUNT; direction++)
+		if (!strcmp(cmd_info[cmd].command, dirs[direction]) ||
+			!strcmp(cmd_info[cmd].command, autoexits[direction]))
       break; 
 
   for (i = 0; guild_info[i].guild_room != NOWHERE; i++) { 
@@ -733,7 +736,7 @@ SPECIAL(pet_shops)
       send_to_char(ch, "You don't have enough gold!\r\n");
       return (TRUE);
     }
-    GET_GOLD(ch) -= PET_PRICE(pet);
+    decrease_gold(ch, PET_PRICE(pet));
 
     pet = read_mobile(GET_MOB_RNUM(pet), REAL);
     GET_EXP(pet) = 0;
@@ -786,8 +789,8 @@ SPECIAL(bank)
       send_to_char(ch, "You don't have that many coins!\r\n");
       return (TRUE);
     }
-    GET_GOLD(ch) -= amount;
-    GET_BANK_GOLD(ch) += amount;
+    decrease_gold(ch, amount);
+	increase_bank(ch, amount);
     send_to_char(ch, "You deposit %d coins.\r\n", amount);
     act("$n makes a bank transaction.", TRUE, ch, 0, FALSE, TO_ROOM);
     return (TRUE);
@@ -800,8 +803,8 @@ SPECIAL(bank)
       send_to_char(ch, "You don't have that many coins deposited!\r\n");
       return (TRUE);
     }
-    GET_GOLD(ch) += amount;
-    GET_BANK_GOLD(ch) -= amount;
+    increase_gold(ch, amount);
+	decrease_bank(ch, amount);
     send_to_char(ch, "You withdraw %d coins.\r\n", amount);
     act("$n makes a bank transaction.", TRUE, ch, 0, FALSE, TO_ROOM);
     return (TRUE);

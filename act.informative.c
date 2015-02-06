@@ -21,6 +21,7 @@
 #include "screen.h"
 #include "constants.h"
 #include "dg_scripts.h"
+#include "mud_event.h"
 #include "mail.h"         /**< For the has_mail function */
 #include "act.h"
 #include "class.h"
@@ -174,7 +175,7 @@ ACMD(do_affections)
 {
  int count = 0;
  
- send_to_char(ch, "@cYou are affected in the following ways:@n \r\n");
+ send_to_char(ch, "\tcYou are affected in the following ways:\tn \r\n");
  
  if (AFF_FLAGGED(ch, AFF_BLIND) && GET_LEVEL(ch) < LVL_IMMORT) {
     send_to_char(ch, "You have been blinded!\r\n");
@@ -620,15 +621,19 @@ static void do_auto_exits(struct char_data *ch)
 
   send_to_char(ch, "%s[ Exits: ", CCCYN(ch, C_NRM));
 
-  for (door = 0; door < NUM_OF_DIRS; door++) {
+  for (door = 0; door < DIR_COUNT; door++) {
     if (!EXIT(ch, door) || EXIT(ch, door)->to_room == NOWHERE)
       continue;
     if (EXIT_FLAGGED(EXIT(ch, door), EX_CLOSED) && !CONFIG_DISP_CLOSED_DOORS)
       continue;
+	if (EXIT_FLAGGED(EXIT(ch, door), EX_HIDDEN) && !PRF_FLAGGED(ch, PRF_HOLYLIGHT))
+	  continue;
     if (EXIT_FLAGGED(EXIT(ch, door), EX_CLOSED))
-      send_to_char(ch, "%s(%c)%s ", CCRED(ch, C_NRM), LOWER(*dirs[door]), CCCYN(ch, C_NRM));
+   	  send_to_char(ch, "%s(%s)%s ", EXIT_FLAGGED(EXIT(ch, door), EX_HIDDEN) ? CCWHT(ch, C_NRM) : CCRED(ch, C_NRM), autoexits[door], CCCYN(ch, C_NRM));
+	else if (EXIT_FLAGGED(EXIT(ch, door), EX_HIDDEN))
+	  send_to_char(ch, "%s%s%s ", CCWHT(ch, C_NRM), autoexits[door], CCCYN(ch, C_NRM));
     else
-      send_to_char(ch, "%c ", LOWER(*dirs[door]));
+      send_to_char(ch, "\t(%s\t) ", autoexits[door]);
     slen++;
   }
 
@@ -646,22 +651,24 @@ ACMD(do_exits)
 
   send_to_char(ch, "Obvious exits:\r\n");
 
-  for (door = 0; door < NUM_OF_DIRS; door++) {
+  for (door = 0; door < DIR_COUNT; door++) {
     if (!EXIT(ch, door) || EXIT(ch, door)->to_room == NOWHERE)
       continue;
     if (EXIT_FLAGGED(EXIT(ch, door), EX_CLOSED) && !CONFIG_DISP_CLOSED_DOORS)
       continue;
+    if (EXIT_FLAGGED(EXIT(ch, door), EX_HIDDEN) && !PRF_FLAGGED(ch, PRF_HOLYLIGHT))
+	  continue;
 
     len++;
 
     if (!IS_NPC(ch) && PRF_FLAGGED(ch, PRF_SHOWVNUMS) && !EXIT_FLAGGED(EXIT(ch, door), EX_CLOSED))
-      send_to_char(ch, "%s%-5s%s - %s[%5d] %s%s\r\n", CBBLU(ch, C_NRM), dirs[door], CCNRM(ch, C_NRM), 
-	  CCCYN(ch, C_NRM), GET_ROOM_VNUM(EXIT(ch, door)->to_room), 
-	  world[EXIT(ch, door)->to_room].name, CCNRM(ch, C_NRM));
+      send_to_char(ch, "%-5s - [%5d]%s %s\r\n", dirs[door], GET_ROOM_VNUM(EXIT(ch, door)->to_room),
+      EXIT_FLAGGED(EXIT(ch, door), EX_HIDDEN) ? " [HIDDEN]" : "", world[EXIT(ch, door)->to_room].name);
     else if (CONFIG_DISP_CLOSED_DOORS && EXIT_FLAGGED(EXIT(ch, door), EX_CLOSED)) {
       /* But we tell them the door is closed */
-      send_to_char(ch, "%s%-5s%s - The %s is closed.\r\n", CBBLU(ch, C_NRM), dirs[door], CCNRM(ch, C_NRM),
-                  (EXIT(ch, door)->keyword)? fname(EXIT(ch, door)->keyword) : "opening" );
+      send_to_char(ch, "%-5s - The %s is closed%s\r\n", dirs[door],
+		(EXIT(ch, door)->keyword)? fname(EXIT(ch, door)->keyword) : "opening",
+		EXIT_FLAGGED(EXIT(ch, door), EX_HIDDEN) ? " and hidden." : ".");
       }
     else
       send_to_char(ch, "%s%-5s%s - %s%s%s\r\n", CBBLU(ch, C_NRM), dirs[door], CCNRM(ch, C_NRM), CCCYN(ch, C_NRM),
@@ -681,22 +688,22 @@ void look_at_room(struct char_data *ch, int ignore_brief)
   
   char *blood_messages[] = {
    "Should never see this.",
-   "@rThere is a little blood splattered about here.@n",
-   "@rThere is a little blood splattered about here.@n",
-   "@rThere is a little blood splattered about here.@n",
-   "@rSome blood is splattered about here.@n",
-   "@rSome blood is splattered about here.@n",
-   "@rThere are some small pools of blood here.@n",
-   "@rThere are some small pools of blood here.@n",
-   "@rScattered pools of blood can be seen in this area.@n",
-   "@rScattered pools of blood can be seen in this area.@n",
-   "@rLarge splotches of splattered blood decorate the area.@n",
-   "@rLarge splotches of splattered blood decorate the area.@n",
-   "@rAn enormous amount of blood covers this area.@n",
-   "@rAn enormous amount of blood covers this area.@n",
-   "@rThis area is drenched in the blood of the fallen.@n",
-   "@rThis area is drenched in the blood of the fallen.@n",
-   "@rCrimson liquid drips from the walls in this blood drenched area.",
+   "\trThere is a little blood splattered about here.\tn",
+   "\trThere is a little blood splattered about here.\tn",
+   "\trThere is a little blood splattered about here.\tn",
+   "\trSome blood is splattered about here.\tn",
+   "\trSome blood is splattered about here.\tn",
+   "\trThere are some small pools of blood here.\tn",
+   "\trThere are some small pools of blood here.\tn",
+   "\trScattered pools of blood can be seen in this area.\tn",
+   "\trScattered pools of blood can be seen in this area.\tn",
+   "\trLarge splotches of splattered blood decorate the area.\tn",
+   "\trLarge splotches of splattered blood decorate the area.\tn",
+   "\trAn enormous amount of blood covers this area.\tn",
+   "\trAn enormous amount of blood covers this area.\tn",
+   "\trThis area is drenched in the blood of the fallen.\tn",
+   "\trThis area is drenched in the blood of the fallen.\tn",
+   "\trCrimson liquid drips from the walls in this blood drenched area.",
    "\n"
    };
 
@@ -1135,7 +1142,7 @@ sprinttype(ch->player.chclass, class_types, buf3, sizeof(buf3));
   
   send_to_char(ch, "    %sMove  :  %s%4d%s/%s%4d		  %sExp  :  %s%d%s\r\n", CCYEL(ch, C_NRM), CBCYN(ch, C_NRM), GET_MOVE(ch), CCNRM(ch, C_NRM), CCCYN(ch, C_NRM), GET_MAX_MOVE(ch), CCYEL(ch, C_NRM), CBGRN(ch, C_NRM), GET_EXP(ch), CCNRM(ch, C_NRM));
   
-  send_to_char(ch, "\r\n    @wKills @y:  @n%6d		@rDeaths @y:  @n%d\r\n", GET_KILL_CNT(ch), GET_RIP_CNT(ch));
+  send_to_char(ch, "\r\n    \twKills \ty:  \tn%6d		\trDeaths \ty:  \tn%d\r\n", GET_KILL_CNT(ch), GET_RIP_CNT(ch));
   
   send_to_char(ch, "-------------------------------------------------------------------------------\r\n");
 
@@ -1294,25 +1301,32 @@ ACMD(do_equipment)
   one_argument(argument, arg);
 
   send_to_char(ch, "You are using:\r\n");
-  for (i = 0; i < NUM_WEARS; i++) {
+  for (i = 0; i < NUM_WEARS; i++) 
+  {
   
-  if (!str_cmp(arg, "a") || !str_cmp(arg, "al") || !str_cmp(arg, "all")) {	  
-   if (!GET_EQ(ch, i)) {
-       found = 1;
-	   send_to_char(ch, "%s", wear_where[i]);
-	   send_to_char(ch, "Nothing.\r\n");
-	}
-  }
+    if (!str_cmp(arg, "a") || !str_cmp(arg, "al") || !str_cmp(arg, "all")) 
+    {	  
+      if (!GET_EQ(ch, i)) 
+      {
+        found = 1;
+	    send_to_char(ch, "%s", wear_where[i]);
+	    send_to_char(ch, "Nothing.\r\n");
+      }
+    }
 
-    if (GET_EQ(ch, i)) {
-      if (CAN_SEE_OBJ(ch, GET_EQ(ch, i))) {
-	send_to_char(ch, "%s", wear_where[i]);
-	show_obj_to_char(GET_EQ(ch, i), ch, SHOW_OBJ_SHORT);
-	found = TRUE;
-      } else {
-	send_to_char(ch, "%s", wear_where[i]);
-	send_to_char(ch, "Something.\r\n");
-	found = TRUE;
+    if (GET_EQ(ch, i)) 
+    {
+      found = TRUE;
+      if (CAN_SEE_OBJ(ch, GET_EQ(ch, i))) 
+      {
+        send_to_char(ch, "%s", wear_where[i]);
+        show_obj_to_char(GET_EQ(ch, i), ch, SHOW_OBJ_SHORT);
+      } 
+      else 
+      {
+        send_to_char(ch, "%s", wear_where[i]);
+        send_to_char(ch, "Something.\r\n");
+        found = TRUE;
       }
     }
   }
@@ -1409,7 +1423,8 @@ int search_help(const char *argument, int level)
       while (level < help_table[mid].min_level && mid < (bot + top) / 2)
         mid++;
 
-      if (strn_cmp(argument, help_table[mid].keywords, minlen) || level < help_table[mid].min_level)
+//    if (strn_cmp(argument, help_table[mid].keywords, minlen) || level < help_table[mid].min_level)
+      if (strn_cmp(argument, help_table[mid].keywords, minlen))
 	      break;
 
       return mid;
@@ -1818,6 +1833,11 @@ ACMD(do_who)
   else
    send_to_char(ch, "\r\n%s%d of %d Immortals displayed and %d of %d Players displayed.%s\r\n", 
 		    CBGRN(ch, C_SPR), gods_can_see, total_gods, morts_can_see, total_morts, CCNRM(ch, C_SPR));
+  
+  if (IS_HAPPYHOUR > 0)
+  {
+    send_to_char(ch, "It's a Happy Hour! Type \tRhappyhour\tW to see the current bonuses.\r\n");
+  }
 }
 
 #define USERS_FORMAT \
@@ -2033,7 +2053,7 @@ static void perform_mortal_where(struct char_data *ch, char *arg)
 
   if (!*arg) {
     j = world[(IN_ROOM(ch))].zone;
-    send_to_char(ch, "Players in %s@n.\r\n--------------------\r\n", zone_table[j].name);
+    send_to_char(ch, "Players in %s\tn.\r\n--------------------\r\n", zone_table[j].name);
     for (d = descriptor_list; d; d = d->next) {
       if (STATE(d) != CON_PLAYING || d->character == ch)
 	continue;
@@ -2292,7 +2312,7 @@ ACMD(do_diagnose)
 ACMD(do_toggle)
 {
   char buf2[4], arg[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
-  int toggle, tp, wimp_lev, result = 0, len = 0;
+  int toggle, tp, wimp_lev, result = 0, len = 0, i;
   const char *types[] = { "off", "brief", "normal", "on", "\n" };
 
     const struct {
@@ -2584,9 +2604,18 @@ ACMD(do_toggle)
       return;
     }
     result = PRF_TOG_CHK(ch, PRF_BUILDWALK);
-    if (PRF_FLAGGED(ch, PRF_BUILDWALK))
+    if (PRF_FLAGGED(ch, PRF_BUILDWALK)) 
+    {
+	  for (i=0; *arg2 && *(sector_types[i]) != '\n'; i++)
+        if (is_abbrev(arg2, sector_types[i]))
+		  break;
+	  if (*(sector_types[i]) == '\n') 
+	    i=0;
+	  GET_BUILDWALK_SECTOR(ch) = i;
+	  send_to_char(ch, "Default sector type is %s\r\n", sector_types[i]);
       mudlog(CMP, GET_LEVEL(ch), TRUE,
              "OLC: %s turned buildwalk on.  Allowed zone %d", GET_NAME(ch), GET_OLC_ZONE(ch));
+    }
     else
       mudlog(CMP, GET_LEVEL(ch), TRUE,
              "OLC: %s turned buildwalk off.  Allowed zone %d", GET_NAME(ch), GET_OLC_ZONE(ch));
@@ -2854,6 +2883,10 @@ ACMD(do_whois)
   {
      CREATE(victim, struct char_data, 1);
      clear_char(victim);
+     
+     /* Allocate mobile event list */
+     victim->events = create_list();
+ 
      CREATE(victim->player_specials, struct player_special_data, 1);
 
      if (load_char(buf, victim) > -1)
@@ -2919,6 +2952,18 @@ ACMD(do_whois)
   if (PLR_FLAGGED(victim, PLR_DELETED))
     send_to_char (ch, "***DELETED***\r\n");
 
+  if (!got_from_file && victim->desc != NULL && GET_LEVEL(ch) >= LVL_GOD) 
+  {
+    protocol_t * prot = victim->desc->pProtocol;
+    send_to_char(ch, "Client:  %s\r\n", prot->pVariables[eMSDP_CLIENT_ID]->pValueString);
+    send_to_char(ch, "Color:   %s\r\n", prot->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt ? "Xterm" : (prot->pVariables[eMSDP_ANSI_COLORS]->ValueInt ? "Ansi" : "None"));
+    send_to_char(ch, "MXP:     %s\r\n", prot->bMXP ? "Yes" : "No");
+    send_to_char(ch, "Charset: %s\r\n", prot->bCHARSET ? "Yes" : "No");
+    send_to_char(ch, "MSP:     %s\r\n", prot->bMSP ? "Yes" : "No");
+    send_to_char(ch, "ATCP:    %s\r\n", prot->bATCP ? "Yes" : "No");
+    send_to_char(ch, "MSDP:    %s\r\n", prot->bMSDP ? "Yes" : "No");
+  }
+
   if (got_from_file)
     free_char (victim);
 }
@@ -2947,8 +2992,8 @@ bool get_zone_levels(zone_rnum znum, char *buf)
 
 ACMD(do_areas)
 {
-  int i, hilev=-1, lolev=-1, zcount=0, lev_set;
-  char arg[MAX_INPUT_LENGTH], *second, lev_str[MAX_INPUT_LENGTH];
+  int i, hilev=-1, lolev=-1, zcount=0, lev_set, len=0, tmp_len=0;
+  char arg[MAX_INPUT_LENGTH], *second, lev_str[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH];
   bool show_zone = FALSE, overlap = FALSE, overlap_shown = FALSE;
 
   one_argument(argument, arg);
@@ -2982,11 +3027,11 @@ ACMD(do_areas)
     hilev = i;
   }
   if (hilev != -1)
-    send_to_char(ch, "Checking range: %s%d to %d%s\r\n", QYEL, lolev, hilev, QNRM);
+    len = snprintf(buf, sizeof(buf), "Checking range: %s%d to %d%s\r\n", QYEL, lolev, hilev, QNRM);
   else if (lolev != -1)
-    send_to_char(ch, "Checking level: %s%d%s\r\n", QYEL, lolev, QNRM);
+    len = snprintf(buf, sizeof(buf), "Checking level: %s%d%s\r\n", QYEL, lolev, QNRM);
   else
-    send_to_char(ch, "Checking all areas.\r\n");
+    len = snprintf(buf, sizeof(buf), "Checking all areas.\r\n");
 
   for (i = 0; i <= top_of_zone_table; i++) {    /* Go through the whole zone table */
     show_zone = FALSE;
@@ -3019,15 +3064,24 @@ ACMD(do_areas)
     if (show_zone) {
       if (overlap) overlap_shown = TRUE;
       lev_set = get_zone_levels(i, lev_str);
-      send_to_char(ch, "@n(%3d) %s%-*s@n %s%s@n\r\n", ++zcount, overlap ? QRED : QCYN,
+      tmp_len = snprintf(buf+len, sizeof(buf)-len, "\tn(%3d) %s%-*s\tn %s%s\tn\r\n", ++zcount, overlap ? QRED : QCYN,
                  count_color_chars(zone_table[i].name)+30, zone_table[i].name,
-                 lev_set ? "@c" : "@n", lev_set ? lev_str : "All Levels");
+                 lev_set ? "\tc" : "\tn", lev_set ? lev_str : "All Levels");
+      len += tmp_len;
     }
   }
-  send_to_char(ch, "%s%d%s area%s found.\r\n", QYEL, zcount, QNRM, zcount == 1 ? "" : "s");
+  tmp_len = snprintf(buf+len, sizeof(buf)-len, "%s%d%s area%s found.\r\n", QYEL, zcount, QNRM, zcount == 1 ? "" : "s");
+  len += tmp_len;
 
-  if (overlap_shown)
-    send_to_char(ch, "Areas shown in @rred@n may have some creatures outside the specified range.\r\n");
+  if (overlap_shown) {
+    tmp_len = snprintf(buf+len, sizeof(buf)-len, "Areas shown in \trred\tn may have some creatures outside the specified range.\r\n");
+    len += tmp_len;
+   }
+   
+  if (zcount == 0)
+    send_to_char(ch, "No areas found.\r\n");
+  else
+    page_string(ch->desc, buf, TRUE);
 }
 
 void list_scanned_chars(struct char_data * list, struct char_data * ch, int
@@ -3068,9 +3122,9 @@ distance, int door)
     if (!CAN_SEE(ch, i))
       continue; 
     if (!*buf)
-      sprintf(buf, "You see @y%s@n", GET_NAME(i));
+      sprintf(buf, "You see \ty%s\tn", GET_NAME(i));
     else 
-      sprintf(buf, "%s@y%s@n", buf, GET_NAME(i));
+      sprintf(buf, "%s\ty%s\tn", buf, GET_NAME(i));
     if (--count > 1)
       strcat(buf, ", ");
     else if (count == 1)
@@ -3103,18 +3157,25 @@ ACMD(do_scan)
   send_to_char(ch, "You quickly scan the area...");
   act("$n quickly scans $s surroundings.", TRUE, ch, 0, 0, TO_ROOM);
   
-  for (door = 0; door < NUM_OF_DIRS; door++) {
+  for (door = 0; door < DIR_COUNT; door++) {
     for (range = 1; range<= maxrange; range++) {
-      if (world[scanned_room].dir_option[door] &&
-       !IS_SET(world[scanned_room].dir_option[door]->exit_info, EX_CLOSED) &&
-	   world[scanned_room].dir_option[door]->to_room != NOWHERE) {
-        scanned_room = world[scanned_room].dir_option[door]->to_room;
-         if (world[scanned_room].people)
-		   {
-             list_scanned_chars(world[scanned_room].people, ch, range - 1, door);
-			 found = TRUE;
-		   }
-      }                  // end of if
+      if (world[scanned_room].dir_option[door] && world[scanned_room].dir_option[door]->to_room != NOWHERE &&
+        !IS_SET(world[scanned_room].dir_option[door]->exit_info, EX_CLOSED) &&
+        !IS_SET(world[scanned_room].dir_option[door]->exit_info, EX_HIDDEN)) {
+          scanned_room = world[scanned_room].dir_option[door]->to_room;
+        if (IS_DARK(scanned_room) && !CAN_SEE_IN_DARK(ch)) {
+          if (world[scanned_room].people)
+            send_to_char(ch, "%s: It's too dark to see, but you can hear shuffling.\r\n", dirs[door]);
+          else
+            send_to_char(ch, "%s: It is too dark to see anything.\r\n", dirs[door]);
+          found=TRUE;
+        } else {
+          if (world[scanned_room].people) {
+           list_scanned_chars(world[scanned_room].people, ch, range - 1, door);
+            found=TRUE;
+          }
+         }
+       }                  // end of if
       else
         break;
     }                    // end of range

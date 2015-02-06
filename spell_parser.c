@@ -834,6 +834,10 @@ void mag_assign_spells(void)
   spello(SPELL_FIREBALL, "fireball", 40, 30, 2, POS_FIGHTING,
 	TAR_CHAR_ROOM | TAR_FIGHT_VICT, TRUE, MAG_DAMAGE,
 	NULL);
+    
+  spello(SPELL_FLY, "fly", 40, 20, 2, POS_FIGHTING,
+	TAR_CHAR_ROOM, FALSE, MAG_AFFECTS,
+	"You drift slowly to the ground.");
 
   spello(SPELL_GROUP_HEAL, "group heal", 80, 60, 5, POS_STANDING,
 	TAR_IGNORE, FALSE, MAG_GROUPS,
@@ -948,5 +952,6 @@ void mag_assign_spells(void)
   skillo(SKILL_SNEAK, "sneak");
   skillo(SKILL_STEAL, "steal");
   skillo(SKILL_TRACK, "track");
+  skillo(SKILL_WHIRLWIND, "whirlwind");
 }
 

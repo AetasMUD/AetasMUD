@@ -448,6 +448,8 @@ static void oedit_disp_val1_menu(struct descriptor_data *d)
   case ITEM_KEY:
   case ITEM_PEN:
   case ITEM_BOAT:
+  case ITEM_FREE:   /* Not implemented, but should be handled here */
+  case ITEM_FREE2:  /* Not implemented, but should be handled here */
     oedit_disp_menu(d);
     break;
   default:
@@ -763,11 +765,12 @@ static void oedit_disp_menu(struct descriptor_data *d)
 	  "%sC%s) Values      : %s%d %d %d %d\r\n"
 	  "%sD%s) Applies menu\r\n"
 	  "%sE%s) Extra descriptions menu: %s%s%s\r\n"
-          "%sM%s) Min Level   : %s%d\r\n"
-          "%sP%s) Perm Affects: %s%s\r\n"
+      "%sM%s) Min Level   : %s%d\r\n"
+      "%sP%s) Perm Affects: %s%s\r\n"
 	  "%sS%s) Script      : %s%s\r\n"
 	  "%sT%s) Weapon Casts: %s%s\r\n"
-          "%sW%s) Copy object\r\n"
+      "%sW%s) Copy object\r\n"
+      "%sX%s) Delete object\r\n"
 	  "%sQ%s) Quit\r\n"
 	  "Enter choice : ",
 
@@ -780,12 +783,13 @@ static void oedit_disp_menu(struct descriptor_data *d)
 	  GET_OBJ_VAL(obj, 1),
 	  GET_OBJ_VAL(obj, 2),
 	  GET_OBJ_VAL(obj, 3),
-	  grn, nrm, grn, nrm, cyn, GET_OBJ_EXTRA(obj) ? "Set." : "Not Set.", grn,
+	  grn, nrm, grn, nrm, cyn, obj->ex_description ? "Set." : "Not Set.", grn,
           grn, nrm, cyn, GET_OBJ_LEVEL(obj),
           grn, nrm, cyn, buf2,
           grn, nrm, cyn, OLC_SCRIPT(d) ? "Set." : "Not Set.",
 		  grn, nrm, cyn, HAS_SPELLS(obj) ? "Set." : "Not set.",
-	  grn, nrm,
+	      grn, nrm,
+          grn, nrm,
           grn, nrm
   );
   OLC_MODE(d) = OEDIT_MAIN_MENU;

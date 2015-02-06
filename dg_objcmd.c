@@ -573,11 +573,11 @@ static OCMD(do_oasound)
   }
 
   if ((room = obj_room(obj)) == NOWHERE) {
-    obj_log(obj, "oecho called by object in NOWHERE");
+    obj_log(obj, "oasound called by object in NOWHERE");
     return;
   }
 
-  for (door = 0; door < NUM_OF_DIRS; door++) {
+  for (door = 0; door < DIR_COUNT; door++) {
     if (world[room].dir_option[door] != NULL &&
        (world[room].dir_option[door])->to_room != NOWHERE &&
        (world[room].dir_option[door])->to_room != room &&

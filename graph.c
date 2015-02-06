@@ -112,7 +112,7 @@ static int find_first_step(room_rnum src, room_rnum target)
   MARK(src);
 
   /* first, enqueue the first steps, saving which direction we're going. */
-  for (curr_dir = 0; curr_dir < NUM_OF_DIRS; curr_dir++)
+  for (curr_dir = 0; curr_dir < DIR_COUNT; curr_dir++)
     if (VALID_EDGE(src, curr_dir)) {
       MARK(TOROOM(src, curr_dir));
       bfs_enqueue(TOROOM(src, curr_dir), curr_dir);
@@ -125,7 +125,7 @@ static int find_first_step(room_rnum src, room_rnum target)
       bfs_clear_queue();
       return (curr_dir);
     } else {
-      for (curr_dir = 0; curr_dir < NUM_OF_DIRS; curr_dir++)
+      for (curr_dir = 0; curr_dir < DIR_COUNT; curr_dir++)
 	if (VALID_EDGE(queue_head->room, curr_dir)) {
 	  MARK(TOROOM(queue_head->room, curr_dir));
 	  bfs_enqueue(TOROOM(queue_head->room, curr_dir), queue_head->dir);
@@ -170,7 +170,7 @@ ACMD(do_track)
     int tries = 10;
     /* Find a random direction. :) */
     do {
-      dir = rand_number(0, NUM_OF_DIRS - 1);
+      dir = rand_number(0, DIR_COUNT - 1);
     } while (!CAN_GO(ch, dir) && --tries);
     send_to_char(ch, "You sense a trail %s from here!\r\n", dirs[dir]);
     return;

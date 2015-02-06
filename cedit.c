@@ -100,6 +100,7 @@ static void cedit_setup(struct descriptor_data *d)
   OLC_CONFIG(d)->play.track_through_doors = CONFIG_TRACK_T_DOORS;
   OLC_CONFIG(d)->play.no_mort_to_immort   = CONFIG_NO_MORT_TO_IMMORT;
   OLC_CONFIG(d)->play.disp_closed_doors   = CONFIG_DISP_CLOSED_DOORS;
+  OLC_CONFIG(d)->play.diagonal_dirs       = CONFIG_DIAGONAL_DIRS;
   OLC_CONFIG(d)->play.map_option          = CONFIG_MAP;
   OLC_CONFIG(d)->play.map_size            = CONFIG_MAP_SIZE;
   OLC_CONFIG(d)->play.minimap_size        = CONFIG_MINIMAP_SIZE;
@@ -132,6 +133,8 @@ static void cedit_setup(struct descriptor_data *d)
   OLC_CONFIG(d)->operation.auto_save_olc      = CONFIG_OLC_SAVE;
   OLC_CONFIG(d)->operation.nameserver_is_slow = CONFIG_NS_IS_SLOW;
   OLC_CONFIG(d)->operation.medit_advanced     = CONFIG_MEDIT_ADVANCED;
+  OLC_CONFIG(d)->operation.ibt_autosave       = CONFIG_IBT_AUTOSAVE;
+  OLC_CONFIG(d)->operation.protocol_negotiation = CONFIG_PROTOCOL_NEGOTIATION;
 
   /* Autowiz */
   OLC_CONFIG(d)->autowiz.use_autowiz          = CONFIG_USE_AUTOWIZ;
@@ -198,6 +201,7 @@ static void cedit_save_internally(struct descriptor_data *d)
   CONFIG_TRACK_T_DOORS = OLC_CONFIG(d)->play.track_through_doors;
   CONFIG_NO_MORT_TO_IMMORT   = OLC_CONFIG(d)->play.no_mort_to_immort;
   CONFIG_DISP_CLOSED_DOORS   = OLC_CONFIG(d)->play.disp_closed_doors;
+  CONFIG_DIAGONAL_DIRS       = OLC_CONFIG(d)->play.diagonal_dirs;
   CONFIG_MAP                 = OLC_CONFIG(d)->play.map_option;
   CONFIG_MAP_SIZE            = OLC_CONFIG(d)->play.map_size;
   CONFIG_MINIMAP_SIZE        = OLC_CONFIG(d)->play.minimap_size;
@@ -230,6 +234,8 @@ static void cedit_save_internally(struct descriptor_data *d)
   CONFIG_NS_IS_SLOW = OLC_CONFIG(d)->operation.nameserver_is_slow;
   CONFIG_OLC_SAVE           = OLC_CONFIG(d)->operation.auto_save_olc;
   CONFIG_MEDIT_ADVANCED     = OLC_CONFIG(d)->operation.medit_advanced;
+  CONFIG_IBT_AUTOSAVE       = OLC_CONFIG(d)->operation.ibt_autosave;
+  CONFIG_PROTOCOL_NEGOTIATION = OLC_CONFIG(d)->operation.protocol_negotiation;
 
   /* Autowiz */
   CONFIG_USE_AUTOWIZ          = OLC_CONFIG(d)->autowiz.use_autowiz;
@@ -361,6 +367,8 @@ int save_config( IDXTYPE nowhere )
               "no_mort_to_immort = %d\n\n", CONFIG_NO_MORT_TO_IMMORT);
   fprintf(fl, "* Should closed doors be shown on autoexit / exit?\n"
               "disp_closed_doors = %d\n\n", CONFIG_DISP_CLOSED_DOORS);
+  fprintf(fl, "* Are diagonal directions enabled?\n"
+              "diagonal_dirs = %d\n\n", CONFIG_DIAGONAL_DIRS);
   fprintf(fl, "* Who can use the map functions? 0=off, 1=on, 2=imm_only\n"
               "map_option = %d\n\n", CONFIG_MAP);
   fprintf(fl, "* Default size of map shown by 'map' command\n"
@@ -501,14 +509,14 @@ int save_config( IDXTYPE nowhere )
     strip_cr(buf);
 
     fprintf(fl, "* The entrance/exit menu.\n"
-                "MENU = \n%s~\n\n", buf);
+                "MENU = \n%s~\n\n", convert_from_tabs(buf));
   }
 
   if (CONFIG_WELC_MESSG) {
     strcpy(buf, CONFIG_WELC_MESSG);
     strip_cr(buf);
 
-    fprintf(fl, "* The welcome message.\nWELC_MESSG = \n%s~\n\n", buf);
+    fprintf(fl, "* The welcome message.\nWELC_MESSG = \n%s~\n\n", convert_from_tabs(buf));
   }
 
   if (CONFIG_START_MESSG) {
@@ -516,12 +524,16 @@ int save_config( IDXTYPE nowhere )
     strip_cr(buf);
 
     fprintf(fl, "* NEWBIE start message.\n"
-                "START_MESSG = \n%s~\n\n", buf);
+                "START_MESSG = \n%s~\n\n", convert_from_tabs(buf));
   }
 
   fprintf(fl, "* Should the medit OLC show the advanced stats menu (1) or not (0).\n"
               "medit_advanced_stats = %d\n\n",
               CONFIG_MEDIT_ADVANCED);
+              
+  fprintf(fl, "* Should the idea, bug and typo commands autosave (1) or not (0).\n"
+		      "ibt_autosave = %d\n\n",
+			  CONFIG_IBT_AUTOSAVE);
 
   fprintf(fl, "\n\n\n* [ Autowiz Options ]\n");
 
@@ -533,7 +545,10 @@ int save_config( IDXTYPE nowhere )
   fprintf(fl, "* If yes, what is the lowest level which should be on the wizlist?\n"
               "min_wizlist_lev = %d\n\n",
               CONFIG_MIN_WIZLIST_LEV);
-
+              
+  fprintf(fl, "* If yes, enable the protocol negotiation system?\n"
+              "protocol_negotiation = %d\n\n",
+              CONFIG_PROTOCOL_NEGOTIATION);
 
   fclose(fl);
 
@@ -598,8 +613,9 @@ static void cedit_disp_game_play_options(struct descriptor_data *d)
         "%sN%s) Objects Load Into Inventory : %s%s\r\n"
         "%sO%s) Track Through Doors         : %s%s\r\n"
         "%sP%s) Display Closed Doors        : %s%s\r\n"
-        "%sR%s) Mortals Level To Immortal   : %s%s\r\n"
-	      "%s1%s) OK Message Text         : %s%s"
+        "%sR%s) Diagonal Directions         : %s%s\r\n"
+        "%sS%s) Mortals Level To Immortal   : %s%s\r\n"
+	    "%s1%s) OK Message Text         : %s%s"
         "%s2%s) NOPERSON Message Text   : %s%s"
         "%s3%s) NOEFFECT Message Text   : %s%s"
         "%s4%s) Map/Automap Option      : %s%s\r\n"
@@ -625,6 +641,7 @@ static void cedit_disp_game_play_options(struct descriptor_data *d)
         grn, nrm, cyn, CHECK_VAR(OLC_CONFIG(d)->play.load_into_inventory),
         grn, nrm, cyn, CHECK_VAR(OLC_CONFIG(d)->play.track_through_doors),
         grn, nrm, cyn, CHECK_VAR(OLC_CONFIG(d)->play.disp_closed_doors),
+        grn, nrm, cyn, CHECK_VAR(OLC_CONFIG(d)->play.diagonal_dirs),
         grn, nrm, cyn, CHECK_VAR(OLC_CONFIG(d)->play.no_mort_to_immort),
 
         grn, nrm, cyn, OLC_CONFIG(d)->play.OK,
@@ -716,6 +733,8 @@ static void cedit_disp_operation_options(struct descriptor_data *d)
   	"%sM%s) Welcome Message     : \r\n%s%s\r\n"
   	"%sN%s) Start Message       : \r\n%s%s\r\n"
   	"%sO%s) Medit Stats Menu    : %s%s\r\n"
+  	"%sP%s) Autosave bugs when resolved from commandline : %s%s\r\n"
+  	"%sR%s) Enable Protocol Negotiation : %s%s\r\n"
     "%sQ%s) Exit To The Main Menu\r\n"
     "Enter your choice : ",
     grn, nrm, cyn, OLC_CONFIG(d)->operation.DFLT_PORT,
@@ -733,6 +752,8 @@ static void cedit_disp_operation_options(struct descriptor_data *d)
     grn, nrm, cyn, OLC_CONFIG(d)->operation.WELC_MESSG ? OLC_CONFIG(d)->operation.WELC_MESSG : "<None>",
     grn, nrm, cyn, OLC_CONFIG(d)->operation.START_MESSG ? OLC_CONFIG(d)->operation.START_MESSG : "<None>",
     grn, nrm, cyn, OLC_CONFIG(d)->operation.medit_advanced ? "Advanced" : "Standard",
+    grn, nrm, cyn, OLC_CONFIG(d)->operation.ibt_autosave ? "Yes" : "No",
+    grn, nrm, cyn, OLC_CONFIG(d)->operation.protocol_negotiation ? "Yes" : "No",
     grn, nrm
     );
 
@@ -927,7 +948,12 @@ void cedit_parse(struct descriptor_data *d, char *arg)
 
         case 'r':
         case 'R':
-	  TOGGLE_VAR(OLC_CONFIG(d)->play.no_mort_to_immort);
+		  TOGGLE_VAR(OLC_CONFIG(d)->play.diagonal_dirs);
+		  break;
+ 
+		case 's':
+		case 'S':
+	      TOGGLE_VAR(OLC_CONFIG(d)->play.no_mort_to_immort);
           break;
 
         case '1':
@@ -1196,6 +1222,16 @@ void cedit_parse(struct descriptor_data *d, char *arg)
            TOGGLE_VAR(OLC_CONFIG(d)->operation.medit_advanced);
            break;
 
+		 case 'p':
+		 case 'P':
+		   TOGGLE_VAR(OLC_CONFIG(d)->operation.ibt_autosave);
+		   break;
+
+		 case 'r':
+		 case 'R':
+		   TOGGLE_VAR(OLC_CONFIG(d)->operation.protocol_negotiation);
+		   break;
+           
          case 'q':
          case 'Q':
            cedit_disp_menu(d);

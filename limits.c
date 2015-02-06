@@ -20,6 +20,8 @@
 #include "dg_scripts.h"
 #include "class.h"
 #include "fight.h"
+#include "screen.h"
+#include "mud_event.h"
 
 /* local file scope function prototypes */
 static int graf(int grafage, int p0, int p1, int p2, int p3, int p4, int p5, int p6);
@@ -231,6 +233,9 @@ void gain_exp(struct char_data *ch, int gain)
     return;
   }
   if (gain > 0) {
+    if ((IS_HAPPYHOUR) && (IS_HAPPYEXP))
+      gain += (int)((float)gain * ((float)HAPPY_EXP / (float)(100)));
+
     gain = MIN(CONFIG_MAX_EXP_GAIN, gain);	/* put a cap on the max gain per kill */
     GET_EXP(ch) += gain;
     while (GET_LEVEL(ch) < LVL_IMMORT - CONFIG_NO_MORT_TO_IMMORT &&
@@ -267,6 +272,9 @@ void gain_exp_regardless(struct char_data *ch, int gain)
 {
   int is_altered = FALSE;
   int num_levels = 0;
+  
+  if ((IS_HAPPYHOUR) && (IS_HAPPYEXP))
+    gain += (int)((float)gain * ((float)HAPPY_EXP / (float)(100)));
 
   GET_EXP(ch) += gain;
   if (GET_EXP(ch) < 0)
@@ -477,4 +485,75 @@ void point_update(void)
         timer_otrigger(j);
     }
   }
+  
+  /* Take 1 from the happy-hour tick counter, and end happy-hour if zero */
+       if (HAPPY_TIME > 1)  HAPPY_TIME--;
+  else if (HAPPY_TIME == 1)   /* Last tick - set everything back to zero */
+  {
+    HAPPY_QP = 0;
+    HAPPY_EXP = 0;
+    HAPPY_GOLD = 0;
+    HAPPY_TIME = 0;
+   game_info("Happy hour has ended!");
+  }
+}
+
+/* Note: amt may be negative */
+int increase_gold(struct char_data *ch, int amt)
+{
+  int curr_gold;
+
+  curr_gold = GET_GOLD(ch);
+
+  if (amt < 0) {
+    GET_GOLD(ch) = MAX(0, curr_gold+amt);
+    /* Validate to prevent overflow */
+    if (GET_GOLD(ch) > curr_gold) GET_GOLD(ch) = 0;
+  } else {
+    GET_GOLD(ch) = MIN(MAX_GOLD, curr_gold+amt);
+    /* Validate to prevent overflow */
+    if (GET_GOLD(ch) < curr_gold) GET_GOLD(ch) = MAX_GOLD;
+  }
+  if (GET_GOLD(ch) == MAX_GOLD)
+    send_to_char(ch, "%sYou have reached the maximum gold!\r\n%sYou must spend it or bank it before you can gain any more.\r\n", QBRED, QNRM);
+
+  return (GET_GOLD(ch));
+}
+
+int decrease_gold(struct char_data *ch, int deduction)
+{
+  int amt;
+  amt = (deduction * -1);
+  increase_gold(ch, amt);
+  return (GET_GOLD(ch));
+}
+
+int increase_bank(struct char_data *ch, int amt)
+{
+  int curr_bank;
+
+  if (IS_NPC(ch)) return 0;
+
+  curr_bank = GET_BANK_GOLD(ch);
+
+  if (amt < 0) {
+    GET_BANK_GOLD(ch) = MAX(0, curr_bank+amt);
+    /* Validate to prevent overflow */
+    if (GET_BANK_GOLD(ch) > curr_bank) GET_BANK_GOLD(ch) = 0;
+  } else {
+    GET_BANK_GOLD(ch) = MIN(MAX_BANK, curr_bank+amt);
+    /* Validate to prevent overflow */
+    if (GET_BANK_GOLD(ch) < curr_bank) GET_BANK_GOLD(ch) = MAX_BANK;
+  }
+  if (GET_BANK_GOLD(ch) == MAX_BANK)
+    send_to_char(ch, "%sYou have reached the maximum bank balance!\r\n%sYou cannot put more into your account unless you withdraw some first.\r\n", QBRED, QNRM);
+  return (GET_BANK_GOLD(ch));
+}
+
+int decrease_bank(struct char_data *ch, int deduction)
+{
+  int amt;
+  amt = (deduction * -1);
+  increase_bank(ch, amt);
+  return (GET_BANK_GOLD(ch));
 }

@@ -101,6 +101,10 @@ int track_through_doors = YES;
  * the top level that people can advance to in gain_exp() in limits.c */
 int no_mort_to_immort = YES;
 
+/* Are diagonal directions enabled?
+* If set to NO, then only the 6 directions n,e,s,w,u,d are allowed */
+int diagonal_dirs = NO;
+
 /* RENT/CRASHSAVE OPTIONS */
 /* Should the MUD allow you to 'rent' for free?  (i.e. if you just quit, your
  * objects are saved at no cost). */
@@ -259,23 +263,23 @@ int use_new_socials = YES;
 
 const char *MENU =
 "\r\n"
-"Welcome to tbaMUD!\r\n"
-"0) Exit from tbaMUD.\r\n"
-"1) Enter the game.\r\n"
-"2) Enter description.\r\n"
-"3) Read the background story.\r\n"
-"4) Change password.\r\n"
-"5) Delete this character.\r\n"
+"Welcome to AetasMUD!\r\n"
+"\t(0\t)) Exit from AetasMUD.\r\n"
+"\t(1\t)) Enter the game.\r\n"
+"\t(2\t)) Enter description.\r\n"
+"\t(3\t)) Read the background story.\r\n"
+"\t(4\t)) Change password.\r\n"
+"\t(5\t)) Delete this character.\r\n"
 "\r\n"
 "   Make your choice: ";
 
 const char *WELC_MESSG =
 "\r\n"
-"Welcome to tbaMUD!  May your visit here be... Enlightening"
+"Welcome to AetasMUD!  May your visit here be... Enlightening"
 "\r\n\r\n";
 
 const char *START_MESSG =
-"Welcome.  This is your new tbaMUD character!  You can now earn gold,\r\n"
+"Welcome.  This is your new AetasMUD character!  You can now earn gold,\r\n"
 "gain experience, find weapons and equipment, and much more -- while\r\n"
 "meeting people from around the world!\r\n";
 
@@ -302,3 +306,9 @@ int default_minimap_size = 2;
 
 /* Medit Stats menu - show 'advanced' options? */
 int medit_advanced_stats = YES;
+
+/* Does "bug resolve" autosave ? */
+int ibt_autosave = YES;
+
+/* Use the protocol negotiation system */
+int protocol_negotiation = YES;

@@ -102,17 +102,46 @@ int copy_mobile(struct char_data *to, struct char_data *from)
 static void extract_mobile_all(mob_vnum vnum)
 {
   struct char_data *next, *ch;
+  int i;
 
   for (ch = character_list; ch; ch = next) {
     next = ch->next;
-    if (GET_MOB_VNUM(ch) == vnum)
+    if (GET_MOB_VNUM(ch) == vnum) {
+			if ((i = GET_MOB_RNUM(ch)) != NOBODY) {
+	    if (ch->player.name && ch->player.name != mob_proto[i].player.name)
+          free(ch->player.name);
+				ch->player.name = NULL;
+				
+        if (ch->player.title && ch->player.title != mob_proto[i].player.title)
+          free(ch->player.title);
+				ch->player.title = NULL;
+				
+        if (ch->player.short_descr && ch->player.short_descr != mob_proto[i].player.short_descr)
+          free(ch->player.short_descr);
+				ch->player.short_descr = NULL;
+				
+        if (ch->player.long_descr && ch->player.long_descr != mob_proto[i].player.long_descr)
+          free(ch->player.long_descr);
+				ch->player.long_descr = NULL;
+				
+        if (ch->player.description && ch->player.description != mob_proto[i].player.description)
+          free(ch->player.description);
+				ch->player.description = NULL;
+    
+        /* free script proto list if it's not the prototype */
+        if (ch->proto_script && ch->proto_script != mob_proto[i].proto_script)
+          free_proto_script(ch, MOB_TRIGGER);			
+				ch->proto_script = NULL;
+			}
       extract_char(ch);
+    }
   }
 }
 
 int delete_mobile(mob_rnum refpt)
 {
   struct char_data *live_mob;
+  struct char_data *proto;
   int counter, cmd_no;
   mob_vnum vnum;
   zone_rnum zone;
@@ -127,7 +156,10 @@ int delete_mobile(mob_rnum refpt)
   }
 
   vnum = mob_index[refpt].vnum;
+  proto = &mob_proto[refpt];
+  
   extract_mobile_all(vnum);
+  extract_char(proto);
 
   for (counter = refpt; counter < top_of_mobt; counter++) {
     mob_index[counter] = mob_index[counter + 1];
@@ -341,13 +373,14 @@ int write_mobile_record(mob_vnum mvnum, struct char_data *mob, FILE *fd)
 {
   char ldesc[MAX_STRING_LENGTH];
   char ddesc[MAX_STRING_LENGTH];
+  char buf[MAX_STRING_LENGTH];
 
   ldesc[MAX_STRING_LENGTH - 1] = '\0';
   ddesc[MAX_STRING_LENGTH - 1] = '\0';
   strip_cr(strncpy(ldesc, GET_LDESC(mob), MAX_STRING_LENGTH - 1));
   strip_cr(strncpy(ddesc, GET_DDESC(mob), MAX_STRING_LENGTH - 1));
 
-  fprintf(fd,	"#%d\n"
+  sprintf(buf,	"#%d\n"
 		"%s%c\n"
 		"%s%c\n"
 		"%s%c\n"
@@ -358,6 +391,8 @@ int write_mobile_record(mob_vnum mvnum, struct char_data *mob, FILE *fd)
 	ldesc, STRING_TERMINATOR,
 	ddesc, STRING_TERMINATOR
   );
+  
+  fprintf(fd, convert_from_tabs(buf), 0);
 
   fprintf(fd, "%d %d %d %d %d %d %d %d %d E\n"
       "%d %d %d %dd%d+%d %dd%d+%d\n",

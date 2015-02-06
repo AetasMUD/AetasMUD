@@ -294,24 +294,51 @@ void generic_complete_quest(struct char_data *ch)
   qst_rnum rnum;
   qst_vnum vnum = GET_QUEST(ch);
   struct obj_data *new_obj;
+  int happy_qp, happy_gold, happy_exp;
 
   if (--GET_QUEST_COUNTER(ch) <= 0) {
     rnum = real_quest(vnum);
+    if (IS_HAPPYHOUR && IS_HAPPYQP) {
+      happy_qp = (int)(QST_POINTS(rnum) * (((float)(100+HAPPY_QP))/(float)100));
+      happy_qp = MAX(happy_qp, 0);
+      GET_QUESTPOINTS(ch) += happy_qp;
+      send_to_char(ch,
+          "%s\r\nYou have been awarded %d quest points for your service.\r\n",
+          QST_DONE(rnum), happy_qp);
+	} else {
     GET_QUESTPOINTS(ch) += QST_POINTS(rnum);
     send_to_char(ch,
           "%s\r\nYou have been awarded %d quest points for your service.\r\n",
           QST_DONE(rnum), QST_POINTS(rnum));
+    }
     if (QST_GOLD(rnum)) {
-      GET_GOLD(ch) += QST_GOLD(rnum);
+      if ((IS_HAPPYHOUR) && (IS_HAPPYGOLD)) {
+        happy_gold = (int)(QST_GOLD(rnum) * (((float)(100+HAPPY_GOLD))/(float)100));
+        happy_gold = MAX(happy_gold, 0);
+        increase_gold(ch, happy_gold);
+        send_to_char(ch,
+              "You have been awarded %d gold coins for your service.\r\n",
+              happy_gold);
+	  } else {
+        increase_gold(ch, QST_GOLD(rnum));
       send_to_char(ch,
             "You have been awarded %d gold coins for your service.\r\n",
             QST_GOLD(rnum));
     }
+    }
     if (QST_EXP(rnum)) {
       gain_exp(ch, QST_EXP(rnum));
+      if ((IS_HAPPYHOUR) && (IS_HAPPYEXP)) {
+        happy_exp = (int)(QST_EXP(rnum) * (((float)(100+HAPPY_EXP))/(float)100));
+        happy_exp = MAX(happy_exp, 0);
+        send_to_char(ch,
+              "You have been awarded %d experience for your service.\r\n",
+              happy_exp);
+      } else {
       send_to_char(ch,
             "You have been awarded %d experience points for your service.\r\n",
             QST_EXP(rnum));
+    }
     }
     if (QST_OBJ(rnum) && QST_OBJ(rnum) != NOTHING) {
       if (real_object(QST_OBJ(rnum)) != NOTHING) {
@@ -445,7 +472,7 @@ void list_quests(struct char_data *ch, zone_rnum zone, qst_vnum vmin, qst_vnum v
   "----- ------- -------------------------------------------- -----------\r\n");
   for (rnum = 0; rnum < total_quests ; rnum++)
     if (QST_NUM(rnum) >= bottom && QST_NUM(rnum) <= top)
-      send_to_char(ch, "@g%4d@n) [@g%-5d@n] @c%-44.44s@n @y[%5d]@n\r\n",
+      send_to_char(ch, "\tg%4d\tn) [\tg%-5d\tn] \tc%-44.44s\tn \ty[%5d]\tn\r\n",
           ++counter, QST_NUM(rnum), QST_NAME(rnum),
           QST_MASTER(rnum) == NOBODY ? 0 : QST_MASTER(rnum));
   if (!counter)
@@ -462,11 +489,11 @@ void quest_hist(struct char_data *ch)
     "----- ---------------------------------------------------- -----------\r\n");
   for (i = 0; i < GET_NUM_QUESTS(ch); i++) {
     if ((rnum = real_quest(ch->player_specials->saved.completed_quests[i])) != NOTHING)
-      send_to_char(ch, "@g%4d@n) @c%-52.52s@n @y%s@n\r\n",
+      send_to_char(ch, "\tg%4d\tn) \tc%-52.52s\tn \ty%s\tn\r\n",
  ++counter, QST_DESC(rnum), (real_mobile(QST_MASTER(rnum)) == NOBODY) ? "Unknown" : GET_NAME(&mob_proto[(real_mobile(QST_MASTER(rnum)))]));
     else
       send_to_char(ch,
-        "@g%4d@n) @cUnknown Quest (it no longer exists)@n\r\n", ++counter);
+        "\tg%4d\tn) \tcUnknown Quest (it no longer exists)\tn\r\n", ++counter);
   }
   if (!counter)
     send_to_char(ch, "You haven't completed any quests yet.\r\n");
@@ -540,7 +567,7 @@ void quest_list(struct char_data *ch, struct char_data *qm, char argument[MAX_IN
   else if ((rnum = real_quest(vnum)) == NOTHING)
     send_to_char(ch, "That is not a valid quest!\r\n");
   else if (QST_INFO(rnum)) {
-    send_to_char(ch,"Complete Details on Quest %d @c%s@n:\r\n%s",
+    send_to_char(ch,"Complete Details on Quest %d \tc%s\tn:\r\n%s",
                       vnum,
          QST_DESC(rnum),
          QST_INFO(rnum));
@@ -617,7 +644,7 @@ void quest_show(struct char_data *ch, mob_vnum qm)
   "----- ---------------------------------------------------- ------- -----\r\n");
   for (rnum = 0; rnum < total_quests; rnum++)
     if (qm == QST_MASTER(rnum))
-      send_to_char(ch, "@g%4d@n) @c%-52.52s@n @y(%5d)@n @y(%s)@n\r\n",
+      send_to_char(ch, "\tg%4d\tn) \tc%-52.52s\tn \ty(%5d)\tn \ty(%s)\tn\r\n",
         ++counter, QST_DESC(rnum), QST_NUM(rnum),
         (is_complete(ch, QST_NUM(rnum)) ? "Yes" : "No "));
   if (!counter)
@@ -668,16 +695,16 @@ void quest_stat(struct char_data *ch, char argument[MAX_STRING_LENGTH])
     }
     qmrnum = real_mobile(QST_MASTER(rnum));
     send_to_char(ch,
-        "VNum  : [@y%5d@n], RNum: [@y%5d@n] -- Questmaster: [@y%5d@n] @y%s@n\r\n"
-        "Name  : @y%s@n\r\n"
- "Desc  : @y%s@n\r\n"
- "Accept Message:\r\n@c%s@n"
- "Completion Message:\r\n@c%s@n"
- "Quit Message:\r\n@c%s@n"
- "Type  : @y%s@n\r\n"
-        "Target: @y%d@n @y%s@n, Quantity: @y%d@n\r\n"
- "Value : @y%d@n, Penalty: @y%d@n, Min Level: @y%2d@n, Max Level: @y%2d@n\r\n"
- "Flags : @c%s@n\r\n",
+        "VNum  : [\ty%5d\tn], RNum: [\ty%5d\tn] -- Questmaster: [\ty%5d\tn] \ty%s\tn\r\n"
+        "Name  : \ty%s\tn\r\n"
+        "Desc  : \ty%s\tn\r\n"
+        "Accept Message:\r\n\tc%s\tn"
+        "Completion Message:\r\n\tc%s\tn"
+        "Quit Message:\r\n\tc%s\tn"
+        "Type  : \ty%s\tn\r\n"
+        "Target: \ty%d\tn \ty%s\tn, Quantity: \ty%d\tn\r\n"
+        "Value : \ty%d\tn, Penalty: \ty%d\tn, Min Level: \ty%2d\tn, Max Level: \ty%2d\tn\r\n"
+        "Flags : \tc%s\tn\r\n",
      QST_NUM(rnum), rnum,
  QST_MASTER(rnum) == NOBODY ? -1 : QST_MASTER(rnum),
  (qmrnum == NOBODY) ? "(Invalid vnum)" : GET_NAME(&mob_proto[(qmrnum)]),
@@ -693,13 +720,13 @@ void quest_stat(struct char_data *ch, char argument[MAX_STRING_LENGTH])
      QST_POINTS(rnum), QST_PENALTY(rnum), QST_MINLEVEL(rnum),
  QST_MAXLEVEL(rnum), buf);
     if (QST_PREREQ(rnum) != NOTHING)
-      send_to_char(ch, "Preq  : [@y%5d@n] @y%s@n\r\n",
+      send_to_char(ch, "Preq  : [\ty%5d\tn] \ty%s\tn\r\n",
         QST_PREREQ(rnum) == NOTHING ? -1 : QST_PREREQ(rnum),
         QST_PREREQ(rnum) == NOTHING ? "" :
    real_object(QST_PREREQ(rnum)) == NOTHING ? "an unknown object" :
        obj_proto[real_object(QST_PREREQ(rnum))].short_description);
     if (QST_TYPE(rnum) == AQ_OBJ_RETURN)
-      send_to_char(ch, "Mob   : [@y%5d@n] @y%s@n\r\n",
+      send_to_char(ch, "Mob   : [\ty%5d\tn] \ty%s\tn\r\n",
         QST_RETURNMOB(rnum),
  real_mobile(QST_RETURNMOB(rnum)) == NOBODY ? "an unknown mob" :
            mob_proto[real_mobile(QST_RETURNMOB(rnum))].player.short_descr);
@@ -711,15 +738,15 @@ void quest_stat(struct char_data *ch, char argument[MAX_STRING_LENGTH])
       send_to_char(ch, "Limit : There is no time limit on this quest.\r\n");
     send_to_char(ch, "Prior :");
     if (QST_PREV(rnum) == NOTHING)
-      send_to_char(ch, " @yNone.@n\r\n");
+      send_to_char(ch, " \tyNone.\tn\r\n");
     else
-      send_to_char(ch, " [@y%5d@n] @c%s@n\r\n",
+      send_to_char(ch, " [\ty%5d\tn] \tc%s\tn\r\n",
         QST_PREV(rnum), QST_DESC(real_quest(QST_PREV(rnum))));
     send_to_char(ch, "Next  :");
     if (QST_NEXT(rnum) == NOTHING)
-      send_to_char(ch, " @yNone.@n\r\n");
+      send_to_char(ch, " \tyNone.\tn\r\n");
     else
-      send_to_char(ch, " [@y%5d@n] @c%s@n\r\n",
+      send_to_char(ch, " [\ty%5d\tn] \tc%s\tn\r\n",
         QST_NEXT(rnum), QST_DESC(real_quest(QST_NEXT(rnum))));
   }
 }

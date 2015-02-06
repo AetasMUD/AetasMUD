@@ -252,6 +252,7 @@ ACMD(do_dig)
     OLC_ROOM(d)->description = strdup("You are in an unfinished room.\r\n");
     OLC_ROOM(d)->zone = OLC_ZNUM(d);
     OLC_ROOM(d)->number = NOWHERE;
+    OLC_ROOM(d)->sector_type = GET_BUILDWALK_SECTOR(ch);
 
     /* Save the new room to memory. redit_save_internally handles adding the 
      * room in the right place, etc. */
