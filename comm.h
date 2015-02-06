@@ -19,6 +19,7 @@
 /* comm.c */
 
 void close_socket(struct descriptor_data *d);
+void game_info(const char *messg, ...) __attribute__ ((format (printf, 1, 2)));
 size_t send_to_char(struct char_data *ch, const char *messg, ...) __attribute__ 
     ((format (printf, 2, 3)));
 void send_to_all(const char *messg, ...) __attribute__ ((format (printf, 1, 
@@ -76,6 +77,7 @@ extern FILE *logfile;
 extern unsigned long pulse;
 extern ush_int port;
 extern socket_t mother_desc;
+extern int next_tick;
 
 #endif /* __COMM_C__ */
 

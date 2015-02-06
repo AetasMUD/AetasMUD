@@ -156,49 +156,49 @@ const char *racepos_types[] = {
 /* The menu for choosing a class in interpreter.c: */
 const char *class_menu =
 "\r\n\r\n"
-"@cSelecting a class is perhaps the most important choice that you will\r\n"
+"\tcSelecting a class is perhaps the most important choice that you will\r\n"
 "make for a character. Character class determines which spells and skills\r\n"
 "the character can use, as well as which equipment they can use and which\r\n"
-"alignment they must remain at.@n\r\n"
-"\r\n@GSelect a class:@n\r\n\r\n"
-"     @cKnight      @w-- @nWarrior devoted to a deity.\r\n"
-"     @cCleric      @w-- @nOne who is devoted to and dependant on a deity.\r\n"
-"     @cBarbarian   @w-- @nWarrior relying on brute strength.\r\n"
-"     @cRanger      @w-- @nWanderer of lands and roamer of the forests.\r\n" 
-"     @cMage        @w-- @nOne who wields arcane powers.\r\n"
-"     @cMonk        @w-- @nWarrior relying on personal discipline and balance.\r\n"
-"     @cNecromancer @w-- @nUser of magic of the netherworld.\r\n"
-"     @cDruid       @w-- @nOne devoted to the earth and its protection.\r\n"
-"     @cThief       @w-- @nBackstabber and pickpocket.\r\n"
-"     @cPsionicist  @w-- @nOne who can alter the perceptions of the mind.\r\n";
+"alignment they must remain at.\tn\r\n"
+"\r\n\tGSelect a class:\tn\r\n\r\n"
+"     \tcKnight      \tw-- \tnWarrior devoted to a deity.\r\n"
+"     \tcCleric      \tw-- \tnOne who is devoted to and dependant on a deity.\r\n"
+"     \tcBarbarian   \tw-- \tnWarrior relying on brute strength.\r\n"
+"     \tcRanger      \tw-- \tnWanderer of lands and roamer of the forests.\r\n" 
+"     \tcMage        \tw-- \tnOne who wields arcane powers.\r\n"
+"     \tcMonk        \tw-- \tnWarrior relying on personal discipline and balance.\r\n"
+"     \tcNecromancer \tw-- \tnUser of magic of the netherworld.\r\n"
+"     \tcDruid       \tw-- \tnOne devoted to the earth and its protection.\r\n"
+"     \tcThief       \tw-- \tnBackstabber and pickpocket.\r\n"
+"     \tcPsionicist  \tw-- \tnOne who can alter the perceptions of the mind.\r\n";
 
 
 /* The menu for choosing a race in interpreter.c: */
 const char *race_menu =
 "\r\n"
-"@cA character's race determines what they look like, how they react\r\n"
+"\tcA character's race determines what they look like, how they react\r\n"
 "in some situations, their physical and mental capabilities, and to\r\n"
-"some extent which equipment they can use.@n\r\n\r\n"
-"@GSelect a race:@n\r\n\r\n"
-"  @cHuman        @c--@n Humans have average attributes.\r\n"
-"  @cElf          @c--@n Elves are usually shorter and lighter than humans\r\n"
+"some extent which equipment they can use.\tn\r\n\r\n"
+"\tGSelect a race:\tn\r\n\r\n"
+"  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
+"  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
 "                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  @cDwarf        @c--@n Dwarves are usually quite shorter than humans, but\r\n"
+"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans, but\r\n"
 "                    are rather stocky, and normally wear beards. They receive\r\n"
 "                    bonuses to strength and constitution, but have reduced dexterity\r\n"
 "                    and intelligence.\r\n"
-"  @cKender       @c--@n Kender are often mistaken for teenage humans, even\r\n"
+"  \tcKender       \tc--\tn Kender are often mistaken for teenage humans, even\r\n"
 "                    with their pointy ears. They receive bonuses for dexterity, but\r\n"
 "                    have reduced intelligence and strength.\r\n" 
-"  Half-@cOrc     @c--@n Half-orcs are usually shorter than humans, with a face\r\n"
+"  Half-\tcOrc     \tc--\tn Half-orcs are usually shorter than humans, with a face\r\n"
 "                    that resembles a pig, and skin that is green and brown. They receive\r\n"
 "                    bonuses to strength, but reductions to intelligence and charisma.\r\n"
-"  Half-O@cgre    @c--@n Half-ogres usually stand a couple feet taller than\r\n"
+"  Half-O\tcgre    \tc--\tn Half-ogres usually stand a couple feet taller than\r\n"
 "                    humans, and have been described as over-sized neanderthals. They\r\n"
 "                    receive large bonuses to strength, but suffer with reduced wisdom,\r\n"
 "                    intelligence and charisma.\r\n"
-"  @cBakali       @c--@n Bakali are a race of lizard type humanoids which\r\n"
+"  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
 "                    bonuses to strength and constitution, but have reduced wisdom\r\n"
 "                    and charisma.\r\n";
@@ -207,20 +207,20 @@ const char *race_menu =
 
 const char *race_mage_menu =
 "\r\n\r\n"
-"@cThe following races can be Mages. Mages may choose to be any alignment.@n\r\n"
+"\tcThe following races can be Mages. Mages may choose to be any alignment.\tn\r\n"
 "\r\n"
-"@GSelect a race:\r\n\r\n"
-"  @cHuman        @c--@n Humans have average attributes.\r\n"
-"  @cElf          @c--@n Elves are usually shorter and lighter than humans\r\n"
+"\tGSelect a race:\r\n\r\n"
+"  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
+"  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
 "                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  @cKender       @c--@n Kender are often mistaken for teenage humans, even\r\n"
+"  \tcKender       \tc--\tn Kender are often mistaken for teenage humans, even\r\n"
 "                    with their pointy ears. They receive bonuses for dexterity, but\r\n"
 "                    have reduced intelligence and strength.\r\n" 
-"  @cHalf-Orc     @c--@n Half-orcs are usually shorter than humans, with a face\r\n"
+"  \tcHalf-Orc     \tc--\tn Half-orcs are usually shorter than humans, with a face\r\n"
 "                    that resembles a pig, and skin that is green and brown. They receive\r\n"
 "                    bonuses to strength, but reductions to intelligence and charisma.\r\n"
-"  @cBakali       @c--@n Bakali are a race of lizard type humanoids which\r\n"
+"  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
 "                    bonuses to strength and constitution, but have reduced wisdom\r\n"
 "                    and charisma.\r\n";
@@ -228,133 +228,132 @@ const char *race_mage_menu =
 
 const char *race_necro_menu =
 "\r\n\r\n"
-"@cThe following races can be Necromancers. Necromancers may choose to be\r\n"
-"any alignment.@n\r\n"
+"\tcThe following races can be Necromancers. Necromancers may choose to be\r\n"
+"any alignment.\tn\r\n"
 "\r\n"
-"@GSelect a race:@n\r\n\r\n"
-"  @cHuman        @c--@n Humans have average attributes.\r\n"
-"  @cElf          @c--@n Elves are usually shorter and lighter than humans\r\n"
+"\tGSelect a race:\tn\r\n\r\n"
+"  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
+"  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
 "                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  @cHalf-Orc     @c--@n Half-orcs are usually shorter than humans, with a face\r\n"
+"  \tcHalf-Orc     \tc--\tn Half-orcs are usually shorter than humans, with a face\r\n"
 "                    that resembles a pig, and skin that is green and brown. They receive\r\n"
 "                    bonuses to strength, but reductions to intelligence and charisma.\r\n"
-"  @cBakali       @c--@n Bakali are a race of lizard type humanoids which\r\n"
+"  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
 "                    bonuses to strength and constitution, but have reduced wisdom\r\n"
 "                    and charisma.\r\n";
 
 const char *race_monk_menu =
 "\r\n"
-"@cThe following races are able to be Monks. Monks need to be at a neutral\r\n"
+"\tcThe following races are able to be Monks. Monks need to be at a neutral\r\n"
 "alignment in order to remain in balance with the forces that give them\r\n"
 "their abilities. Therefore, your alignment will automatically be set to\r\n"
-"neutral after choosing your race.@n\r\n"
+"neutral after choosing your race.\tn\r\n"
 "\r\n"
-"@GSelect a race:@n\r\n\r\n"
-"  @cHuman        @c--@n Humans have average attributes.\r\n"
-"  @cElf          @c--@n Elves are usually shorter and lighter than humans\r\n"
+"\tGSelect a race:\tn\r\n\r\n"
+"  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
+"  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
 "                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  @cKender       @c--@n Kender are often mistaken for teenage humans, even\r\n"
+"  \tcKender       \tc--\tn Kender are often mistaken for teenage humans, even\r\n"
 "                    with their pointy ears. They receive bonuses for dexterity, but\r\n"
 "                    have reduced intelligence and strength.\r\n" 
-"  @cBakali       @c--@n Bakali are a race of lizard type humanoids which\r\n"
+"  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
 "                    bonuses to strength and constitution, but have reduced wisdom\r\n"
 "                    and charisma.\r\n";
 
 const char *race_knig_menu =
 "\r\n\r\n"
-"@cThe following races are able to be Knights. Knights must have alignments\r\n"
-"of either good or evil in order to keep the favor of their chosen deity.@n\r\n"
+"\tcThe following races are able to be Knights. Knights must have alignments\r\n"
+"of either good or evil in order to keep the favor of their chosen deity.\tn\r\n"
 "\r\n"
-"@GSelect a race:@n\r\n\r\n"
-"  @cHuman        @c--@n Humans have average attributes.\r\n"
-"  @cElf          @c--@n Elves are usually shorter and lighter than humans\r\n"
+"\tGSelect a race:\tn\r\n\r\n"
+"  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
+"  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
 "                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  @cDwarf        @c--@n Dwarves are usually quite shorter than humans, but\r\n"
+"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans, but\r\n"
 "                    are rather stocky, and normally wear beards. They receive\r\n"
 "                    bonuses to strength and constitution, but have reduced dexterity\r\n"
 "                    and intelligence.\r\n";
 
 const char *race_cler_menu =
 "\r\n\r\n"
-"@cThe following races are able to be Clerics. Clerics must have alignments\r\n"
-"of either good or evil in order to keep the favor of their chosen deity.@n\r\n"
+"\tcThe following races are able to be Clerics. Clerics must have alignments\r\n"
+"of either good or evil in order to keep the favor of their chosen deity.\tn\r\n"
 "\r\n"
-"@GSelect a race:@n\r\n\r\n"
-"  @cHuman        @c--@n Humans have average attributes.\r\n"
-"  @cElf          @c--@n Elves are usually shorter and lighter than humans\r\n"
+"\tGSelect a race:\tn\r\n\r\n"
+"  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
+"  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
 "                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  @cDwarf        @c--@n Dwarves are usually quite shorter than humans, but\r\n"
+"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans, but\r\n"
 "                    are rather stocky, and normally wear beards. They receive\r\n"
 "                    bonuses to strength and constitution, but have reduced dexterity\r\n"
 "                    and intelligence.\r\n";
 
 const char *race_barb_menu =
 "\r\n\r\n"
-"@cThe following races can be Barbarians. Barbarians may choose to be any alignment.@n\r\n"
+"\tcThe following races can be Barbarians. Barbarians may choose to be any alignment.\tn\r\n"
 "\r\n"
-"@GSelect a race:@n\r\n\r\n"
-"  @cHuman        @c--@n Humans have average attributes.\r\n"
-"  @cDwarf        @c--@n Dwarves are usually quite shorter than humans, but\r\n"
+"\tGSelect a race:\tn\r\n\r\n"
+"  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
+"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans, but\r\n"
 "                    are rather stocky, and normally wear beards. They receive\r\n"
 "                    bonuses to strength and constitution, but have reduced dexterity\r\n"
 "                    and intelligence.\r\n"
-"  @cHalf-Orc     @c--@n Half-orcs are usually shorter than humans, with a face\r\n"
+"  \tcHalf-Orc     \tc--\tn Half-orcs are usually shorter than humans, with a face\r\n"
 "                    that resembles a pig, and skin that is green and brown. They receive\r\n"
 "                    bonuses to strength, but reductions to intelligence and charisma.\r\n"
-"  @cHalf-Ogre    @c--@n Half-ogres usually stand a couple feet taller than\r\n"
+"  \tcHalf-Ogre    \tc--\tn Half-ogres usually stand a couple feet taller than\r\n"
 "                    humans, and have been described as over-sized neanderthals. They\r\n"
 "                    receive large bonuses to strength, but suffer with reduced wisdom,\r\n"
 "                    intelligence and charisma.\r\n"
-"  @cBakali       @c--@n Bakali are a race of lizard type humanoids which\r\n"
+"  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
 "                    bonuses to strength and constitution, but have reduced wisdom\r\n"
 "                    and charisma.\r\n";
 
 const char *race_druid_menu =
 "\r\n"
-"@cThe following races are able to be Druids. Druids need to be at a neutral\r\n"
+"\tcThe following races are able to be Druids. Druids need to be at a neutral\r\n"
 "alignment in order to remain in balance with the forces of nature that\r\n"
 "they rely on in order to use their unique abilities. Therefore, your\r\n"
-"alignment will automatically be set to neutral after choosing your race.@n\r\n"
+"alignment will automatically be set to neutral after choosing your race.\tn\r\n"
 "\r\n"
-"@GSelect a race:@n\r\n\r\n"
-"  @cHuman        @c--@n Humans have average attributes.\r\n"
-"  @cElf          @c--@n Elves are usually shorter and lighter than humans\r\n"
+"\tGSelect a race:\tn\r\n\r\n"
+"  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
+"  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
 "                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  @cDwarf        @c--@n Dwarves are usually quite shorter than humans, but\r\n"
+"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans, but\r\n"
 "                    are rather stocky, and normally wear beards. They receive\r\n"
 "                    bonuses to strength and constitution, but have reduced dexterity\r\n"
 "                    and intelligence.\r\n"
-"  @cBakali       @c--@n Bakali are a race of lizard type humanoids which\r\n"
+"  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
 "                    bonuses to strength and constitution, but have reduced wisdom\r\n"
 "                    and charisma.\r\n";
 
 const char *race_psio_menu =
 "\r\n\r\n"
-"@cThe following races can be Psionicists. Psionicists may choose to be\r\n"
-"any alignment.@n\r\n"
+"\tcThe following races can be Psionicists. Psionicists may choose to be\r\n"
+"any alignment.\tn\r\n"
 "\r\n"
-"@GSelect a race:@n\r\n\r\n"
-"  @cHuman        @c--@n Humans have average attributes.\r\n"
-"  @cElf          @c--@n Elves are usually shorter and lighter than humans\r\n"
+"\tGSelect a race:\tn\r\n\r\n"
+"  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
+"  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
 "                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  @cKender       @c--@n Kender are often mistaken for teenage humans, even\r\n"
+"  \tcKender       \tc--\tn Kender are often mistaken for teenage humans, even\r\n"
 "                    with their pointy ears. They receive bonuses for dexterity, but\r\n"
 "                    have reduced intelligence and strength.\r\n" 
-"  @cBakali       @c--@n Bakali are a race of lizard type humanoids which\r\n"
+"  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
 "                    bonuses to strength and constitution, but have reduced wisdom\r\n"
 "                    and charisma.\r\n";
-
 
 
 /* The code to interpret a class letter -- used in interpreter.c when a new 
@@ -5317,9 +5316,7 @@ void do_start(struct char_data *ch)
 
   GET_COND(ch, THIRST) = 24;
   GET_COND(ch, HUNGER) = 24;
-  GET_COND(ch, DRUNK) = 0;
-
-  SET_BIT_AR(PRF_FLAGS(ch), PRF_AUTOEXIT);  
+  GET_COND(ch, DRUNK) = 0; 
 
   if (CONFIG_SITEOK_ALL)
     SET_BIT_AR(PLR_FLAGS(ch), PLR_SITEOK);
@@ -5738,6 +5735,7 @@ void init_spell_levels(void)
   spell_level(SPELL_CHARM, CLASS_MAGE, 16);
   spell_level(SPELL_SUMMON, CLASS_MAGE, 17);
   spell_level(SPELL_IDENTIFY, CLASS_MAGE, 22);
+  spell_level(SPELL_FLY, CLASS_MAGE, 25);
   spell_level(SPELL_ENCHANT_WEAPON, CLASS_MAGE, 26);
   spell_level(SPELL_CLONE, CLASS_MAGE, 30);
   spell_level(SPELL_TELEPORT, CLASS_MAGE, 35);
@@ -5746,6 +5744,7 @@ void init_spell_levels(void)
   spell_level(SKILL_KICK, CLASS_MONK, 1);
   spell_level(SKILL_RESCUE, CLASS_MONK, 3);
   spell_level(SKILL_BASH, CLASS_MONK, 12);
+  spell_level(SKILL_WHIRLWIND, CLASS_MONK, 20);
 
   /* NECROMANCER */
   spell_level(SPELL_MAGIC_MISSILE, CLASS_NECROMANCER, 1);

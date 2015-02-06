@@ -81,6 +81,7 @@
 #include "modify.h"
 #include "quest.h"
 #include "ibt.h" /* for free_ibt_lists */
+#include "mud_event.h"
 
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET (-1)
@@ -102,6 +103,7 @@ FILE *logfile = NULL;     /* Where to send the log messages. */
 unsigned long pulse = 0;  /* number of pulses since game start */
 ush_int port;
 socket_t mother_desc;
+int next_tick = SECS_PER_MUD_HOUR;  /* Tick countdown */
 /* used with do_tell and handle_webster_file utility */
 long last_webster_teller = -1L;
 
@@ -160,8 +162,9 @@ static sigfunc *my_signal(int signo, sigfunc *func);
 #endif
 /* Webster Dictionary Lookup functions */
 static RETSIGTYPE websterlink(int sig);
-static size_t proc_colors(char *txt, size_t maxlen, int parse);
 static void handle_webster_file();
+
+static void msdp_update(void); /* KaVir plugin*/
 
 /* externally defined functions, used locally */
 #ifdef __CXREF__
@@ -367,6 +370,9 @@ int main(int argc, char **argv)
     free_save_list();       /* genolc.c */
     free_strings(&config_info, OASIS_CFG); /* oasis_delete.c */
     free_ibt_lists();             /* ibt.c */
+    free_recent_players();  /* act.informative.c */
+    free_list(world_events); /* free up our global lists */
+    free_list(global_lists);
   }
 
   if (last_act_message) 
@@ -389,7 +395,7 @@ void copyover_recover()
 {
   struct descriptor_data *d;
   FILE *fp;
-  char host[1024];
+  char host[1024], guiopt[1024];
   int desc, i, player_i;
   bool fOld;
   char name[MAX_INPUT_LENGTH];
@@ -411,9 +417,12 @@ void copyover_recover()
   /* read boot_time - first line in file */
   i = fscanf(fp, "%ld\n", (long *)&boot_time);
 
+  if (i != 1) 
+    log("SYSERR: Error reading boot time.");
+  
   for (;;) {
     fOld = TRUE;
-    i = fscanf (fp, "%d %ld %s %s\n", &desc, &pref, name, host);
+    i = fscanf (fp, "%d %ld %s %s %s\n", &desc, &pref, name, host, guiopt);
     if (desc == -1)
       break;
 
@@ -434,10 +443,16 @@ void copyover_recover()
 
     d->connected = CON_CLOSE;
 
+    CopyoverSet(d,guiopt);
+
     /* Now, find the pfile */
     CREATE(d->character, struct char_data, 1);
     clear_char(d->character);
     CREATE(d->character->player_specials, struct player_special_data, 1);
+       
+    /* Allocate mobile event list */
+    d->character->events = create_list();
+
     d->character->desc = d;
 
     if ((player_i = load_char(name, d->character)) >= 0) {
@@ -461,6 +476,12 @@ void copyover_recover()
       enter_player_game(d);
       d->connected = CON_PLAYING;
       look_at_room(d->character, 0);
+
+      /* Add to the list of 'recent' players (since last reboot) with copyover flag */
+      if (AddRecentPlayer(GET_NAME(d->character), d->host, FALSE, TRUE) == FALSE)
+      {
+        mudlog(BRF, MAX(LVL_IMMORT, GET_INVIS_LEV(d->character)), TRUE, "Failure to AddRecentPlayer (returned FALSE).");
+      }      
     }
   }
   fclose (fp);
@@ -808,8 +829,13 @@ void game_loop(socket_t local_mother_desc)
     for (d = descriptor_list; d; d = next_d) {
       next_d = d->next;
       if (FD_ISSET(d->descriptor, &input_set))
-	if (process_input(d) < 0)
-	  close_socket(d);
+      {
+        if ( d->pProtocol != NULL )      /* KaVir's plugin */
+          d->pProtocol->WriteOOB = 0;    /* KaVir's plugin */          
+      
+	    if (process_input(d) < 0)
+	      close_socket(d);
+      }
     }
 
     /* Process commands we just read from process_input */
@@ -942,6 +968,11 @@ void heartbeat(int heart_pulse)
   if (!(heart_pulse % PULSE_DG_SCRIPT))
     script_trigger_check();
 
+  if (!(heart_pulse % PASSES_PER_SEC)) {    /* EVERY second */
+    msdp_update();
+    next_tick--;
+  }
+
   if (!(heart_pulse % PULSE_ZONE))
     zone_update();
 
@@ -955,6 +986,7 @@ void heartbeat(int heart_pulse)
     perform_violence();
 
   if (!(heart_pulse % (SECS_PER_MUD_HOUR * PASSES_PER_SEC))) {  /* Tick ! */
+    next_tick = SECS_PER_MUD_HOUR;  /* Reset tick coundown */
     weather_and_time(1);
     check_time_triggers();
     affect_update();
@@ -1070,79 +1102,6 @@ void echo_on(struct descriptor_data *d)
   };
 
   write_to_output(d, "%s", on_string);
-}
-
-#define COLOR_ON(ch) (!IS_NPC(ch) ? (PRF_FLAGGED((ch), PRF_COLOR_1) || PRF_FLAGGED((ch), PRF_COLOR_2) ? 1 : 0) : 0)
-
-/* Color replacement arrays. Renx -- 011100 */
-#define A "\x1B["
-char *ANSI[] = { "@", A"0m",A"0m",A"0;30m",A"0;34m",A"0;32m",A"0;36m",A"0;31m",
-     A"0;35m",A"0;33m",A"0;37m",A"1;30m",A"1;34m",A"1;32m",A"1;36m",A"1;31m",
-     A"1;35m",A"1;33m",A"1;37m",A"40m",A"44m",A"42m",A"46m",A"41m",A"45m",
-     A"43m",A"47m",A"5m",A"4m",A"1m",A"7m"
-     ,"!"};
-#undef A
-const char CCODE[] = "@nNdbgcrmywDBGCRMYW01234567luoe!";
-
-static size_t proc_colors(char *txt, size_t maxlen, int parse)
-{
-  char *d, *s, *c, *p;
-  int i;
-  
-  if (!txt || !strchr(txt, '@')) /* skip out if no color codes     */
-    return strlen(txt);
-
-  s = txt;
-  CREATE(d, char, maxlen);
-  p = d;
-
-  for( ; *s && ((size_t)(d-p) < maxlen); ) {
-    /* no color code - just copy */
-    if (*s != '@') {
-      *d++ = *s++;
-      continue;
-    }
-
-    /* if we get here we have a color code */
-    s++; /* s now points to the code */
-
-    if (!*s) { /* string was terminated with @ */
-      *d++ = '@';
-      /* s will now point to '\0' in the for() check */
-      continue;
-    }
-
-    if (!parse) { /* not parsing, just skip the code, unless it's @@ */
-      if (*s == '@') {
-        *d++ = '@';
-      }
-      s++; /* skip to next (non-colorcode) char */
-      continue;
-    }
-
-    /* parse the color code */
-    for (i = 0; CCODE[i] != '!'; i++) { /* do we find it ? */
-      if ((*s) == CCODE[i]) {           /* if so :*/
-
-        /* c now points to the first char in color code*/
-        for(c = ANSI[i] ; *c && ((size_t)(d-p) < maxlen); )
-          *d++ = *c++;
-
-        break;
-      }
-    }
-   /* If we couldn't find any correct color code let's just skip it - Welcor */
-    s++;
-
-  } /* for loop */
-
-  /* make sure txt is NULL - terminated */
-  d = '\0';
-  strncpy(txt, p, maxlen-1);
-
-  free(p);
-
-  return strlen(txt);
 }
 
 static char *make_prompt(struct descriptor_data *d)
@@ -1412,8 +1371,12 @@ size_t vwrite_to_output(struct descriptor_data *t, const char *format, va_list a
     return (0);
 
   wantsize = size = vsnprintf(txt, sizeof(txt), format, args);
-  if (t->character)
-    wantsize = size = proc_colors(txt, sizeof(txt), COLOR_ON(t->character));
+
+  strcpy(txt, ProtocolOutput( t, txt, (int*)&wantsize )); /* <--- Add this line */
+  size = wantsize;                    /* <--- Add this line */
+  if ( t->pProtocol->WriteOOB > 0 )   /* <--- Add this line */
+    --t->pProtocol->WriteOOB;         /* <--- Add this line */
+
   /* If exceeding the size of the buffer, truncate it for the overflow message */
   if (size < 0 || wantsize >= sizeof(txt)) {
     size = sizeof(txt) - 1;
@@ -1571,17 +1534,20 @@ static void init_descriptor (struct descriptor_data *newd, int desc)
   *newd->output = '\0';
   newd->bufptr = 0;
   newd->has_prompt = 1;  /* prompt is part of greetings */
-  STATE(newd) = CON_GET_NAME;
+  STATE(newd) = CONFIG_PROTOCOL_NEGOTIATION ? CON_GET_PROTOCOL : CON_GET_NAME;
   CREATE(newd->history, char *, HISTORY_SIZE);
   if (++last_desc == 1000)
     last_desc = 1;
   newd->desc_num = last_desc;
+  newd->pProtocol = ProtocolCreate(); /* KaVir's plugin*/
+  newd->events = create_list();
 }
 
 static int new_descriptor(socket_t s)
 {
   socket_t desc;
   int sockets_connected = 0;
+  int greetsize;
   socklen_t i;
   struct descriptor_data *newd;
   struct sockaddr_in peer;
@@ -1647,12 +1613,16 @@ static int new_descriptor(socket_t s)
   newd->next = descriptor_list;
   descriptor_list = newd;
 
-  /* This is where the greetings are actually sent to the new player */ 
-  /* Adjusted by Jamdog to show color codes on the greetings page    */ 
-  *greet_copy = '\0'; 
-  sprintf(greet_copy, "%s", GREETINGS); 
-  proc_colors(greet_copy, MAX_STRING_LENGTH, TRUE); 
-  write_to_output(newd, "%s", greet_copy); 
+  if (CONFIG_PROTOCOL_NEGOTIATION) {
+    /* Attach Event */ 
+    NEW_EVENT(ePROTOCOLS, newd, NULL, 1.5 * PASSES_PER_SEC);
+    /* KaVir's plugin*/
+    write_to_output(newd, "Attempting to Detect Client, Please Wait...\r\n");
+    ProtocolNegotiate(newd);
+  } else {
+    greetsize = strlen(GREETINGS);
+    write_to_output(newd, "%s", ProtocolOutput(newd, GREETINGS, &greetsize));
+  } 
 
   return (0);
 }
@@ -1682,8 +1652,8 @@ static int process_output(struct descriptor_data *t)
   if (STATE(t) == CON_PLAYING && t->character && !IS_NPC(t->character) && !PRF_FLAGGED(t->character, PRF_COMPACT))
     strcat(osb, "\r\n");	/* strcpy: OK (osb:MAX_SOCK_BUF-2 reserves space) */
 
-  /* add a prompt */
-  strcat(i, make_prompt(t));	/* strcpy: OK (i:MAX_SOCK_BUF reserves space) */
+  if (!t->pProtocol->WriteOOB) /* add a prompt */
+    strcat(i, make_prompt(t));	/* strcpy: OK (i:MAX_SOCK_BUF reserves space) */
 
   /* now, send the output.  If this is an 'interruption', use the prepended
    * CRLF, otherwise send the straight output sans CRLF. */
@@ -1863,13 +1833,17 @@ static ssize_t perform_socket_read(socket_t desc, char *read_point, size_t space
 {
   ssize_t ret;
 
-#if defined(CIRCLE_ACORN)
-  ret = recv(desc, read_point, space_left, MSG_DONTWAIT);
-#elif defined(CIRCLE_WINDOWS)
-  ret = recv(desc, read_point, space_left, 0);
-#else
-  ret = read(desc, read_point, space_left);
-#endif
+
+  #if defined(CIRCLE_ACORN)
+   ret = recv(desc, read_point, space_left, MSG_DONTWAIT);
+
+  #elif defined(CIRCLE_WINDOWS)
+   ret = recv(desc, read_point, space_left, 0);
+
+  #else
+   ret = read(desc, read_point, space_left);
+
+  #endif
 
   /* Read was successful. */
   if (ret > 0)
@@ -1937,6 +1911,7 @@ static int process_input(struct descriptor_data *t)
   size_t space_left;
   char *ptr, *read_point, *write_point, *nl_pos = NULL;
   char tmp[MAX_INPUT_LENGTH];
+  static char read_buf[MAX_PROTOCOL_BUFFER] = { '\0' }; /* KaVir's plugin */
 
   /* first, find the point where we left off reading data */
   buf_length = strlen(t->inbuf);
@@ -1949,7 +1924,15 @@ static int process_input(struct descriptor_data *t)
       return (-1);
     }
 
-    bytes_read = perform_socket_read(t->descriptor, read_point, space_left);
+    /* Read # of "bytes_read" from socket, and if we have something, mark the sizeof data
+     * in the read_buf array as NULL */
+    if ((bytes_read = perform_socket_read(t->descriptor, read_buf, space_left)) > 0)
+      read_buf[bytes_read] = '\0';
+
+    /* Since we have recieved atleast 1 byte of data from the socket, lets run it through
+     * ProtocolInput() and rip out anything that is Out Of Band */ 
+    if ( bytes_read > 0 )
+      bytes_read = ProtocolInput( t, read_buf, bytes_read, t->inbuf );
 
     if (bytes_read < 0)	/* Error, disconnect them. */
       return (-1);
@@ -2205,6 +2188,19 @@ void close_socket(struct descriptor_data *d)
   if (d->showstr_count)
     free(d->showstr_vector);
 
+  /* KaVir's plugin*/
+  ProtocolDestroy( d->pProtocol );
+ 
+  /* Mud Events */
+  if (d->events->iSize > 0) {
+    struct event * pEvent;
+
+    while ((pEvent = simple_list(d->events)) != NULL)
+      event_cancel(pEvent);
+  }
+
+  free_list(d->events);
+
   /*. Kill any OLC stuff .*/
   switch (d->connected) {
     case CON_OEDIT:
@@ -2423,6 +2419,29 @@ static void signal_setup(void)
 
 #endif	/* CIRCLE_UNIX || CIRCLE_MACINTOSH */
 /* Public routines for system-to-player-communication. */
+
+void game_info(const char *format, ...)
+{
+  struct descriptor_data *i;
+  va_list args;
+  char messg[MAX_STRING_LENGTH];
+  if (format == NULL)
+    return;
+  sprintf(messg, "\tcInfo: \ty");
+  for (i = descriptor_list; i; i = i->next) {
+    if (STATE(i) != CON_PLAYING)
+      continue;
+    if (!(i->character))
+      continue;
+
+    write_to_output(i, "%s", messg);
+    va_start(args, format);
+    vwrite_to_output(i, format, args);
+    va_end(args);
+    write_to_output(i, "\tn\r\n");
+  }
+}
+
 size_t send_to_char(struct char_data *ch, const char *messg, ...)
 {
   if (ch->desc && messg && *messg) {
@@ -2853,4 +2872,66 @@ static void handle_webster_file(void) {
 
   send_to_char(ch, "You get this feedback from Merriam-Webster:\r\n");
   page_string(ch->desc, retval, 1);
+}
+
+/* KaVir's plugin*/
+static void msdp_update( void )
+{
+  struct descriptor_data *d;
+  int PlayerCount = 0;
+  char buf[MAX_STRING_LENGTH];
+  extern const char *class_types[];
+
+  for (d = descriptor_list; d; d = d->next)
+  {
+    struct char_data *ch = d->character;
+    if ( ch && !IS_NPC(ch) && d->connected == CON_PLAYING )
+    {
+      struct char_data *pOpponent = FIGHTING(ch);
+      ++PlayerCount;
+
+      MSDPSetString( d, eMSDP_CHARACTER_NAME, GET_NAME(ch) );
+      MSDPSetNumber( d, eMSDP_ALIGNMENT, GET_ALIGNMENT(ch) );
+      MSDPSetNumber( d, eMSDP_EXPERIENCE, GET_EXP(ch) );
+
+      MSDPSetNumber( d, eMSDP_HEALTH, GET_HIT(ch) );
+      MSDPSetNumber( d, eMSDP_HEALTH_MAX, GET_MAX_HIT(ch) );
+      MSDPSetNumber( d, eMSDP_LEVEL, GET_LEVEL(ch) );
+
+      sprinttype( ch->player.chclass, class_types, buf, sizeof(buf) );
+      MSDPSetString( d, eMSDP_CLASS, buf );
+
+      MSDPSetNumber( d, eMSDP_MANA, GET_MANA(ch) );
+      MSDPSetNumber( d, eMSDP_MANA_MAX, GET_MAX_MANA(ch) );
+      MSDPSetNumber( d, eMSDP_WIMPY, GET_WIMP_LEV(ch) );
+      MSDPSetNumber( d, eMSDP_MONEY, GET_GOLD(ch) );
+      MSDPSetNumber( d, eMSDP_MOVEMENT, GET_MOVE(ch) );
+      MSDPSetNumber( d, eMSDP_MOVEMENT_MAX, GET_MAX_MOVE(ch) );
+      MSDPSetNumber( d, eMSDP_AC, compute_armor_class(ch) );
+
+      /* This would be better moved elsewhere */
+      if ( pOpponent != NULL )
+      {
+          int hit_points = (GET_HIT(pOpponent) * 100) / GET_MAX_HIT(pOpponent);
+          MSDPSetNumber( d, eMSDP_OPPONENT_HEALTH, hit_points );
+          MSDPSetNumber( d, eMSDP_OPPONENT_HEALTH_MAX, 100 );
+          MSDPSetNumber( d, eMSDP_OPPONENT_LEVEL, GET_LEVEL(pOpponent) );
+          MSDPSetString( d, eMSDP_OPPONENT_NAME, PERS(pOpponent, ch) );
+      }
+      else /* Clear the values */
+      {
+          MSDPSetNumber( d, eMSDP_OPPONENT_HEALTH, 0 );
+          MSDPSetNumber( d, eMSDP_OPPONENT_LEVEL, 0 ); 
+          MSDPSetString( d, eMSDP_OPPONENT_NAME, "" ); 
+      }
+
+      MSDPUpdate( d );
+    }
+
+    /* Ideally this should be called once at startup, and again whenever
+     * someone leaves or joins the mud.  But this works, and it keeps the
+     * snippet simple.  Optimise as you see fit.
+     */
+    MSSPSetPlayers( PlayerCount );
+  }
 }

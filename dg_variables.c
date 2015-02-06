@@ -24,6 +24,8 @@
 #include "oasis.h"
 #include "class.h"
 #include "quest.h"
+#include "act.h"
+#include "genobj.h"
 
 /* Utility functions */
 
@@ -129,6 +131,43 @@ int char_has_item(char *item, struct char_data *ch)
     return 0;
   else
     return 1;
+}
+
+static int handle_oset(struct obj_data * obj, char * argument)
+{
+  int i = 0;
+  bool found = FALSE;
+  char value[MAX_INPUT_LENGTH];
+  
+  struct oset_handler {
+    const char * type;
+    bool (* name)(struct obj_data *, char *);
+  } handler[] = {
+    { "alias",     oset_alias },
+    { "apply",     oset_apply },
+    { "longdesc",  oset_long_description },
+    { "shortdesc", oset_short_description},
+    { "\n", NULL }
+  };
+  
+  if (!obj || !*argument)
+    return 0;
+  
+  argument = one_argument(argument, value);
+  
+  while (*handler[i].type != '\n') {
+    if (is_abbrev(value, handler[i].type)) {
+      found = TRUE;
+      break;
+    }
+    i++;
+  } 
+  
+  if (!found)
+    return 0;
+    
+  handler[i].name(obj, argument);  
+  return 1;
 }
 
 int text_processed(char *field, char *subfield, struct trig_var_data *vd,
@@ -385,6 +424,16 @@ void find_replacement(void *go, struct script_data *sc, trig_data *trig,
         snprintf(str, slen, "%d",((num = atoi(field)) > 0) ? trgvar_in_room(num) : 0);
         return;
       }
+      else if (!str_cmp(var, "happyhour")) {
+        if (!str_cmp(field, "qp") && IS_HAPPYHOUR)
+          snprintf(str, slen, "%d", HAPPY_QP);
+        else if (!str_cmp(field, "exp") && IS_HAPPYHOUR)
+          snprintf(str, slen, "%d", HAPPY_EXP);
+        else if (!str_cmp(field, "gold") && IS_HAPPYHOUR)
+          snprintf(str, slen, "%d", HAPPY_GOLD);
+        else snprintf(str, slen, "%d", HAPPY_TIME);
+        return;
+      }
       else if (!str_cmp(var, "time")) {
         if (!str_cmp(field, "hour"))
           snprintf(str, slen, "%d", time_info.hours);
@@ -506,7 +555,7 @@ void find_replacement(void *go, struct script_data *sc, trig_data *trig,
           } else {
             doors = 0;
             room = &world[in_room];
-            for (i = 0; i < NUM_OF_DIRS ; i++)
+            for (i = 0; i < DIR_COUNT; i++)
               if (R_EXIT(room, i))
                 doors++;
 
@@ -514,7 +563,7 @@ void find_replacement(void *go, struct script_data *sc, trig_data *trig,
               *str = '\0';
             } else {
               for ( ; ; ) {
-                doors = rand_number(0, NUM_OF_DIRS-1);
+                doors = rand_number(0, DIR_COUNT-1);
                 if (R_EXIT(room, doors))
                   break;
               }
@@ -581,8 +630,18 @@ void find_replacement(void *go, struct script_data *sc, trig_data *trig,
             }
             snprintf(str, slen, "%d", GET_CHA(c));
           }
-          else if (!str_cmp(field, "class"))
+          else if (!str_cmp(field, "class")) {
+            if (subfield && *subfield) {
+              int cl = get_class_by_name(subfield);
+              if (cl != -1) {
+                GET_CLASS(c) = cl;
+                snprintf(str, slen, "1");
+              } else {
+                snprintf(str, slen, "0");
+              }
+            } else
             sprinttype(GET_CLASS(c), class_types, str, slen);
+          }
           else if (!str_cmp(field, "con")) {
             if (subfield && *subfield) {
               int addition = atoi(subfield);
@@ -595,7 +654,14 @@ void find_replacement(void *go, struct script_data *sc, trig_data *trig,
           }
           break;
         case 'd':
-          if (!str_cmp(field, "dex")) {
+          if (!str_cmp(field, "damroll")) {
+            if (subfield && *subfield) {
+              int addition = atoi(subfield);
+              GET_DAMROLL(c) = MAX(1, GET_DAMROLL(c) + addition);
+			}
+			snprintf(str, slen, "%d", GET_DAMROLL(c));
+			} 
+            else if (!str_cmp(field, "dex")) {
             if (subfield && *subfield) {
               int addition = atoi(subfield);
               int max = (IS_NPC(c) || GET_LEVEL(c) >= LVL_GRGOD) ? 25 : 18;
@@ -660,7 +726,7 @@ void find_replacement(void *go, struct script_data *sc, trig_data *trig,
           if (!str_cmp(field, "gold")) {
             if (subfield && *subfield) {
               int addition = atoi(subfield);
-              GET_GOLD(c) += addition;
+              increase_gold(c, addition);
             }
             snprintf(str, slen, "%d", GET_GOLD(c));
           }
@@ -694,6 +760,13 @@ void find_replacement(void *go, struct script_data *sc, trig_data *trig,
             }
             snprintf(str, slen, "%d", GET_HIT(c));
           }
+          else if (!str_cmp(field, "hitroll")) {
+			if (subfield && *subfield) {
+			  int addition = atoi(subfield);
+			  GET_HITROLL(c) = MAX(1, GET_HITROLL(c) + addition);
+			}
+			snprintf(str, slen, "%d", GET_HITROLL(c));
+		  }
           else if (!str_cmp(field, "hunger")) {
             if (subfield && *subfield) {
               int addition = atoi(subfield);
@@ -766,8 +839,13 @@ void find_replacement(void *go, struct script_data *sc, trig_data *trig,
           }
           break;
         case 'l':
-          if (!str_cmp(field, "level"))
+          if (!str_cmp(field, "level")) {
+            if (subfield && *subfield) {
+              int lev = atoi(subfield);
+              GET_LEVEL(c) = MIN(MAX(lev, 0), LVL_IMMORT-1);
+            } else
             snprintf(str, slen, "%d", GET_LEVEL(c));
+           }
           break;
         case 'm':
           if (!str_cmp(field, "mana")) {
@@ -1122,8 +1200,7 @@ o->contains));
           /* thanks to Jamie Nelson (Mordecai of 4 Dimensions MUD) */
           if (!str_cmp(field, "has_in")) {
             if (GET_OBJ_TYPE(o) == ITEM_CONTAINER)
-              snprintf(str, slen, "%s", (item_in_list(subfield,
-o->contains) ? "1" : "0"));
+              snprintf(str, slen, "%s", (item_in_list(subfield, o->contains) ? "1" : "0"));
             else
             	strcpy(str, "0");
           }
@@ -1159,6 +1236,16 @@ o->contains) ? "1" : "0"));
               snprintf(str, slen,"%c%ld",UID_CHAR, GET_ID(o->next_content));
             else
               *str = '\0';
+          }
+          break;
+        case 'o':
+          if (!str_cmp(field, "oset")) {
+            if (subfield && *subfield) {
+              if (handle_oset(o, subfield))
+                strcpy(str, "1");
+              else
+                strcpy(str, "0");
+            }
           }
           break;
         case 'r':

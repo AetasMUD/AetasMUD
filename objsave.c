@@ -1203,7 +1203,8 @@ static int Crash_load_objs(struct char_data *ch) {
   char line[READ_SIZE];
   char buf[MAX_STRING_LENGTH];
   char str[64];
-  int i, num_of_days, orig_rent_code, cost, num_objs=0;
+  int i, num_of_days, orig_rent_code, num_objs=0;
+  unsigned long cost;
   struct obj_data *cont_row[MAX_BAG_ROWS];
   int rentcode,timed,netcost,gold,account,nitems;
 	obj_save_data *loaded, *current;
@@ -1232,8 +1233,8 @@ static int Crash_load_objs(struct char_data *ch) {
   if (rentcode == RENT_RENTED || rentcode == RENT_TIMEDOUT) {
     sprintf(str, "%d", SECS_PER_REAL_DAY);
     num_of_days = (int)((float) (time(0) - timed) / (float)atoi(str));
-    cost = (int) (netcost * num_of_days);
-    if (cost > GET_GOLD(ch) + GET_BANK_GOLD(ch)) {
+    cost = (unsigned int) (netcost * num_of_days);
+    if (cost > (unsigned int)GET_GOLD(ch) + (unsigned int)GET_BANK_GOLD(ch)) {
       fclose(fl);
       mudlog(BRF, MAX(LVL_IMMORT, GET_INVIS_LEV(ch)), TRUE,
              "%s entering game, rented equipment lost (no $).", GET_NAME(ch));

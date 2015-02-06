@@ -32,7 +32,7 @@ ACMD(do_say)
     char buf[MAX_INPUT_LENGTH + 14], *msg;
     struct char_data *vict;
 
-    snprintf(buf, sizeof(buf), "@B$n says, @c'%s'@n", argument);
+    snprintf(buf, sizeof(buf), "\tB$n says, \tc'%s'\tn", argument);
     msg = act(buf, FALSE, ch, 0, 0, TO_ROOM | DG_NO_TRIG);
 
     for (vict = world[IN_ROOM(ch)].people; vict; vict = vict->next_in_room)
@@ -42,7 +42,7 @@ ACMD(do_say)
     if (!IS_NPC(ch) && PRF_FLAGGED(ch, PRF_NOREPEAT))
       send_to_char(ch, "%s", CONFIG_OK);
     else {
-      sprintf(buf, "@BYou say, @c'%s@n'@n", argument);
+      sprintf(buf, "\tBYou say, \tc'%s'\tn", argument);
       msg = act(buf, FALSE, ch, 0, 0, TO_CHAR | DG_NO_TRIG);
       add_history(ch, msg, HIST_SAY);
     }
@@ -55,13 +55,13 @@ ACMD(do_say)
 
 ACMD(do_say_adv)
 {
- struct char_data *vict;
- const char *action_sing, *action_plur, *action_others;
- char buf[MAX_INPUT_LENGTH + 14], buf2[MAX_INPUT_LENGTH + 14];
+  struct char_data *vict;
+  const char *action_sing, *action_plur, *action_others;
+  char buf[MAX_INPUT_LENGTH + 14], buf2[MAX_INPUT_LENGTH + 14];
 
- action_sing = "say to";
- action_plur = "says to";
- action_others = "says to";
+  action_sing = "say to";
+  action_plur = "says to";
+  action_others = "says to";
 
   half_chop(argument, buf, buf2);
 
@@ -73,16 +73,16 @@ ACMD(do_say_adv)
   else if (vict == ch)
     send_to_char(ch, "You can't get your mouth close enough to your ear...\r\n");
   else {
-    sprintf(buf, "@B$n %s you, @c'%s'@n", action_plur, buf2);
+    sprintf(buf, "\tB$n %s you, \tc'%s'\tn", action_plur, buf2);
     act(buf, FALSE, ch, 0, vict, TO_VICT);
 	
     if ((IS_NPC(ch) || PRF_FLAGGED(ch, PRF_NOREPEAT)))
       send_to_char(ch, "%s", CONFIG_OK);
     else {
-      sprintf(buf, "@BYou %s %s, @c'%s'@n\r\n", action_sing, GET_NAME(vict), buf2);
+      sprintf(buf, "\tBYou %s %s, \tc'%s'\tn\r\n", action_sing, GET_NAME(vict), buf2);
       send_to_char(ch, "%s", buf);
     }
-    sprintf(buf, "@B$n %s $N, @c'%s'@n", action_others, buf2);
+    sprintf(buf, "\tB$n %s $N, \tc'%s'\tn", action_others, buf2);
     act(buf, FALSE, ch, 0, vict, TO_NOTVICT);
   }
   
@@ -113,7 +113,7 @@ ACMD(do_gsay)
     else
       k = ch;
 
-    snprintf(buf, sizeof(buf), "@g$n tells the group, @y'%s@n'", argument);
+    snprintf(buf, sizeof(buf), "\tg$n tells the group, \ty'%s\tn'", argument);
 
     if (AFF_FLAGGED(k, AFF_GROUP) && (k != ch))
       act(buf, FALSE, ch, 0, k, TO_VICT | TO_SLEEP);
@@ -124,7 +124,7 @@ ACMD(do_gsay)
     if (!IS_NPC(ch) && PRF_FLAGGED(ch, PRF_NOREPEAT))
       send_to_char(ch, "%s", CONFIG_OK);
     else
-      send_to_char(ch, "@gYou tell the group, @y'%s@n'\r\n", argument);
+      send_to_char(ch, "\tgYou tell the group, \ty'%s'\tn\r\n", argument);
   }
 }
 
@@ -153,7 +153,11 @@ static void perform_tell(struct char_data *ch, struct char_data *vict, char *arg
 
 static int is_tell_ok(struct char_data *ch, struct char_data *vict)
 {
-  if (ch == vict)
+  if (!ch)
+    log("SYSERR: is_tell_ok called with no characters");
+  else if (!vict)
+    send_to_char(ch, "%s", CONFIG_NOPERSON);
+  else if (ch == vict)
     send_to_char(ch, "You try to tell yourself something.\r\n");
   else if (!IS_NPC(ch) && PRF_FLAGGED(ch, PRF_NOTELL))
     send_to_char(ch, "You can't tell other people while you have notell on.\r\n");
@@ -291,13 +295,13 @@ ACMD(do_spec_comm)
   else {
     char buf1[MAX_STRING_LENGTH];
 
-    snprintf(buf1, sizeof(buf1), "@y$n %s you, @n'%s'@n", action_plur, buf2);
+    snprintf(buf1, sizeof(buf1), "\ty$n %s you, \tn'%s'\tn", action_plur, buf2);
     act(buf1, FALSE, ch, 0, vict, TO_VICT);
 
     if ((!IS_NPC(ch)) && (PRF_FLAGGED(ch, PRF_NOREPEAT))) 
       send_to_char(ch, "%s", CONFIG_OK);
     else
-      send_to_char(ch, "@yYou %s %s, @n'%s'\r\n", action_sing, GET_NAME(vict), buf2);
+      send_to_char(ch, "\tyYou %s %s, \tn'%s'\r\n", action_sing, GET_NAME(vict), buf2);
     act(action_others, FALSE, ch, 0, vict, TO_NOTVICT);
   }
 }
@@ -396,7 +400,7 @@ ACMD(do_page)
   else {
     char buf[MAX_STRING_LENGTH];
 
-    snprintf(buf, sizeof(buf), "\007\007@Y*$n* %s@n", buf2);
+    snprintf(buf, sizeof(buf), "\007\007\tY*$n* %s\tn", buf2);
     if (!str_cmp(arg, "all")) {
       if (GET_LEVEL(ch) > LVL_GOD) {
 	for (d = descriptor_list; d; d = d->next)

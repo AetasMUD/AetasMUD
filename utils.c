@@ -21,7 +21,7 @@
 #include "spells.h"
 #include "handler.h"
 #include "interpreter.h"
-
+#include "class.h"
 
 
 /** Aportable random number function.
@@ -91,8 +91,8 @@ char *CAP(char *txt)
   char *p = txt;
 
   /* Skip all preceeding color codes and ANSI codes */
-  while ((*p == '@' && *(p+1)) || (*p == '\x1B' && *(p+1) == '[')) {
-    if (*p == '@') p += 2;  /* Skip @ sign and color letter/number */
+  while ((*p == '\t' && *(p+1)) || (*p == '\x1B' && *(p+1) == '[')) {
+    if (*p == '\t') p += 2;  /* Skip \t sign and color letter/number */
     else {
       p += 2;                          /* Skip the CSI section of the ANSI code */
       while (*p && !isalpha(*p)) p++;  /* Skip until a 'letter' is found */
@@ -820,8 +820,8 @@ int count_color_chars(char *string)
 
 	len = strlen(string);
   for (i = 0; i < len; i++) {
-    while (string[i] == '@') {
-      if (string[i + 1] == '@')
+    while (string[i] == '\t') {
+      if (string[i + 1] == '\t')
         num++;
       else
         num += 2;
@@ -1301,6 +1301,7 @@ IDXTYPE atoidx( const char *str_to_conv )
     return (IDXTYPE) result;
 }
 
+#define isspace_ignoretabs(c) ((c)!='\t' && isspace(c))
 
 /*
    strfrmt (String Format) function
@@ -1308,7 +1309,7 @@ IDXTYPE atoidx( const char *str_to_conv )
    Re-formats a string to fit within a particular size box.
    Recognises @ color codes, and if a line ends in one color, the
    next line will start with the same color.
-   Ends every line with @n to prevent color bleeds.
+   Ends every line with \tn to prevent color bleeds.
 */
 char *strfrmt(char *str, int w, int h, int justify, int hpad, int vpad)
 {
@@ -1327,17 +1328,17 @@ char *strfrmt(char *str, int w, int h, int justify, int hpad, int vpad)
   /* Split into lines, including convert \\ into \r\n */
   while(*sp) {
     /* eat leading space */
-    while(*sp && isspace(*sp)) sp++;
+    while(*sp && isspace_ignoretabs(*sp)) sp++;
     /* word begins */
     wp = sp;
     wlen = 0;
     while(*sp) { /* Find the end of the word */
-      if(isspace(*sp)) break;
+      if(isspace_ignoretabs(*sp)) break;
       if(*sp=='\\' && sp[1] && sp[1]=='\\') {
         if(sp!=wp)
           break; /* Finish dealing with the current word */
         sp += 2; /* Eat the marker and any trailing space */
-        while(*sp && isspace(*sp)) sp++;
+        while(*sp && isspace_ignoretabs(*sp)) sp++;
         wp = sp;
         /* Start a new line */
         if(hpad)
@@ -1350,12 +1351,22 @@ char *strfrmt(char *str, int w, int h, int justify, int hpad, int vpad)
         llen = 0;
         lcount++;
         lp = line;
-      } else if (*sp=='`'||*sp=='$'||*sp=='#'||*sp=='@') {
+      } else if (*sp=='`'||*sp=='$'||*sp=='#') {
         if (sp[1] && (sp[1]==*sp))
           wlen++; /* One printable char here */
-        if (*sp=='@' && (sp[1]!=*sp)) /* Color code, not @@ */
-          last_color = sp[1];
         sp += 2; /* Eat the whole code regardless */
+      } else if (*sp=='\t'&&sp[1]) {
+        char MXPcode = sp[1]=='[' ? ']' : sp[1]=='<' ? '>' : '\0';
+	
+  if (!MXPcode)
+	   last_color = sp[1];
+ 
+        sp += 2; /* Eat the code */
+        if (MXPcode)
+        {
+           while (*sp!='\0'&&*sp!=MXPcode)
+             ++sp; /* Eat the rest of the code */
+        }
       } else {
         wlen++;
         sp++;
@@ -1366,7 +1377,7 @@ char *strfrmt(char *str, int w, int h, int justify, int hpad, int vpad)
       if(hpad)
         for(; llen < w; llen++)
           *lp++ = ' ';
-      *lp++ = '@';  /* 'normal' color */
+      *lp++ = '\t';  /* 'normal' color */
       *lp++ = 'n';
       *lp++ = '\r'; /* New line */
       *lp++ = '\n';
@@ -1377,7 +1388,7 @@ char *strfrmt(char *str, int w, int h, int justify, int hpad, int vpad)
       lcount++;
       lp = line;
       if (last_color != 'n') {
-        *lp++ = '@';  /* restore previous color */
+        *lp++ = '\t';  /* restore previous color */
         *lp++ = last_color;
         new_line_started = TRUE;
       }
@@ -1470,4 +1481,34 @@ char *strpaste(char *str1, char *str2, char *joiner)
   /* Close off the string */
   *rp = '\0';
   return ret;
+}
+
+/* Create a blank affect struct */
+void new_affect(struct affected_type *af)
+{
+  int i;
+  af->spell     = 0;
+  af->duration  = 0;
+  af->modifier  = 0;
+  af->location  = APPLY_NONE;
+  for (i=0; i<AF_ARRAY_MAX; i++) af->bitvector[i]=0;
+}
+
+/* Handy function to get class ID number by name (abbreviations allowed) */
+int get_class_by_name(char *classname)
+{
+    int i;
+    for (i=0; i<NUM_CLASSES; i++)
+      if (is_abbrev(classname, class_types[i])) return(i);
+
+    return (-1);
+}
+
+char * convert_from_tabs(char * string)
+{
+  static char buf[MAX_STRING_LENGTH * 8];
+  
+  strcpy(buf, string);
+  parse_tab(buf);
+  return(buf);
 }

@@ -12,6 +12,9 @@
 #ifndef _STRUCTS_H_
 #define _STRUCTS_H_
 
+#include "protocol.h" /* Kavir Plugin*/
+#include "lists.h"
+
 /** Intended use of this macro is to allow external packages to work with a
  * variety of versions without modifications.  For instance, an IS_CORPSE()
  * macro was introduced in pl13.  Any future code add-ons could take into
@@ -19,7 +22,7 @@
  * on an older version. You are supposed to compare this with the macro
  * TBAMUD_VERSION() in utils.h.
  * It is read as Major/Minor/Patchlevel - MMmmPP */
-#define _TBAMUD    0x030620
+#define _TBAMUD    0x030630
 
 /** If you want equipment to be automatically equipped to the same place
  * it was when players rented, set the define below to 1 because
@@ -64,10 +67,15 @@
 #define WEST           3    /**< The direction west */
 #define UP             4    /**< The direction up */
 #define DOWN           5    /**< The direction down */
+#define NORTHWEST      6 /**< The direction north-west */
+#define NORTHEAST      7 /**< The direction north-east */
+#define SOUTHEAST      8 /**< The direction south-east */
+#define SOUTHWEST      9 /**< The direction south-west */
 /** Total number of directions available to move in. BEFORE CHANGING THIS, make
- * sure you change every other direction and movement based item that this will
- * impact. */
-#define NUM_OF_DIRS    6
+* sure you change every other direction and movement based item that this will
+* impact. */
+
+#define NUM_OF_DIRS 10
 
 /* Room flags: used in room_data.room_flags */
 /* WARNING: In the world files, NEVER set the bits marked "R" ("Reserved") */
@@ -99,14 +107,16 @@
 #define ZONE_GRID         3  /**< Zone is 'on the grid', connected, show on 'areas' */
 #define ZONE_NOBUILD      4  /**< Building is not allowed in the zone */
 #define ZONE_NOASTRAL     5  /**< No teleportation magic will work to or from this zone */
+#define ZONE_WORLDMAP     6 /**< Whole zone uses the WORLDMAP by default */
 /** The total number of Zone Flags */
-#define NUM_ZONE_FLAGS    6
+#define NUM_ZONE_FLAGS    7
 
 /* Exit info: used in room_data.dir_option.exit_info */
 #define EX_ISDOOR     (1 << 0)   /**< Exit is a door		*/
 #define EX_CLOSED     (1 << 1)   /**< The door is closed	*/
 #define EX_LOCKED     (1 << 2)   /**< The door is locked	*/
 #define EX_PICKPROOF  (1 << 3)   /**< Lock can't be picked	*/
+#define EX_HIDDEN    (1 << 4) /**< Exit is hidden, secret */
 
 /* Sector types: used in room_data.sector_type */
 #define SECT_INSIDE          0		/**< Indoors, connected to SECT macro. */
@@ -366,12 +376,12 @@
 #define CON_QKNIGALIGN   44 /* Alignment restrictions       */
 #define CON_QCLERALIGN   45 /* Alignment restrictions       */
 #define CON_QDRUIDALIGN  46 /* Alignment restrictions       */
-
+#define CON_GET_PROTOCOL 47 /**< Used at log-in while attempting to get protocols > */
 
 
 /* OLC States range - used by IS_IN_OLC and IS_PLAYING */
 #define FIRST_OLC_STATE CON_OEDIT     /**< The first CON_ state that is an OLC */
-#define LAST_OLC_STATE  CON_PREFEDIT  /**< The last CON_ state that is an OLC  */
+#define LAST_OLC_STATE  CON_IBTEDIT   /**< The last CON_ state that is an OLC  */
 
 /* Character equipment positions: used as index for char_data.equipment[] */
 /* NOTE: Don't confuse these constants with the ITEM_ bitvectors
@@ -428,8 +438,7 @@
 #define ITEM_PEN       21		/**< Item is a pen		*/
 #define ITEM_BOAT      22		/**< Item is a boat		*/
 #define ITEM_FOUNTAIN  23		/**< Item is a fountain		*/
-/** Total number of item types.
- * @todo Should this be 23? */
+/** Total number of item types.*/
 #define NUM_ITEM_TYPES    24
 
 /* Take/Wear flags: used by obj_data.obj_flags.wear_flags */
@@ -698,7 +707,7 @@
 
 #define MAX_STRING_LENGTH     49152  /**< Max length of string, as defined */
 #define MAX_INPUT_LENGTH      512    /**< Max length per *line* of input */
-#define MAX_RAW_INPUT_LENGTH  1024   /**< Max size of *raw* input */
+#define MAX_RAW_INPUT_LENGTH  (12 * 1024) /**< Max size of *raw* input */
 #define MAX_MESSAGES          60     /**< Max Different attack message types */
 #define MAX_NAME_LENGTH       20     /**< Max PC/NPC name length */
 #define MAX_PWD_LENGTH        30     /**< Max PC password length */
@@ -714,6 +723,9 @@
 #define MAX_HELP_KEYWORDS     256    /**< Max length of help keyword string */
 #define MAX_HELP_ENTRY        MAX_STRING_LENGTH /**< Max size of help entry */
 #define MAX_COMPLETED_QUESTS  1024   /**< Maximum number of completed quests allowed */
+
+#define MAX_GOLD 2140000000 /**< Maximum possible on hand gold (2.14 Billion) */
+#define MAX_BANK 2140000000 /**< Maximum possible in bank gold (2.14 Billion) */
 
 /** Define the largest set of commands for a trigger.
  * 16k should be plenty and then some. */
@@ -1124,6 +1136,7 @@ struct player_special_data
   void *last_olc_targ; /**< ? Currently Unused ? */
   int last_olc_mode;   /**< ? Currently Unused ? */
   char *host;          /**< Resolved hostname, or ip, for player. */
+  int buildwalk_sector;  /**< Default sector type for buildwalk */
 };
 
 /** Special data used by NPCs, not PCs */
@@ -1139,11 +1152,11 @@ struct mob_special_data
 /** An affect structure. */
 struct affected_type
 {
-  sh_int type;     /**< The type of spell that caused this      */
+  sh_int spell; /**< The spell that caused this */
   sh_int duration; /**< For how long its effects will last      */
   sbyte modifier;  /**< Added/subtracted to/from apropriate ability     */
   byte location;   /**< Tells which ability to change(APPLY_XXX). */
-  long /*bitvector_t*/bitvector; /**< Tells which bits to set (AFF_XXX). */
+  int bitvector[AF_ARRAY_MAX]; /**< Tells which bits to set (AFF_XXX). */
 
   struct affected_type *next; /**< The next affect in the list of affects. */
 };
@@ -1192,6 +1205,8 @@ struct char_data
   struct char_data *master;      /**< List of character being followed */
 
   long pref; /**< unique session id */
+  
+  struct list_data * events;
 };
 
 /** descriptor-related structures */
@@ -1246,9 +1261,33 @@ struct descriptor_data
   struct descriptor_data *snoop_by; /**< And who is snooping this char	*/
   struct descriptor_data *next;     /**< link to next descriptor		*/
   struct oasis_olc_data *olc;       /**< OLC info */
+  protocol_t *pProtocol;    /**< Kavir plugin */
+  
+  struct list_data * events;
 };
 
 /* other miscellaneous structures */
+
+/** Happy Hour Data */
+struct happyhour {
+  int qp_rate;
+  int exp_rate;
+  int gold_rate;
+  int ticks_left;
+};
+
+/** structure for list of recent players (see 'recent' command) */
+struct recent_player
+{
+   int    vnum;                   /* The ID number for this instance */
+   char   name[MAX_NAME_LENGTH];  /* The char name of the player     */
+   bool   new_player;             /* Is this a new player?           */
+   bool   copyover_player;        /* Is this a player that was on during the last copyover? */
+   time_t time;                   /* login time                      */
+   char   host[HOST_LENGTH+1];    /* Host IP address                 */
+   struct recent_player *next;    /* Pointer to the next instance    */
+};
+
 /** Fight message display. This structure is used to hold the information to
  * be displayed for every different violent hit type. */
 struct msg_type
@@ -1426,6 +1465,7 @@ struct game_data
   int track_through_doors; /**< Track through doors while closed?    */
   int no_mort_to_immort; /**< Prevent mortals leveling to imms?    */
   int disp_closed_doors; /**< Display closed doors in autoexit?    */
+  int diagonal_dirs; /**< Are there 6 or 10 directions? */
   int map_option;         /**< MAP_ON, MAP_OFF or MAP_IMM_ONLY      */
   int map_size;           /**< Default size for map command         */
   int minimap_size;       /**< Default size for mini-map (automap)  */
@@ -1478,6 +1518,8 @@ struct game_operation
   char *WELC_MESSG; /**< The welcome message.      */
   char *START_MESSG; /**< The start msg for new characters.  */
   int medit_advanced; /**< Does the medit OLC show the advanced stats menu ? */
+  int ibt_autosave; /**< Does "bug resolve" autosave ? */
+  int protocol_negotiation; /**< Enable the protocol negotiation system ? */
 };
 
 /** The Autowizard options. */

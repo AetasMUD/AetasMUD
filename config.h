@@ -1,5 +1,5 @@
 /**
-* @file comm.h
+* @file config.h
 * Configuration of various aspects of tbaMUD operation.
 *
 * Part of the core tbaMUD source code distribution, which is a derivative
@@ -35,6 +35,7 @@ extern const char *NOPERSON;
 extern const char *NOEFFECT;
 extern int track_through_doors;
 extern int no_mort_to_immort;
+extern int diagonal_dirs;
 extern int free_rent;
 extern int max_obj_save;
 extern int min_rent_cost;
@@ -67,12 +68,14 @@ extern const char *START_MESSG;
 extern int use_autowiz;
 extern int min_wizlist_lev;
 extern int display_closed_doors;
+extern int protocol_negotiation;
 /* Automap and map options */
 extern int map_option;
 extern int default_map_size;
 extern int default_minimap_size;
 
 extern int medit_advanced_stats;
+extern int ibt_autosave;
 /*
  * Variables not controlled by cedit
  */

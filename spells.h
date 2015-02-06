@@ -90,8 +90,9 @@
 #define SPELL_INFRAVISION            50 /* Reserved Skill[] DO NOT CHANGE */
 #define SPELL_WATERWALK              51 /* Reserved Skill[] DO NOT CHANGE */
 #define SPELL_IDENTIFY	             52 /* Reserved Skill[] DO NOT CHANGE */
+#define SPELL_FLY                    53 /* Reserved Skill[] DO NOT CHANGE */
 /** Total Number of defined spells */
-#define NUM_SPELLS    52
+#define NUM_SPELLS    53
 
 /* Insert new spells here, up to MAX_SPELLS */
 #define MAX_SPELLS		    130
@@ -102,7 +103,7 @@
 #define SKILL_HIDE                  133 /* Reserved Skill[] DO NOT CHANGE */
 #define SKILL_KICK                  134 /* Reserved Skill[] DO NOT CHANGE */
 #define SKILL_PICK_LOCK             135 /* Reserved Skill[] DO NOT CHANGE */
-/* Undefined                        136 */
+#define SKILL_WHIRLWIND             136 
 #define SKILL_RESCUE                137 /* Reserved Skill[] DO NOT CHANGE */
 #define SKILL_SNEAK                 138 /* Reserved Skill[] DO NOT CHANGE */
 #define SKILL_STEAL                 139 /* Reserved Skill[] DO NOT CHANGE */

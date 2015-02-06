@@ -78,7 +78,7 @@ void mobile_activity(void)
 
     /* Mob Movement */
     if (!MOB_FLAGGED(ch, MOB_SENTINEL) && (GET_POS(ch) == POS_STANDING) &&
-       ((door = rand_number(0, 18)) < NUM_OF_DIRS) && CAN_GO(ch, door) &&
+       ((door = rand_number(0, 18)) < DIR_COUNT) && CAN_GO(ch, door) &&
        !ROOM_FLAGGED(EXIT(ch, door)->to_room, ROOM_NOMOB) &&
        !ROOM_FLAGGED(EXIT(ch, door)->to_room, ROOM_DEATH) &&
        (!MOB_FLAGGED(ch, MOB_STAY_ZONE) ||

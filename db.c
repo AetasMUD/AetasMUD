@@ -37,6 +37,7 @@
 #include "shop.h"
 #include "quest.h"
 #include "ibt.h"
+#include "mud_event.h"
 #include <sys/stat.h>
 
 /*  declarations of most of the 'global' variables */
@@ -120,6 +121,7 @@ struct weather_data weather_info;	/* the infomation about the weather */
 struct player_special_data dummy_mob;	/* dummy spec area for mobs	*/
 struct reset_q_type reset_q;	    /* queue of zones to be reset	 */
 
+struct happyhour happy_data = {0,0,0,0};
 
 /* declaration of local (file scope) variables */
 static int converting = FALSE;
@@ -180,6 +182,7 @@ char *fread_action(FILE *fl, int nr)
   if (*buf == '#')
     return (NULL);
 
+  parse_at(buf);
   buf[strlen(buf) - 1] = '\0';
   return (strdup(buf));
 }
@@ -519,7 +522,7 @@ void destroy_db(void)
     /* free script proto list */
     free_proto_script(&world[cnt], WLD_TRIGGER);
 
-    for (itr = 0; itr < NUM_OF_DIRS; itr++) {
+    for (itr = 0; itr < NUM_OF_DIRS; itr++) { /* NUM_OF_DIRS here, not DIR_COUNT */
       if (!world[cnt].dir_option[itr])
         continue;
 
@@ -651,6 +654,12 @@ void boot_db(void)
   log("Resetting the game time:");
   reset_time();
 
+  log("Initialize Global Lists");
+  global_lists = create_list();
+
+  log("Initializing Events");
+  init_events();
+  
   log("Reading news, credits, help, ihelp, bground, info & motds.");
   file_to_string_alloc(NEWS_FILE, &news);
   file_to_string_alloc(CREDITS_FILE, &credits);
@@ -1255,7 +1264,7 @@ void parse_room(FILE *fl, int virtual_nr)
   world[room_nr].people = NULL;
   world[room_nr].light = 0;	/* Zero light sources */
 
-  for (i = 0; i < NUM_OF_DIRS; i++)
+  for (i = 0; i < NUM_OF_DIRS; i++) /* NUM_OF_DIRS here, not DIR_COUNT */
     world[room_nr].dir_option[i] = NULL;
 
   world[room_nr].ex_description = NULL;
@@ -1315,6 +1324,11 @@ void setup_dir(FILE *fl, int room, int dir)
 
   snprintf(buf2, sizeof(buf2), "room #%d, direction D%d", GET_ROOM_VNUM(room)+1, dir);
 
+  if (!CONFIG_DIAGONAL_DIRS && IS_DIAGONAL(dir)) {
+    log("Warning: Diagonal direction disabled: %s", buf2);
+    return;
+  }
+  
   CREATE(world[room].dir_option[dir], struct room_direction_data, 1);
   world[room].dir_option[dir]->general_description = fread_string(fl, buf2);
   world[room].dir_option[dir]->keyword = fread_string(fl, buf2);
@@ -1331,6 +1345,10 @@ void setup_dir(FILE *fl, int room, int dir)
     world[room].dir_option[dir]->exit_info = EX_ISDOOR;
   else if (t[0] == 2)
     world[room].dir_option[dir]->exit_info = EX_ISDOOR | EX_PICKPROOF;
+  else if (t[0] == 3)
+    world[room].dir_option[dir]->exit_info = EX_ISDOOR | EX_HIDDEN;
+  else if (t[0] == 4)
+    world[room].dir_option[dir]->exit_info = EX_ISDOOR | EX_PICKPROOF | EX_HIDDEN;
   else
     world[room].dir_option[dir]->exit_info = 0;
 
@@ -2110,6 +2128,7 @@ static void load_zones(FILE *fl, char *zonename)
   if ((ptr = strchr(buf, '~')) != NULL)	/* take off the '~' if it's there */
     *ptr = '\0';
   Z.name = strdup(buf);
+  parse_at(Z.name);
 
   /* Clear all the zone flags */
   for (i=0; i<ZN_ARRAY_MAX; i++)
@@ -2142,7 +2161,7 @@ static void load_zones(FILE *fl, char *zonename)
   }
   else
   {
-    /* We found 12 values, so deal with the strings */
+    /* We found 10 values, so deal with the strings */
     Z.zone_flags[0] = asciiflag_conv(zbuf1);
     Z.zone_flags[1] = asciiflag_conv(zbuf2);
     Z.zone_flags[2] = asciiflag_conv(zbuf3);
@@ -2301,6 +2320,7 @@ void load_help(FILE * fl, char *name)
 
     el.duplicate = 0;
     el.entry = strdup(entry);
+    parse_at(el.entry);
     scan = one_word(key, next_key);
 
     while (*next_key) {
@@ -2378,6 +2398,10 @@ struct char_data *create_char(void)
 
   CREATE(ch, struct char_data, 1);
   clear_char(ch);
+  
+  /* Allocate mobile event list */
+  ch->events = create_list();
+  
   ch->next = character_list;
   character_list = ch;
 
@@ -2404,9 +2428,13 @@ struct char_data *read_mobile(mob_vnum nr, int type) /* and mob_rnum */
 
   CREATE(mob, struct char_data, 1);
   clear_char(mob);
+  
   *mob = mob_proto[i];
   mob->next = character_list;
   character_list = mob;
+  
+  /* Allocate mobile event list */
+  mob->events = create_list();
 
   if (!mob->points.max_hit) {
     mob->points.max_hit = dice(mob->points.hit, mob->points.mana) +
@@ -2425,6 +2453,7 @@ struct char_data *read_mobile(mob_vnum nr, int type) /* and mob_rnum */
   mob_index[i].number++;
 
   GET_ID(mob) = max_mob_id++;
+  
   /* find_char helper */
   add_to_lookup_table(GET_ID(mob), (void *)mob);
 
@@ -2689,7 +2718,7 @@ void reset_zone(zone_rnum zone)
 
 
     case 'D':			/* set state of door */
-      if (ZCMD.arg2 < 0 || ZCMD.arg2 >= NUM_OF_DIRS ||
+      if (ZCMD.arg2 < 0 || ZCMD.arg2 >= DIR_COUNT ||
 	  (world[ZCMD.arg1].dir_option[ZCMD.arg2] == NULL)) {
         char error[MAX_INPUT_LENGTH];
         snprintf(error, sizeof(error), "door does not exist in room %d - dir %d, command disabled",  world[ZCMD.arg1].number, ZCMD.arg2);
@@ -2854,6 +2883,63 @@ char *fread_string(FILE *fl, const char *error)
     }
   } while (!done);
 
+  parse_at(buf);
+  /* allocate space for the new string and copy it */
+  return (strlen(buf) ? strdup(buf) : NULL);
+}
+
+/* fread_clean_string is the same as fread_string, but skips preceding spaces */
+char *fread_clean_string(FILE *fl, const char *error)
+{
+  char buf[MAX_STRING_LENGTH], tmp[513];
+  char *point, c;
+  int done = 0, length = 0, templength;
+
+  *buf = '\0';
+
+  do
+  {
+    if( feof( fl ) )
+    {
+      log( "%s", "fread_clean_string: EOF encountered on read." );
+      return 0;
+    }
+    c = getc( fl );
+  }
+  while( isspace( c ) );
+  ungetc( c, fl );
+
+  do {
+    if (!fgets(tmp, 512, fl)) {
+      log("SYSERR: fread_clean_string: format error at or near %s", error);
+      exit(1);
+    }
+    /* If there is a '~', end the string; else put an "\r\n" over the '\n'. */
+    /* now only removes trailing ~'s -- Welcor */
+    point = strchr(tmp, '\0');
+    for (point-- ; (*point=='\r' || *point=='\n'); point--);
+    if (*point=='~') {
+      *point='\0';
+      done = 1;
+    } else {
+      *(++point) = '\r';
+      *(++point) = '\n';
+      *(++point) = '\0';
+    }
+
+    templength = point - tmp;
+
+    if (length + templength >= MAX_STRING_LENGTH) {
+      log("SYSERR: fread_clean_string: string too large (db.c)");
+      log("%s", error);
+      exit(1);
+    } else {
+      strcat(buf + length, tmp);	/* strcat: OK (size checked above) */
+      length += templength;
+    }
+  } while (!done);
+  
+  parse_at(buf);
   /* allocate space for the new string and copy it */
   return (strlen(buf) ? strdup(buf) : NULL);
 }
@@ -3159,7 +3245,7 @@ void free_char(struct char_data *ch)
       free(ch->player.description);
     for (i = 0; i < NUM_HIST; i++)
       if (GET_HISTORY(ch, i))
-        free(GET_HISTORY(ch, i));
+        free_history(ch, i);
 
     if (ch->player_specials)
       free(ch->player_specials);
@@ -3189,6 +3275,17 @@ void free_char(struct char_data *ch)
   /* free any assigned scripts */
   if (SCRIPT(ch))
     extract_script(ch, MOB_TRIGGER);
+
+    /* Mud Events */
+  if (ch->events != NULL) {
+	  if (ch->events->iSize > 0) {
+		struct event * pEvent;
+
+		while ((pEvent = simple_list(ch->events)) != NULL)
+		  event_cancel(pEvent);
+	  }
+	  free_list(ch->events);
+  }
 
   /* new version of free_followers take the followers pointer as arg */
   free_followers(ch->followers);
@@ -3262,6 +3359,8 @@ static int file_to_string_alloc(const char *name, char **buf)
 
   if (*buf)
     free(*buf);
+
+  parse_at(temp);
 
   *buf = strdup(temp);
   return (0);
@@ -3358,6 +3457,7 @@ void clear_char(struct char_data *ch)
   GET_WAS_IN(ch) = NOWHERE;
   GET_POS(ch) = POS_STANDING;
   ch->mob_specials.default_pos = POS_STANDING;
+  ch->events = NULL;
 
   GET_AC(ch) = 100;		/* Basic Armor */
   if (ch->points.max_mana < 100)
@@ -3509,6 +3609,18 @@ void init_char(struct char_data *ch)
 
   GET_LOADROOM(ch) = NOWHERE;
   GET_SCREEN_WIDTH(ch) = PAGE_WIDTH;
+  
+  /* Set Beginning Toggles Here */
+  SET_BIT_AR(PRF_FLAGS(ch), PRF_AUTOEXIT);
+  if (ch->desc)
+    if (ch->desc->pProtocol->pVariables[eMSDP_ANSI_COLORS] || 
+      ch->desc->pProtocol->pVariables[eMSDP_XTERM_256_COLORS]) {
+      SET_BIT_AR(PRF_FLAGS(ch), PRF_COLOR_1);
+      SET_BIT_AR(PRF_FLAGS(ch), PRF_COLOR_2);
+    } 
+  SET_BIT_AR(PRF_FLAGS(ch), PRF_DISPHP);  
+  SET_BIT_AR(PRF_FLAGS(ch), PRF_DISPMANA);
+  SET_BIT_AR(PRF_FLAGS(ch), PRF_DISPMOVE);
 }
 
 /* returns the real number of the room with given virtual number */
@@ -3780,6 +3892,8 @@ static void load_default_config( void )
   CONFIG_TRACK_T_DOORS          = track_through_doors;
   CONFIG_NO_MORT_TO_IMMORT	= no_mort_to_immort;
   CONFIG_DISP_CLOSED_DOORS      = display_closed_doors;
+  CONFIG_PROTOCOL_NEGOTIATION   = protocol_negotiation;
+  CONFIG_DIAGONAL_DIRS          = diagonal_dirs;
   CONFIG_MAP                    = map_option;
   CONFIG_MAP_SIZE               = default_map_size;
   CONFIG_MINIMAP_SIZE           = default_minimap_size;
@@ -3828,6 +3942,7 @@ static void load_default_config( void )
   CONFIG_WELC_MESSG             = strdup(WELC_MESSG);
   CONFIG_START_MESSG            = strdup(START_MESSG);
   CONFIG_MEDIT_ADVANCED         = medit_advanced_stats;
+  CONFIG_IBT_AUTOSAVE           = ibt_autosave;
 
   /* Autowiz options. */
   CONFIG_USE_AUTOWIZ            = use_autowiz;
@@ -3874,6 +3989,8 @@ void load_config( void )
       case 'd':
         if (!str_cmp(tag, "display_closed_doors"))
           CONFIG_DISP_CLOSED_DOORS = num;
+        else if (!str_cmp(tag, "diagonal_dirs"))
+          CONFIG_DIAGONAL_DIRS = num;
         else if (!str_cmp(tag, "dts_are_dumps"))
           CONFIG_DTS_ARE_DUMPS = num;
         else if (!str_cmp(tag, "donation_room_1"))
@@ -3936,6 +4053,8 @@ void load_config( void )
           CONFIG_NO_MORT_TO_IMMORT = num;
         else if (!str_cmp(tag, "immort_start_room"))
           CONFIG_IMMORTAL_START = num;
+        else if (!str_cmp(tag, "ibt_autosave"))
+		  CONFIG_IBT_AUTOSAVE = num;
         break;
 
       case 'l':
@@ -3975,6 +4094,7 @@ void load_config( void )
             free(CONFIG_MENU);
           strncpy(buf, "Reading menu in load_config()", sizeof(buf));
           CONFIG_MENU = fread_string(fl, buf);
+          parse_at(CONFIG_MENU);
         } else if (!str_cmp(tag, "min_rent_cost"))
           CONFIG_MIN_RENT_COST = num;
         else if (!str_cmp(tag, "min_wizlist_lev"))
@@ -4018,6 +4138,8 @@ void load_config( void )
       case 'p':
         if (!str_cmp(tag, "pk_allowed"))
           CONFIG_PK_ALLOWED = num;
+        else if (!str_cmp(tag, "protocol_negotiation"))
+          CONFIG_PROTOCOL_NEGOTIATION = num;
         else if (!str_cmp(tag, "pt_allowed"))
           CONFIG_PT_ALLOWED = num;
         break;
@@ -4037,6 +4159,7 @@ void load_config( void )
           if (CONFIG_START_MESSG)
             free(CONFIG_START_MESSG);
           CONFIG_START_MESSG = fread_string(fl, buf);
+          parse_at(CONFIG_START_MESSG);
         }
         break;
 

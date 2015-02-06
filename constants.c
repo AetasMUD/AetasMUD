@@ -24,7 +24,7 @@
  * @todo cpp_extern isn't needed here (or anywhere) as the extern reserved word
  * works correctly with C compilers (at least in my Experience)
  * Jeremy Osborne 1/28/2008 */
-cpp_extern const char *tbamud_version = "tbaMUD 3.62";
+cpp_extern const char *tbamud_version = "tbaMUD 3.63";
 
 /* strings corresponding to ordinals/bitvectors in structs.h */
 /* (Note: strings for class definitions in class.c instead of here) */
@@ -48,6 +48,25 @@ const char *dirs[] =
   "west",
   "up",
   "down",
+  "northwest", /* Diagonals only used if CONFIG_DIAGONAL_DIRS is set */
+  "northeast",
+  "southeast",
+  "southwest",
+  "\n"
+};
+
+const char *autoexits[] =
+{
+  "n",
+  "e",
+  "s",
+  "w",
+  "u",
+  "d",
+  "nw",
+  "ne",
+  "se",
+  "sw",
   "\n"
 };
 
@@ -86,6 +105,7 @@ const char *zone_bits[] = {
   "GRID",
   "NOBUILD",
   "!ASTRAL",
+  "WORLDMAP",
   "\n"
 };
 
@@ -332,6 +352,7 @@ const char *connected_types[] = {
   "Select Knight align",
   "Select Cleric align",
   "Select Druid align",
+  "Protocol Detection",
   "\n"
 };
 
@@ -339,27 +360,27 @@ const char *connected_types[] = {
  * @pre Must be in the same order as the defines.
  * Not used in sprinttype() so no \n. */
 const char *wear_where[] = {
-  "@g<worn on head>@n       ",
-  "@g<worn on face>@n       ",
-  "@g<worn around neck>@n   ",
-  "@g<worn around neck>@n   ",
-  "@g<worn on body>@n       ",
-  "@g<worn about body>@n    ",
-  "@g<worn on back>@n       ",
-  "@g<worn on arms>@n       ",
-  "@g<worn around wrist>@n  ",
-  "@g<worn around wrist>@n  ",
-  "@g<worn on hands>@n      ",
-  "@g<worn on finger>@n     ",
-  "@g<worn on finger>@n     ",
-  "@g<worn as shield>@n     ",
-  "@g<used as light>@n      ",
-  "@g<wielded>@n            ",
-  "@g<second wielded>@n     ",
-  "@g<held>@n               ",
-  "@g<worn about waist>@n   ",
-  "@g<worn on legs>@n       ",
-  "@g<worn on feet>@n       "
+  "\tg<worn on head>\tn       ",
+  "\tg<worn on face>\tn       ",
+  "\tg<worn around neck>\tn   ",
+  "\tg<worn around neck>\tn   ",
+  "\tg<worn on body>\tn       ",
+  "\tg<worn about body>\tn    ",
+  "\tg<worn on back>\tn       ",
+  "\tg<worn on arms>\tn       ",
+  "\tg<worn around wrist>\tn  ",
+  "\tg<worn around wrist>\tn  ",
+  "\tg<worn on hands>\tn      ",
+  "\tg<worn on finger>\tn     ",
+  "\tg<worn on finger>\tn     ",
+  "\tg<worn as shield>\tn     ",
+  "\tg<used as light>\tn      ",
+  "\tg<wielded>\tn            ",
+  "\tg<second wielded>\tn     ",
+  "\tg<held>\tn               ",
+  "\tg<worn about waist>\tn   ",
+  "\tg<worn on legs>\tn       ",
+  "\tg<worn on feet>\tn       "
 };
 
 /* Describes where an item can be worn.
@@ -858,7 +879,11 @@ int rev_dir[] =
   NORTH,
   EAST,
   DOWN,
-  UP
+  UP,
+  SOUTHEAST,
+  SOUTHWEST,
+  NORTHWEST,
+  NORTHEAST
 };
 
 /** How much movement is lost moving through a particular sector type. */

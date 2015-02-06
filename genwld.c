@@ -107,7 +107,7 @@ room_rnum add_room(struct room_data *room)
   i = top_of_world + 1;
   do {
     i--;
-    for (j = 0; j < NUM_OF_DIRS; j++)
+    for (j = 0; j < DIR_COUNT; j++)
       if (W_EXIT(i, j) && W_EXIT(i, j)->to_room != NOWHERE)
 	W_EXIT(i, j)->to_room += (W_EXIT(i, j)->to_room >= found);
   } while (i > 0);
@@ -172,7 +172,7 @@ int delete_room(room_rnum rnum)
   i = top_of_world + 1;
   do {
     i--;
-    for (j = 0; j < NUM_OF_DIRS; j++) {
+    for (j = 0; j < DIR_COUNT; j++) {
       if (W_EXIT(i, j) == NULL)
         continue;
       else if (W_EXIT(i, j)->to_room > rnum)
@@ -257,6 +257,7 @@ int save_rooms(zone_rnum rzone)
   char filename[128];
   char buf[MAX_STRING_LENGTH];
   char buf1[MAX_STRING_LENGTH];
+  char buf2[MAX_STRING_LENGTH];
 
 #if CIRCLE_UNSIGNED_INDEX
   if (rzone == NOWHERE || rzone > top_of_zone_table) {
@@ -289,7 +290,7 @@ int save_rooms(zone_rnum rzone)
       strip_cr(buf);
 
       /* Save the numeric and string section of the file. */
-      fprintf(sf, 	"#%d\n"
+      sprintf(buf2, 	"#%d\n"
 			"%s%c\n"
 			"%s%c\n"
 			"%d %d %d %d %d %d\n",
@@ -299,9 +300,11 @@ int save_rooms(zone_rnum rzone)
 	zone_table[room->zone].number, room->room_flags[0], room->room_flags[1], room->room_flags[2], 
 	  room->room_flags[3], room->sector_type 
       );
+      
+    fprintf(sf, convert_from_tabs(buf2), 0);
 
       /* Now you write out the exits for the room. */
-      for (j = 0; j < NUM_OF_DIRS; j++) {
+      for (j = 0; j < DIR_COUNT; j++) {
 	if (R_EXIT(room, j)) {
 	  int dflag;
 	  if (R_EXIT(room, j)->general_description) {
@@ -316,6 +319,10 @@ int save_rooms(zone_rnum rzone)
 	      dflag = 2;
 	    else
 	      dflag = 1;
+      
+	    if (IS_SET(R_EXIT(room, j)->exit_info, EX_HIDDEN))
+          dflag += 2;
+      
 	  } else
 	    dflag = 0;
 
@@ -395,7 +402,7 @@ int copy_room_strings(struct room_data *dest, struct room_data *source)
   dest->description = str_udup(source->description);
   dest->name = str_udup(source->name);
 
-  for (i = 0; i < NUM_OF_DIRS; i++) {
+  for (i = 0; i < DIR_COUNT; i++) {
     if (!R_EXIT(source, i))
       continue;
 
@@ -426,7 +433,7 @@ int free_room_strings(struct room_data *room)
     free_ex_descriptions(room->ex_description);
 
   /* Free exits. */
-  for (i = 0; i < NUM_OF_DIRS; i++) {
+  for (i = 0; i < DIR_COUNT; i++) {
     if (room->dir_option[i]) {
       if (room->dir_option[i]->general_description)
         free(room->dir_option[i]->general_description);

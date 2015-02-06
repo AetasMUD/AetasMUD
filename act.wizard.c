@@ -27,6 +27,7 @@
 #include "genzon.h" /* for real_zone_by_thing */
 #include "class.h"
 #include "genolc.h"
+#include "genobj.h"
 #include "fight.h"
 #include "house.h"
 #include "modify.h"
@@ -48,9 +49,15 @@ static void mob_checkload(struct char_data *ch, mob_vnum mvnum);
 static void obj_checkload(struct char_data *ch, obj_vnum ovnum);
 static void trg_checkload(struct char_data *ch, trig_vnum tvnum);
 static void mod_llog_entry(struct last_entry *llast,int type);
+static int  get_max_recent(void);
+static void clear_recent(struct recent_player *this);
+static struct recent_player *create_recent(void);
 
 const char *get_spec_func_name(SPECIAL(*func));
 bool zedit_get_levels(struct descriptor_data *d, char *buf);
+
+/* Local Globals */
+static struct recent_player *recent_list = NULL;  /** Global list of recent players */
 
 int purge_room(room_rnum room)
 {
@@ -526,7 +533,7 @@ static void do_stat_room(struct char_data *ch, struct room_data *rm)
   sprinttype(rm->sector_type, sector_types, buf2, sizeof(buf2));
   send_to_char(ch, "Zone: [%3d], VNum: [%s%5d%s], RNum: [%5d], IDNum: [%5ld], Type: %s\r\n",
 	  zone_table[rm->zone].number, CCGRN(ch, C_NRM), rm->number,
-	  CCNRM(ch, C_NRM), IN_ROOM(ch), (long) rm->number + ROOM_ID_BASE, buf2);
+	  CCNRM(ch, C_NRM), real_room(rm->number), (long) rm->number + ROOM_ID_BASE, buf2);
 
   sprintbitarray(rm->room_flags, room_bits, RF_ARRAY_MAX, buf2);
   send_to_char(ch, "SpecProc: %s, Flags: %s\r\n", rm->func == NULL ? "None" : get_spec_func_name(rm->func), buf2);
@@ -574,7 +581,7 @@ static void do_stat_room(struct char_data *ch, struct room_data *rm)
     send_to_char(ch, "%s", CCNRM(ch, C_NRM));
   }
 
-  for (i = 0; i < NUM_OF_DIRS; i++) {
+  for (i = 0; i < DIR_COUNT; i++) {
     char buf1[128];
 
     if (!rm->dir_option[i])
@@ -951,16 +958,19 @@ static void do_stat_character(struct char_data *ch, struct char_data *k)
   /* Routine to show what spells a char is affected by */
   if (k->affected) {
     for (aff = k->affected; aff; aff = aff->next) {
-      send_to_char(ch, "SPL: (%3dhr) %s%-21s%s ", aff->duration + 1, CCCYN(ch, C_NRM), skill_name(aff->type), CCNRM(ch, C_NRM));
+      send_to_char(ch, "SPL: (%3dhr) %s%-21s%s ", aff->duration + 1, CCCYN(ch, C_NRM), skill_name(aff->spell), CCNRM(ch, C_NRM));
 
       if (aff->modifier)
-	send_to_char(ch, "%+d to %s", aff->modifier, apply_types[(int) aff->location]);
+	    send_to_char(ch, "%+d to %s", aff->modifier, apply_types[(int) aff->location]);
 
-      if (aff->bitvector) {
-	if (aff->modifier)
-	  send_to_char(ch, ", ");
-
-        send_to_char(ch, "sets %s", affected_bits[aff->bitvector]);
+      if (aff->bitvector[0] || aff->bitvector[1] || aff->bitvector[2] || aff->bitvector[3]) {
+	    if (aff->modifier)
+	      send_to_char(ch, ", ");
+        for (i=0; i<NUM_AFF_FLAGS; i++) {
+          if (IS_SET_AR(aff->bitvector, i)) {
+            send_to_char(ch, "sets %s, ", affected_bits[i]);
+          }
+        }
       }
       send_to_char(ch, "\r\n");
     }
@@ -979,7 +989,6 @@ static void do_stat_character(struct char_data *ch, struct char_data *k)
   }
 
   /* check mobiles for a script */
-  if (IS_NPC(k)) {
     do_sstat_character(ch, k);
     if (SCRIPT_MEM(k)) {
       struct script_memory *mem = SCRIPT_MEM(k);
@@ -997,7 +1006,7 @@ static void do_stat_character(struct char_data *ch, struct char_data *k)
       mem = mem->next;
       }
     }
-  } else {
+  if (!(IS_NPC(k))) {
     /* this is a PC, display their global variables */
     if (k->script && k->script->global_vars) {
       struct trig_var_data *tv;
@@ -1069,6 +1078,8 @@ ACMD(do_stat)
       CREATE(victim, struct char_data, 1);
       clear_char(victim);
       CREATE(victim->player_specials, struct player_special_data, 1);
+      /* Allocate mobile event list */
+      victim->events = create_list();      
       if (load_char(buf2, victim) >= 0) {
         char_to_room(victim, 0);
         if (GET_LEVEL(victim) > GET_LEVEL(ch))
@@ -1347,6 +1358,11 @@ ACMD(do_load)
     struct char_data *mob=NULL;
     mob_rnum r_num;
 
+    if (GET_LEVEL(ch) < LVL_GRGOD && !can_edit_zone(ch, world[IN_ROOM(ch)].zone)) {
+	  send_to_char(ch, "Sorry, you can't load mobs here.\r\n");
+	  return;
+    }
+
     if ((r_num = real_mobile(atoi(buf2))) == NOBODY) {
       send_to_char(ch, "There is no monster with that number.\r\n");
       return;
@@ -1364,6 +1380,11 @@ ACMD(do_load)
     struct obj_data *obj;
     obj_rnum r_num;
 
+	if (GET_LEVEL(ch) < LVL_GRGOD && !can_edit_zone(ch, world[IN_ROOM(ch)].zone)) {
+	  send_to_char(ch, "Sorry, you can't load objects here.\r\n");
+	  return;
+	}
+    
     if ((r_num = real_object(atoi(buf2))) == NOTHING) {
       send_to_char(ch, "There is no object with that number.\r\n");
       return;
@@ -1455,6 +1476,11 @@ ACMD(do_purge)
   int number;
 
   one_argument(argument, buf);
+  
+  if (GET_LEVEL(ch) < LVL_GRGOD && !can_edit_zone(ch, world[IN_ROOM(ch)].zone)) {
+	send_to_char(ch, "Sorry, you can't purge anything here.\r\n");
+	return;
+  }
 
   /* argument supplied. destroy single object or char */
   if (*buf) {
@@ -1575,6 +1601,9 @@ ACMD(do_advance)
         for (i = 1; i <= MAX_SKILLS; i++)
           SET_SKILL(victim, i, 100);
    GET_OLC_ZONE(victim) = NOWHERE;
+   GET_COND(victim, HUNGER) = -1;
+   GET_COND(victim, THIRST) = -1;
+   GET_COND(victim, DRUNK)  = -1;
   }
 
   gain_exp_regardless(victim, level_exp(GET_CLASS(victim), newlevel) - GET_EXP(victim));
@@ -1657,7 +1686,7 @@ static void perform_immort_invis(struct char_data *ch, int level)
   struct char_data *tch;
 
   for (tch = world[IN_ROOM(ch)].people; tch; tch = tch->next_in_room) {
-    if (tch == ch)
+    if (tch == ch || IS_NPC(tch))
       continue;
     if (GET_LEVEL(tch) >= GET_INVIS_LEV(ch) && GET_LEVEL(tch) < level)
       act("You blink and suddenly realize that $n is gone.", FALSE, ch, 0,
@@ -1851,7 +1880,7 @@ struct last_entry *find_llog_entry(int punique, long idnum) {
   FILE *fp;
   struct last_entry mlast;
   struct last_entry *llast;
-  int size, recs, tmp, i;
+  int size, recs, tmp;
 
   if(!(fp=fopen(LAST_FILE,"r"))) {
     log("Error opening last_file for reading, will create.");
@@ -1866,7 +1895,8 @@ struct last_entry *find_llog_entry(int punique, long idnum) {
    * do (like searching for the last shutdown/etc..) */
   for(tmp=recs-1; tmp > 0; tmp--) {
     fseek(fp,-1*(sizeof(struct last_entry)),SEEK_CUR);
-    i = fread(&mlast,sizeof(struct last_entry),1,fp);
+    if (fread(&mlast,sizeof(struct last_entry),1,fp) != 1)
+      return NULL;
         /*another one to keep that stepback */
     fseek(fp,-1*(sizeof(struct last_entry)),SEEK_CUR);
 
@@ -2073,6 +2103,8 @@ ACMD(do_last)
     CREATE(vict, struct char_data, 1);
     clear_char(vict);
     CREATE(vict->player_specials, struct player_special_data, 1);
+    /* Allocate mobile event list */
+    vict->events = create_list();
     if (load_char(name, vict) <  0) {
       send_to_char(ch, "There is no such player.\r\n");
       free_char(vict);
@@ -2194,7 +2226,7 @@ ACMD(do_wiznet)
   delete_doubledollar(argument);
 
   if (!*argument) {
-    send_to_char(ch, "Usage: wiznet [ #<level> ] [<text> | *<emotetext> | @@ ]\r\n");
+    send_to_char(ch, "Usage: wiznet [ #<level> ] [<text> | *<emotetext> | @ ]\r\n");
     return;
   }
   switch (*argument) {
@@ -2244,25 +2276,23 @@ ACMD(do_wiznet)
     send_to_char(ch, "Don't bother the gods like that!\r\n");
     return;
   }
-  if (level > LVL_IMMORT) {
-    snprintf(buf1, sizeof(buf1), "@W%s: <%d> %s%s@n\r\n", GET_NAME(ch), level, emote ? "<--- " : "", argument);
-    snprintf(buf2, sizeof(buf1), "@WSomeone: <%d> %s%s@n\r\n", level, emote ? "<--- " : "", argument);
-  } else {
-    snprintf(buf1, sizeof(buf1), "@W%s: %s%s@n\r\n", GET_NAME(ch), emote ? "<--- " : "", argument);
-    snprintf(buf2, sizeof(buf1), "@WSomeone: %s%s@n\r\n", emote ? "<--- " : "", argument);
-  }
+   if (level > LVL_IMMORT) {
+     snprintf(buf1, sizeof(buf1), "\tc%s: <%d> %s%s\tn", GET_NAME(ch), level, emote ? "<--- " : "", argument);
+     snprintf(buf2, sizeof(buf1), "\tcSomeone: <%d> %s%s\tn", level, emote ? "<--- " : "", argument);
+   } else {
+     snprintf(buf1, sizeof(buf1), "\tc%s: %s%s\tn", GET_NAME(ch), emote ? "<--- " : "", argument);
+     snprintf(buf2, sizeof(buf1), "\tcSomeone: %s%s\tn", emote ? "<--- " : "", argument);
+   }
 
   for (d = descriptor_list; d; d = d->next) {
     if (IS_PLAYING(d) && (GET_LEVEL(d->character) >= level) &&
 	(!PRF_FLAGGED(d->character, PRF_NOWIZ))
 	&& (d != ch->desc || !(PRF_FLAGGED(d->character, PRF_NOREPEAT)))) {
-      if (CAN_SEE(d->character, ch)) {
-        msg = strdup(buf1);
-      send_to_char(d->character, "%s", buf1);
-      } else {
-        msg = strdup(buf2);
-        send_to_char(d->character, "%s", buf2);
-      }
+      if (CAN_SEE(d->character, ch)) 
+        msg = act(buf1, FALSE, d->character, 0, 0, TO_CHAR | DG_NO_TRIG);
+      else 
+        msg = act(buf2, FALSE, d->character, 0, 0, TO_CHAR | DG_NO_TRIG);
+     
       add_history(d->character, msg, HIST_WIZNET);
     }
   }
@@ -2489,6 +2519,8 @@ ACMD(do_show)
   struct descriptor_data *d;
   char field[MAX_INPUT_LENGTH], value[MAX_INPUT_LENGTH],
 	arg[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH];
+  int r, g, b;
+  char colour[16];
 
   struct show_struct {
     const char *cmd;
@@ -2507,6 +2539,9 @@ ACMD(do_show)
     { "snoop",		LVL_IMMORT },			/* 10 */
 	{ "clans",		LVL_GRGOD },
     { "members",	LVL_GRGOD },
+    { "thaco",      LVL_IMMORT },
+    { "exp",        LVL_IMMORT },
+    { "colour",     LVL_IMMORT },           /* 15 */
     { "\n", 0 }
   };
 
@@ -2590,6 +2625,8 @@ ACMD(do_show)
     CREATE(vict, struct char_data, 1);
     clear_char(vict);
     CREATE(vict->player_specials, struct player_special_data, 1);
+    /* Allocate mobile event list */
+    vict->events = create_list();
     if (load_char(value, vict) < 0) {
       send_to_char(ch, "There is no such player.\r\n");
       free_char(vict);
@@ -2644,9 +2681,10 @@ ACMD(do_show)
 	"  %5d mobiles          %5d prototypes\r\n"
 	"  %5d objects          %5d prototypes\r\n"
 	"  %5d rooms            %5d zones\r\n"
-  "  %5d triggers         %5d shops\r\n"
-  "  %5d large bufs       %5d autoquests\r\n"
-	"  %5d buf switches     %5d overflows\r\n",
+    "  %5d triggers         %5d shops\r\n"
+    "  %5d large bufs       %5d autoquests\r\n"
+	"  %5d buf switches     %5d overflows\r\n"
+	"  %5d lists\r\n",
 	i, con,
 	top_of_p_table + 1,
 	j, top_of_mobt + 1,
@@ -2654,7 +2692,7 @@ ACMD(do_show)
 	top_of_world + 1, top_of_zone_table + 1,
 	top_of_trigt + 1, top_shop + 1,
 	buf_largecount, total_quests,
-	buf_switches, buf_overflows
+	buf_switches, buf_overflows, global_lists->iSize
 	);
     break;
 
@@ -2662,7 +2700,7 @@ ACMD(do_show)
   case 5:
     len = strlcpy(buf, "Errant Rooms\r\n------------\r\n", sizeof(buf));
     for (i = 0, k = 0; i <= top_of_world; i++)
-      for (j = 0; j < NUM_OF_DIRS; j++) {
+      for (j = 0; j < DIR_COUNT; j++) {
       	if (!W_EXIT(i,j))
       	  continue;
         if (W_EXIT(i,j)->to_room == 0) {
@@ -2745,35 +2783,98 @@ ACMD(do_show)
   case 12:
     k = 0;
     c_number = atoi(value);
+    
     if (!*value) {
       send_to_char(ch, "A clan number would help.\r\n");
       return;
     }
 
-  if (c_number > NUM_CLANS || c_number < 1)
-   send_to_char(ch, "That clan does not exist.");
+    if (c_number > NUM_CLANS || c_number < 1)
+      send_to_char(ch, "That clan does not exist.");
+    else {
+      send_to_char(ch, "Members of clan %s: \r\n", get_clan_name(c_number));
+      for (i = 0; i <= top_of_p_table; i++ ) {
+        if ((player_table + i)->clan_name ==  c_number) {
+          send_to_char(ch, "%s  [%s%s%s] %-15.15s", buf, 
+            ((player_table + i)->clan_rank == 10 ?
+            CCCYN(ch, C_NRM) : CCNRM(ch, C_NRM)), 
+            get_rank_name((player_table + i)->clan_name,
+            (player_table + i)->clan_rank), CCNRM(ch, C_NRM), 
+            (player_table + i)->name);
+          k++;
+            if (k == 3) {
+              k = 0;
+              send_to_char(ch, "\r\n");
+            } 
+        }
+      }
+    }
+    send_to_char(ch, "\r\n"); 
+    break;
 
-  else {
-   send_to_char(ch, "Members of clan %s: \r\n", get_clan_name(c_number));
+  /* show thaco */
+  case 13:
+    len = strlcpy(buf, "LvL - Kn Cl Ba Ra Ma Mo Ne Dr Th Ps\r\n----------------\r\n", sizeof(buf));
+			
+    for (j = 1; j < LVL_IMMORT; j++) {
+      nlen = snprintf(buf + len, sizeof(buf) - len,  "%-3d - %-2d %-2d %-2d %-2d %-2d %-2d %-2d %-2d %-2d %-2d\r\n", j, 
+				thaco(CLASS_KNIGHT, j),
+				thaco(CLASS_CLERIC, j),
+                thaco(CLASS_BARBARIAN, j),
+                thaco(CLASS_RANGER, j),
+                thaco(CLASS_MAGE, j),
+                thaco(CLASS_MONK, j),
+                thaco(CLASS_NECROMANCER, j),
+                thaco(CLASS_DRUID, j),
+                thaco(CLASS_THIEF, j),
+				thaco(CLASS_PSIONICIST, j));
+      if (len + nlen >= sizeof(buf))
+        break;
+      len += nlen;		
+		}
+			
+    page_string(ch->desc, buf, TRUE);	
+    break;
 
-  for (i = 0; i <= top_of_p_table; i++ ) {
-   if ((player_table + i)->clan_name ==  c_number) {
+  /* show experience tables */
+  case 14:
+    len = strlcpy(buf, "LvL - Kn Cl Ba Ra Ma Mo Ne Dr Th Ps\r\n--------------------------\r\n", sizeof(buf));
+	 
+	for (i = 1; i < LVL_IMMORT; i++) { 		
+	  nlen = snprintf(buf + len, sizeof(buf) - len,  "%-3d - %-6d %-6d %-6d %-6d %-6d %-6d %-6d %-6d %-6d %-6d\r\n", i,  
+				level_exp(CLASS_KNIGHT, i) - level_exp(CLASS_KNIGHT, i - 1),
+				level_exp(CLASS_CLERIC, i) - level_exp(CLASS_CLERIC, i - 1),
+                level_exp(CLASS_BARBARIAN, i) - level_exp(CLASS_BARBARIAN, i - 1),
+                level_exp(CLASS_RANGER, i) - level_exp(CLASS_RANGER, i - 1),
+                level_exp(CLASS_MAGE, i) - level_exp(CLASS_MAGE, i - 1),
+                level_exp(CLASS_MONK, i) - level_exp(CLASS_MONK, i - 1),
+                level_exp(CLASS_NECROMANCER, i) - level_exp(CLASS_NECROMANCER, i - 1),
+                level_exp(CLASS_DRUID, i) - level_exp(CLASS_DRUID, i - 1),
+                level_exp(CLASS_THIEF, i) - level_exp(CLASS_THIEF, i - 1),
+				level_exp(CLASS_PSIONICIST, i) - level_exp(CLASS_PSIONICIST, i - 1));
+	  if (len + nlen >= sizeof(buf))
+		break;
+	  len += nlen;		
+    }
+			
+    page_string(ch->desc, buf, TRUE);	
+    break;
 
- send_to_char(ch, "%s  [%s%s%s] %-15.15s", buf, ((player_table + i)->clan_rank == 10 ?
-  CCCYN(ch, C_NRM) : CCNRM(ch, C_NRM)), get_rank_name((player_table + i)->clan_name,
-  (player_table + i)->clan_rank), CCNRM(ch, C_NRM), (player_table + i)->name);
-
-    k++;
-    if (k == 3) {
-      k = 0;
-      send_to_char(ch, "\r\n");
-    } 
-  }
-}
-}
-  send_to_char(ch, "\r\n"); 
-  break;
-
+  case 15:
+    len = strlcpy(buf, "Colours\r\n--------------------------\r\n", sizeof(buf));
+		k = 0;	
+    for (r = 0; r < 6; r++)
+			for (g = 0; g < 6; g++)
+			  for (b = 0; b < 6; b++) {
+					  sprintf(colour, "F%d%d%d", r, g, b);
+					nlen = snprintf(buf + len, sizeof(buf) - len,  "%s%s%s", ColourRGB(ch->desc, colour), colour, ++k % 6 == 0 ? "\tn\r\n" : "    ");
+				if (len + nlen >= sizeof(buf))
+					break;
+				len += nlen;
+				}	
+    page_string(ch->desc, buf, TRUE);	
+    break;
+    
   /* show what? */
   default:
     send_to_char(ch, "Sorry, I don't understand that.\r\n");
@@ -3413,6 +3514,8 @@ ACMD(do_set)
     CREATE(cbuf, struct char_data, 1);
     clear_char(cbuf);
     CREATE(cbuf->player_specials, struct player_special_data, 1);
+    /* Allocate mobile event list */
+    cbuf->events = create_list();
     if ((player_i = load_char(name, cbuf)) > -1) {
       if (GET_LEVEL(cbuf) > GET_LEVEL(ch)) {
 	free_char(cbuf);
@@ -3475,7 +3578,6 @@ ACMD(do_links)
   int first, last, j;
   char arg[MAX_INPUT_LENGTH];
 
-
   skip_spaces(&argument);
   one_argument(argument, arg);
 
@@ -3498,7 +3600,7 @@ ACMD(do_links)
   send_to_char(ch, "Zone %d is linked to the following zones:\r\n", zvnum);
   for (nr = 0; nr <= top_of_world && (GET_ROOM_VNUM(nr) <= last); nr++) {
     if (GET_ROOM_VNUM(nr) >= first) {
-      for (j = 0; j < NUM_OF_DIRS; j++) {
+      for (j = 0; j < DIR_COUNT; j++) {
         if (world[nr].dir_option[j]) {
           to_room = world[nr].dir_option[j]->to_room;
           if (to_room != NOWHERE && (zrnum != world[to_room].zone))
@@ -3869,7 +3971,7 @@ ACMD (do_zcheck)
   send_to_char(ch, "\r\nChecking Rooms for limits...\r\n");
   for (i=0; i<top_of_world;i++) {
     if (world[i].zone==zrnum) {
-      for (j = 0; j < NUM_OF_DIRS; j++) {
+      for (j = 0; j < DIR_COUNT; j++) {
         /*check for exit, but ignore off limits if you're in an offlimit zone*/
         if (!world[i].dir_option[j])
           continue;
@@ -3935,11 +4037,11 @@ ACMD (do_zcheck)
   for (i=0; i<top_of_world;i++) {
     if (world[i].zone==zrnum) {
       m++;
-      for (j = 0, k = 0; j < NUM_OF_DIRS; j++)
+      for (j = 0, k = 0; j < DIR_COUNT; j++)
         if (!world[i].dir_option[j])
           k++;
 
-      if (k == NUM_OF_DIRS)
+      if (k == DIR_COUNT)
         l++;
     }
   }
@@ -4225,7 +4327,7 @@ ACMD(do_copyover)
      write_to_descriptor (d->descriptor, "\n\rSorry, we are rebooting. Come back in a few minutes.\n\r");
      close_socket (d); /* throw'em out */
    } else {
-      fprintf (fp, "%d %ld %s %s\n", d->descriptor, GET_PREF(och), GET_NAME(och), d->host);
+      fprintf (fp, "%d %ld %s %s %s\n", d->descriptor, GET_PREF(och), GET_NAME(och), d->host, CopyoverGet(d));
       /* save och */
       GET_LOADROOM(och) = GET_ROOM_VNUM(IN_ROOM(och));
       Crash_rentsave(och,0);
@@ -4317,7 +4419,7 @@ ACMD(do_zpurge)
 
 /** Used to read and gather a bit of information about external log files while
  * in game.
- * Makes use of the '@' color codes in the file status information.
+ * Makes use of the '\t' color codes in the file status information.
  * Some of the methods used are a bit wasteful (reading through the file
  * multiple times to gather diagnostic information), but it is
  * assumed that the files read with this function will never be very large.
@@ -4439,8 +4541,8 @@ ACMD(do_file)
    req_file_lines = file_numlines(req_file);
 
    snprintf( buf, sizeof(buf),
-       "@gFile:@n %s@g; Min. Level to read:@n %d@g; File Location:@n %s@g\r\n"
-       "File size (bytes):@n %ld@g; Total num lines:@n %d\r\n",
+       "\tgFile:\tn %s\tg; Min. Level to read:\tn %d\tg; File Location:\tn %s\tg\r\n"
+       "File size (bytes):\tn %ld\tg; Total num lines:\tn %d\r\n",
        fields[l].cmd, fields[l].level, fields[l].file, (long) req_file_size,
        req_file_lines);
 
@@ -4448,13 +4550,13 @@ ACMD(do_file)
    if ( (fields[l].read_backwards == TRUE) && (req_lines < req_file_lines) )
    {
      snprintf( buf + strlen(buf), sizeof(buf) - strlen(buf),
-               "@gReading from the tail of the file.@n\r\n\r\n" );
+               "\tgReading from the tail of the file.\tn\r\n\r\n" );
      lines_read = file_tail( req_file, buf, sizeof(buf), req_lines );
    }
    else
    {
      snprintf( buf + strlen(buf), sizeof(buf) - strlen(buf),
-              "@gReading from the head of the file.@n\r\n\r\n" );
+              "\tgReading from the head of the file.\tn\r\n\r\n" );
      lines_read = file_head( req_file, buf, sizeof(buf), req_lines );
    }
 
@@ -4464,19 +4566,19 @@ ACMD(do_file)
    {
      /* We're reading the entire file */
      snprintf( buf + strlen(buf), sizeof(buf) - strlen(buf),
-         "\r\n@gEntire file returned (@n%d @glines).@n\r\n",
+         "\r\n\tgEntire file returned (\tn%d \tglines).\tn\r\n",
          lines_read );
    }
    else if ( lines_read == max_lines_to_read )
    {
      snprintf( buf + strlen(buf), sizeof(buf) - strlen(buf),
-         "\r\n@gMaximum number of @n%d @glines returned.@n\r\n",
+         "\r\n\tgMaximum number of \tn%d \tglines returned.\tn\r\n",
          lines_read );
    }
    else
    {
      snprintf( buf + strlen(buf), sizeof(buf) - strlen(buf),
-         "\r\n%d @glines returned.@n\r\n",
+         "\r\n%d \tglines returned.\tn\r\n",
          lines_read );
    }
 
@@ -4608,7 +4710,7 @@ ACMD(do_plist)
   }
 
   len = 0;
-  len += snprintf(buf + len, sizeof(buf) - len, "@W[ Id] (Lv) Name         Last@n\r\n"
+  len += snprintf(buf + len, sizeof(buf) - len, "\tW[ Id] (Lv) Name         Last\tn\r\n"
                   "%s-------------------------------------%s\r\n", CCCYN(ch, C_NRM),
                   CCNRM(ch, C_NRM));
 
@@ -4681,6 +4783,8 @@ bool change_player_name(struct char_data *ch, struct char_data *vict, char *new_
     CREATE(temp_ch, struct char_data, 1);
     clear_char(temp_ch);
     CREATE(temp_ch->player_specials, struct player_special_data, 1);
+    /* Allocate mobile event list */
+    temp_ch->events = create_list();
     if ((plr_i = load_char(new_name, temp_ch)) > -1) {
       free_char(temp_ch);
       send_to_char(ch, "Sorry, the new name already exists.\r\n");
@@ -4937,5 +5041,203 @@ ACMD(do_zunlock)
   else
   {
     send_to_char(ch, "Unable to save zone changes.  Check syslog!\r\n");
+  }
+}
+
+/* get highest vnum in recent player list  */
+static int get_max_recent(void)
+{
+  struct recent_player *this;
+  int iRet=0;
+
+  this = recent_list;
+
+  while (this)
+  {
+   if (this->vnum > iRet) iRet = this->vnum;
+   this = this->next;
+  }
+
+  return iRet;
+}
+
+/* clear an item in recent player list */
+static void clear_recent(struct recent_player *this)
+{
+  this->vnum = 0;
+  this->time = 0;
+  strcpy(this->name, "");
+  strcpy(this->host, "");
+  this->next = NULL;
+}
+
+/* create new blank player in recent players list */
+static struct recent_player *create_recent(void)
+{
+  struct recent_player *newrecent;
+
+  CREATE(newrecent, struct recent_player, 1);
+  clear_recent(newrecent);
+  newrecent->next = recent_list;
+  recent_list = newrecent;
+
+  newrecent->vnum = get_max_recent();
+  newrecent->vnum++;
+  return newrecent;
+}
+
+/* Add player to recent player list */
+bool AddRecentPlayer(char *chname, char *chhost, bool newplr, bool cpyplr)
+{
+  struct recent_player *this;
+  time_t ct;
+  int max_vnum;
+
+  ct = time(0);  /* Grab the current time */
+
+  this = create_recent();
+
+  if (!this) return FALSE;
+
+  this->time = ct;
+  this->new_player = newplr;
+  this->copyover_player = cpyplr;
+  strcpy(this->host, chhost);
+  strcpy(this->name, chname);
+  max_vnum = get_max_recent();
+  this->vnum = max_vnum;   /* Possibly should be +1 ? */
+
+  return TRUE;
+}
+
+void free_recent_players(void) 
+{
+  struct recent_player *this;
+  struct recent_player *temp;
+  
+  this = recent_list;
+  
+  while((temp = this) != NULL)
+  {
+	this = this->next;
+	free(temp);  
+  }  	
+}
+
+ACMD(do_recent)
+{
+  time_t ct;
+  char *tmstr, arg[MAX_INPUT_LENGTH];
+  int hits = 0, limit = 0, count = 0;
+  struct recent_player *this;
+  bool loc;
+
+  one_argument(argument, arg);
+  if (!*arg) {
+    limit = 0;
+  } else {
+    limit = atoi(arg);
+  }
+
+  if (GET_LEVEL(ch) >= LVL_GRGOD) {  /* If High-Level Imm, then show Host IP */
+    send_to_char(ch, " ID | DATE/TIME           | HOST IP                               | Player Name\r\n");
+  } else {
+    send_to_char(ch, " ID | DATE/TIME           | Player Name\r\n");
+  }
+
+  this = recent_list;
+  while(this)
+  {
+    loc = FALSE;
+    hits++;
+    ct = this->time;
+    tmstr = asctime(localtime(&ct));
+    *(tmstr + strlen(tmstr) - 1) = '\0';   /* Cut off last char */
+    if (this->host && *(this->host)) {
+      if (!strcmp(this->host, "localhost")) loc = TRUE;
+    }
+
+    if ((limit == 0) || (count < limit))
+    {
+      if (GET_LEVEL(ch) >= LVL_GRGOD)   /* If High-Level Imm, then show Host IP */
+      {
+        if (this->new_player == TRUE) {
+          send_to_char(ch, "%3d | %-19.19s | %s%-37s%s | %s %s(New Player)%s\r\n", this->vnum, tmstr, loc ? QRED : "", this->host, QNRM, this->name, QYEL, QNRM);
+        } else if (this->copyover_player == TRUE) {
+          send_to_char(ch, "%3d | %-19.19s | %s%-37s%s | %s %s(Copyover)%s\r\n", this->vnum, tmstr, loc ? QRED : "", this->host, QNRM, this->name, QCYN, QNRM);
+        } else {
+          send_to_char(ch, "%3d | %-19.19s | %s%-37s%s | %s\r\n", this->vnum, tmstr, loc ? QRED : "", this->host, QNRM, this->name);
+        }
+      }
+      else
+      {
+        if (this->new_player == TRUE) {
+          send_to_char(ch, "%3d | %-19.19s | %s %s(New Player)%s\r\n", this->vnum, tmstr, this->name, QYEL, QNRM);
+        } else if (this->copyover_player == TRUE) {
+          send_to_char(ch, "%3d | %-19.19s | %s %s(Copyover)%s\r\n", this->vnum, tmstr, this->name, QCYN, QNRM);
+        } else {
+          send_to_char(ch, "%3d | %-19.19s | %s\r\n", this->vnum, tmstr, this->name);
+        }
+      }
+      count++;
+
+      this = this->next;
+    }
+    else
+    {
+      this = NULL;
+    }
+  }
+
+  ct = time(0);  /* Grab the current time */
+  tmstr = asctime(localtime(&ct));
+  *(tmstr + strlen(tmstr) - 1) = '\0';
+  send_to_char(ch, "Current Server Time: %-19.19s\r\nShowing %d players since last copyover/reboot\r\n", tmstr, hits);
+}
+
+ACMD(do_oset)
+{
+  char arg[MAX_INPUT_LENGTH];
+  char arg2[MAX_INPUT_LENGTH];
+  const char usage[] = "Usage: \r\n"
+                       "Options: alias, apply, longdesc, shortdesc\r\n"
+                       "> oset <object> <option> <value>\r\n";
+  struct obj_data *obj;
+  bool success = TRUE;
+
+  if (IS_NPC(ch) || ch->desc == NULL) {
+    send_to_char(ch, "oset is only usable by connected players.\r\n");
+    return;
+  }
+
+  argument = one_argument(argument, arg);
+
+  if (!*arg)
+    send_to_char(ch, usage);
+  else if (!(obj = get_obj_in_list_vis(ch, arg, NULL, ch->carrying)) && 
+    !(obj = get_obj_in_list_vis(ch, arg, NULL, world[IN_ROOM(ch)].contents)))
+    send_to_char(ch, "You don't seem to have %s %s.\r\n", AN(arg), arg);
+  else {
+     argument = one_argument(argument, arg2);
+     
+     if (!*arg2) 
+       send_to_char(ch, usage);
+     else {
+       if (is_abbrev(arg2, "alias") && (success = oset_alias(obj, argument)))
+         send_to_char(ch, "Object alias set.\r\n");
+       else if (is_abbrev(arg2, "longdesc") && (success = oset_long_description(obj, argument)))
+         send_to_char(ch, "Object long description set.\r\n");
+       else if (is_abbrev(arg2, "shortdesc") && (success = oset_short_description(obj, argument)))
+         send_to_char(ch, "Object short description set.\r\n");
+       else if (is_abbrev(arg2, "apply") && (success = oset_apply(obj, argument)))
+         send_to_char(ch, "Object apply set.\r\n");           
+       else {
+         if (!success) 
+           send_to_char(ch, "%s was unsuccessful.\r\n", arg2);
+         else
+           send_to_char(ch, usage);
+         return;
+       }
+     }
   }
 }

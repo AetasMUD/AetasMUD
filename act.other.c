@@ -31,6 +31,7 @@
 #include "mail.h"  /* for has_mail() */
 #include "shop.h"
 #include "quest.h"
+#include "modify.h"
 
 /* Local defined utility functions */
 /* do_group utility functions */
@@ -118,11 +119,10 @@ ACMD(do_sneak)
   if (percent > GET_SKILL(ch, SKILL_SNEAK) + dex_app_skill[GET_DEX(ch)].sneak)
     return;
 
-  af.type = SKILL_SNEAK;
+  new_affect(&af);
+  af.spell = SKILL_SNEAK;
   af.duration = GET_LEVEL(ch);
-  af.modifier = 0;
-  af.location = APPLY_NONE;
-  af.bitvector = AFF_SNEAK;
+  SET_BIT_AR(af.bitvector, AFF_SNEAK);
   affect_to_char(ch, &af);
 }
 
@@ -255,8 +255,8 @@ ACMD(do_steal)
       gold = (GET_GOLD(vict) * rand_number(1, 10)) / 100;
       gold = MIN(1782, gold);
       if (gold > 0) {
-	GET_GOLD(ch) += gold;
-	GET_GOLD(vict) -= gold;
+		increase_gold(ch, gold);
+		decrease_gold(vict, gold);
         if (gold > 1)
 	  send_to_char(ch, "Bingo!  You got %d gold coins.\r\n", gold);
 	else
@@ -304,6 +304,7 @@ ACMD(do_title)
 {
   skip_spaces(&argument);
   delete_doubledollar(argument);
+  parse_at(argument);
 
   if (IS_NPC(ch))
     send_to_char(ch, "Your title is fine... go away.\r\n");
@@ -321,22 +322,21 @@ ACMD(do_title)
 
 ACMD(do_badge)
 {
- skip_spaces(&argument);
+  skip_spaces(&argument);
  
- if (strlen(argument) > MAX_BADGE_LENGTH) {
-	  send_to_char(ch, "Badges cannot exceed %d characters.\r\n", MAX_BADGE_LENGTH);
-	  }
-   else {
- 
-        if (GET_BADGE(ch))
-          free(GET_BADGE(ch));
-
-	if (!*argument)
-          GET_BADGE(ch) = NULL;
-        else
-          GET_BADGE(ch) = strdup(argument);
-		  send_to_char(ch, "Your badge is now: %s\r\n", GET_BADGE(ch));
-        }
+  if (strlen(argument) > MAX_BADGE_LENGTH) {
+    send_to_char(ch, "Badges cannot exceed %d characters.\r\n", MAX_BADGE_LENGTH);
+  } 
+  else {
+    if (GET_BADGE(ch))
+      free(GET_BADGE(ch));
+    if (!*argument)
+      GET_BADGE(ch) = NULL;
+    else
+      GET_BADGE(ch) = strdup(argument);
+  
+	send_to_char(ch, "Your badge is now: %s\r\n", GET_BADGE(ch));
+  }
 }
 
 static int perform_group(struct char_data *ch, struct char_data *vict)
@@ -595,7 +595,7 @@ ACMD(do_split)
       return;
     }
 
-    GET_GOLD(ch) -= share * (num - 1);
+    decrease_gold(ch, share * (num - 1));
 
     /* Abusing signed/unsigned to make sizeof work. */
     len = snprintf(buf, sizeof(buf), "%s splits %d coins; you receive %d.\r\n",
@@ -607,7 +607,7 @@ ACMD(do_split)
     }
     if (AFF_FLAGGED(k, AFF_GROUP) && IN_ROOM(k) == IN_ROOM(ch) &&
 		!IS_NPC(k) && k != ch) {
-      GET_GOLD(k) += share;
+      increase_gold(k, share);
       send_to_char(k, "%s", buf);
     }
 
@@ -617,7 +617,7 @@ ACMD(do_split)
 	  (IN_ROOM(f->follower) == IN_ROOM(ch)) &&
 	  f->follower != ch) {
 
-	GET_GOLD(f->follower) += share;
+	increase_gold(f->follower, share);
 	send_to_char(f->follower, "%s", buf);
       }
     }
@@ -627,7 +627,7 @@ ACMD(do_split)
     if (rest) {
       send_to_char(ch, "%d coin%s %s not splitable, so you keep the money.\r\n",
 		rest, (rest == 1) ? "" : "s", (rest == 1) ? "was" : "were");
-      GET_GOLD(ch) += rest;
+      increase_gold(ch, rest);
     }
   } else {
     send_to_char(ch, "How many coins do you wish to split with your group?\r\n");
@@ -801,6 +801,8 @@ ACMD(do_display)
 ACMD(do_gen_tog)
 {
   long result;
+  int i;
+  char arg[MAX_INPUT_LENGTH];
 
   const char *tog_messages[][2] = {
     {"You are now safe from summoning by other players.\r\n",
@@ -934,10 +936,19 @@ ACMD(do_gen_tog)
       return;
     }
     result = PRF_TOG_CHK(ch, PRF_BUILDWALK);
-    if (PRF_FLAGGED(ch, PRF_BUILDWALK))
+    if (PRF_FLAGGED(ch, PRF_BUILDWALK)) {
+	  one_argument(argument, arg);
+	  for (i=0; *arg && *(sector_types[i]) != '\n'; i++)
+		if (is_abbrev(arg, sector_types[i]))
+		  break;
+	  if (*(sector_types[i]) == '\n') 
+	    i=0;
+	  GET_BUILDWALK_SECTOR(ch) = i;
+	  send_to_char(ch, "Default sector type is %s\r\n", sector_types[i]);
+	  
       mudlog(CMP, GET_LEVEL(ch), TRUE,
              "OLC: %s turned buildwalk on. Allowed zone %d", GET_NAME(ch), GET_OLC_ZONE(ch));
-    else
+    } else
       mudlog(CMP, GET_LEVEL(ch), TRUE,
              "OLC: %s turned buildwalk off. Allowed zone %d", GET_NAME(ch), GET_OLC_ZONE(ch));
     break;
@@ -1002,4 +1013,117 @@ ACMD(do_gen_tog)
     send_to_char(ch, "%s", tog_messages[subcmd][TOG_OFF]);
 
   return;
+}
+
+void show_happyhour(struct char_data *ch)
+{
+  char happyexp[80], happygold[80], happyqp[80];
+  int secs_left;
+
+  if ((IS_HAPPYHOUR) || (GET_LEVEL(ch) >= LVL_GRGOD))
+  {
+      if (HAPPY_TIME)
+        secs_left = ((HAPPY_TIME - 1) * SECS_PER_MUD_HOUR) + next_tick;
+      else
+        secs_left = 0;
+
+      sprintf(happyqp,   "%s+%d%%%s to Questpoints per quest\r\n", CCYEL(ch, C_NRM), HAPPY_QP,   CCNRM(ch, C_NRM));
+      sprintf(happygold, "%s+%d%%%s to Gold gained per kill\r\n",  CCYEL(ch, C_NRM), HAPPY_GOLD, CCNRM(ch, C_NRM));
+      sprintf(happyexp,  "%s+%d%%%s to Experience per kill\r\n",   CCYEL(ch, C_NRM), HAPPY_EXP,  CCNRM(ch, C_NRM));
+
+      send_to_char(ch, "tbaMUD Happy Hour!\r\n"
+                       "------------------\r\n"
+                       "%s%s%sTime Remaining: %s%d%s hours %s%d%s mins %s%d%s secs\r\n",
+                       (IS_HAPPYEXP || (GET_LEVEL(ch) >= LVL_GOD)) ? happyexp : "",
+                       (IS_HAPPYGOLD || (GET_LEVEL(ch) >= LVL_GOD)) ? happygold : "",
+                       (IS_HAPPYQP || (GET_LEVEL(ch) >= LVL_GOD)) ? happyqp : "",
+                       CCYEL(ch, C_NRM), (secs_left / 3600), CCNRM(ch, C_NRM),
+                       CCYEL(ch, C_NRM), (secs_left % 3600) / 60, CCNRM(ch, C_NRM),
+                       CCYEL(ch, C_NRM), (secs_left % 60), CCNRM(ch, C_NRM) );
+  }
+  else
+  {
+      send_to_char(ch, "Sorry, there is currently no happy hour!\r\n");
+  }
+}
+
+ACMD(do_happyhour)
+{
+  char arg[MAX_INPUT_LENGTH], val[MAX_INPUT_LENGTH];
+  int num;
+
+  if (GET_LEVEL(ch) < LVL_GOD)
+  {
+    show_happyhour(ch);
+    return;
+  }
+
+  /* Only Imms get here, so check args */
+  two_arguments(argument, arg, val);
+
+  if (is_abbrev(arg, "experience"))
+  {
+    num = MIN(MAX((atoi(val)), 0), 1000);
+    HAPPY_EXP = num;
+    send_to_char(ch, "Happy Hour Exp rate set to +%d%%\r\n", HAPPY_EXP);
+  }
+  else if ((is_abbrev(arg, "gold")) || (is_abbrev(arg, "coins")))
+  {
+    num = MIN(MAX((atoi(val)), 0), 1000);
+    HAPPY_GOLD = num;
+    send_to_char(ch, "Happy Hour Gold rate set to +%d%%\r\n", HAPPY_GOLD);
+  }
+  else if ((is_abbrev(arg, "time")) || (is_abbrev(arg, "ticks")))
+  {
+    num = MIN(MAX((atoi(val)), 0), 1000);
+    if (HAPPY_TIME && !num)
+      game_info("Happyhour has been stopped!");
+    else if (!HAPPY_TIME && num)
+      game_info("A Happyhour has started!");
+
+    HAPPY_TIME = num;
+    send_to_char(ch, "Happy Hour Time set to %d ticks (%d hours %d mins and %d secs)\r\n",
+                                HAPPY_TIME,
+                                 (HAPPY_TIME*SECS_PER_MUD_HOUR)/3600,
+                                ((HAPPY_TIME*SECS_PER_MUD_HOUR)%3600) / 60,
+                                 (HAPPY_TIME*SECS_PER_MUD_HOUR)%60 );
+  }
+  else if ((is_abbrev(arg, "qp")) || (is_abbrev(arg, "questpoints")))
+  {
+    num = MIN(MAX((atoi(val)), 0), 1000);
+    HAPPY_QP = num;
+    send_to_char(ch, "Happy Hour Questpoints rate set to +%d%%\r\n", HAPPY_QP);
+  }
+  else if (is_abbrev(arg, "show"))
+  {
+    show_happyhour(ch);
+  }
+  else if (is_abbrev(arg, "default"))
+  {
+    HAPPY_EXP = 100;
+    HAPPY_GOLD = 50;
+    HAPPY_QP  = 50;
+    HAPPY_TIME = 48;
+    game_info("A Happyhour has started!");
+  }
+  else
+  {
+    send_to_char(ch, "Usage: %shappyhour              %s- show usage (this info)\r\n"
+                     "       %shappyhour show         %s- display current settings (what mortals see)\r\n"
+                     "       %shappyhour time <ticks> %s- set happyhour time and start timer\r\n"
+                     "       %shappyhour qp <num>     %s- set qp percentage gain\r\n"
+                     "       %shappyhour exp <num>    %s- set exp percentage gain\r\n"
+                     "       %shappyhour gold <num>   %s- set gold percentage gain\r\n"
+                     "       \tyhappyhour default      \tw- sets a default setting for happyhour\r\n\r\n"
+                     "Configure the happyhour settings and start a happyhour.\r\n"
+                     "Currently 1 hour IRL = %d ticks\r\n"
+                     "If no number is specified, 0 (off) is assumed.\r\nThe command \tyhappyhour time\tn will therefore stop the happyhour timer.\r\n",
+                     CCYEL(ch, C_NRM), CCNRM(ch, C_NRM),
+                     CCYEL(ch, C_NRM), CCNRM(ch, C_NRM),
+                     CCYEL(ch, C_NRM), CCNRM(ch, C_NRM),
+                     CCYEL(ch, C_NRM), CCNRM(ch, C_NRM),
+                     CCYEL(ch, C_NRM), CCNRM(ch, C_NRM),
+                     CCYEL(ch, C_NRM), CCNRM(ch, C_NRM),
+                     (3600 / SECS_PER_MUD_HOUR) );
+  }
 }

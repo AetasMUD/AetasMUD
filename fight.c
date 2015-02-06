@@ -204,7 +204,7 @@ void check_killer(struct char_data *ch, struct char_data *vict)
     return;
 
   SET_BIT_AR(PLR_FLAGS(ch), PLR_KILLER);
-  send_to_char(ch, "If you want to be a @RPLAYER KILLER@n, so be it...\r\n");
+  send_to_char(ch, "If you want to be a \tRPLAYER KILLER\tn, so be it...\r\n");
   mudlog(BRF, LVL_IMMORT, TRUE, "PC Killer bit set on %s for initiating attack on %s at %s.",
 	    GET_NAME(ch), GET_NAME(vict), world[IN_ROOM(vict)].name);
 }
@@ -503,7 +503,7 @@ void death_cry(struct char_data *ch)
   if (IS_UNDEAD(ch)) {
    act("$n shrieks loudly as $s animated body collapses into a heap.", FALSE, ch, 0, 0, TO_ROOM);
 
-  for (door = 0; door < NUM_OF_DIRS; door++)
+  for (door = 0; door < DIR_COUNT; door++)
    if (CAN_GO(ch, door))
     send_to_room(world[IN_ROOM(ch)].dir_option[door]->to_room, "Your blood freezes as you hear a horrible shriek.\r\n");
   }
@@ -570,15 +570,22 @@ void die(struct char_data * ch, struct char_data * killer)
 static void perform_group_gain(struct char_data *ch, int base,
 			     struct char_data *victim)
 {
-  int share;
+  int share, hap_share;
 
   share = MIN(CONFIG_MAX_EXP_GAIN, MAX(1, base));
+  
+  if ((IS_HAPPYHOUR) && (IS_HAPPYEXP))
+  {
+    /* This only reports the correct amount - the calc is done in gain_exp */
+    hap_share = share + (int)((float)share * ((float)HAPPY_EXP / (float)(100)));
+    share = MIN(CONFIG_MAX_EXP_GAIN, MAX(1, hap_share));
+  }
 
   if (GET_LEVEL(ch) <= 49) {
    if (share > 1)
-    send_to_char(ch, "@YYou receive your share of experience -- %d points.@n\r\n", share);
+    send_to_char(ch, "\tYYou receive your share of experience -- %d points.\tn\r\n", share);
    else
-    send_to_char(ch, "@YYou receive your share of experience -- one measly little point!@n\r\n");
+    send_to_char(ch, "\tYYou receive your share of experience -- one measly little point!\tn\r\n");
 	}
 
   gain_exp(ch, share);
@@ -603,7 +610,7 @@ static void group_gain(struct char_data *ch, struct char_data *victim)
     if (AFF_FLAGGED(f->follower, AFF_GROUP) && IN_ROOM(f->follower) == IN_ROOM(ch))
       tot_members++;
 
-  /* round up to the next highest tot_members */
+  /* round up to the nearest tot_members */
   tot_gain = (GET_EXP(victim) / 3) + tot_members - 1;
 
   /* prevent illegal xp creation when killing players */
@@ -625,7 +632,7 @@ static void group_gain(struct char_data *ch, struct char_data *victim)
 
 static void solo_gain(struct char_data *ch, struct char_data *victim)
 {
-  int exp;
+  int exp, happy_exp;
 
   exp = MIN(CONFIG_MAX_EXP_GAIN, GET_EXP(victim) / 3);
 
@@ -636,12 +643,17 @@ static void solo_gain(struct char_data *ch, struct char_data *victim)
     exp += MAX(0, (exp * MIN(8, (GET_LEVEL(victim) - GET_LEVEL(ch)))) / 8);
 
   exp = MAX(exp, 1);
+  
+  if (IS_HAPPYHOUR && IS_HAPPYEXP) {
+    happy_exp = exp + (int)((float)exp * ((float)HAPPY_EXP / (float)(100)));
+    exp = MAX(happy_exp, 1);
+  }
 
   if (GET_LEVEL(ch) <= 49) {
    if (exp > 1)
-    send_to_char(ch, "@YYou receive %d experience points.@n\r\n", exp);
+    send_to_char(ch, "\tYYou receive %d experience points.\tn\r\n", exp);
    else
-    send_to_char(ch, "@YYou receive one lousy experience point.@n\r\n");
+    send_to_char(ch, "\tYYou receive one lousy experience point.\tn\r\n");
 }
 
   gain_exp(ch, exp);
@@ -706,49 +718,49 @@ static void dam_message(int dam, struct char_data *ch, struct char_data *victim,
     {
       "$n tickles $N as $e #W $M.",	/* 1: 1..2  */
       "You tickle $N as you #w $M.",
-      "@R$n tickles you as $e #W you.@n"
+      "$n tickles you as $e #W you."
     },
 
     {
       "$n barely #W $N.",		/* 2: 3..4  */
       "You barely #w $N.",
-      "@R$n barely #W you.@n"
+      "$n barely #W you."
     },
 
     {
       "$n #W $N.",			/* 3: 5..6  */
       "You #w $N.",
-      "@R$n #W you.@n"
+      "$n #W you."
     },
 
     {
       "$n #W $N hard.",			/* 4: 7..10  */
       "You #w $N hard.",
-      "@R$n #W you hard.@n"
+      "$n #W you hard."
     },
 
     {
       "$n #W $N very hard.",		/* 5: 11..14  */
       "You #w $N very hard.",
-      "@R$n #W you very hard.@n"
+      "$n #W you very hard."
     },
 
     {
       "$n #W $N extremely hard.",	/* 6: 15..19  */
       "You #w $N extremely hard.",
-      "@R$n #W you extremely hard.@n"
+      "$n #W you extremely hard."
     },
 
     {
       "$n massacres $N to small fragments with $s #w.",	/* 7: 19..23 */
       "You massacre $N to small fragments with your #w.",
-      "@R$n massacres you to small fragments with $s #w.@n"
+      "$n massacres you to small fragments with $s #w."
     },
 
     {
       "$n OBLITERATES $N with $s deadly #w!!",	/* 8: > 23   */
       "You OBLITERATE $N with your deadly #w!!",
-      "@R$n OBLITERATES you with $s deadly #w!!@n"
+      "$n OBLITERATES you with $s deadly #w!!"
     }
   };
 
@@ -780,7 +792,7 @@ static void dam_message(int dam, struct char_data *ch, struct char_data *victim,
 
   /* damage message to damagee */
   if (GET_LEVEL(victim) >= LVL_IMMORT)
-    send_to_char(victim, "(%d)", dam);
+    send_to_char(victim, "\tR(%d)", dam);
   send_to_char(victim, CCRED(ch, C_SPR));
   buf = replace_string(dam_weapons[msgnum].to_victim,
 	  attack_hit_text[w_type].singular, attack_hit_text[w_type].plural);
@@ -795,7 +807,7 @@ static void dam_message(int dam, struct char_data *ch, struct char_data *victim,
    if (bleed >= 90) {
 
  sprintf(buf,
-  "@rA stream of your blood sprays into the air as a result of $n's %s!@n",
+  "\trA stream of your blood sprays into the air as a result of $n's %s!\tn",
    attack_hit_text[w_type].singular);
    act(buf, FALSE, ch, NULL, victim, TO_VICT | TO_SLEEP);
 
@@ -805,7 +817,7 @@ static void dam_message(int dam, struct char_data *ch, struct char_data *victim,
    act(buf, FALSE, victim, NULL, ch, TO_NOTVICT); 
 
  sprintf(buf,
-  "@rA stream of $N's blood sprays into the air as a result of your %s!@n",
+  "\trA stream of $N's blood sprays into the air as a result of your %s!\tn",
    attack_hit_text[w_type].singular);
    act(buf, FALSE, ch, NULL, victim, TO_CHAR);
 
@@ -891,7 +903,7 @@ int skill_message(int dam, struct char_data *ch, struct char_data *vict,
  *	> 0	How much damage done. */
 int damage(struct char_data *ch, struct char_data *victim, int dam, int attacktype)
 {
-  long local_gold = 0;
+  long local_gold = 0, happy_gold = 0;
   char local_buf[256];
   struct char_data *tmp_char;
   struct obj_data *corpse_obj;
@@ -1057,6 +1069,12 @@ int damage(struct char_data *ch, struct char_data *victim, int dam, int attackty
     }
     /* Cant determine GET_GOLD on corpse, so do now and store */
     if (IS_NPC(victim)) {
+      if ((IS_HAPPYHOUR) && (IS_HAPPYGOLD))
+      {
+        happy_gold = (long)(GET_GOLD(victim) * (((float)(HAPPY_GOLD))/(float)100));
+        happy_gold = MAX(0, happy_gold);
+        increase_gold(victim, happy_gold);
+      }
       local_gold = GET_GOLD(victim);
       sprintf(local_buf,"%ld", (long)local_gold);
     }
@@ -1247,7 +1265,7 @@ void weapon_spells(struct char_data *ch, struct char_data *vict, struct obj_data
 
   rndm=rand_number(1,100);
   if(GET_WEAPON_SPELL_PCT(wpn,i)>=rndm) {
-   act("@c$p suddenly begins to hum and shake in your hand.@n",TRUE,ch,wpn,0,TO_CHAR);
+   act("\tc$p suddenly begins to hum and shake in your hand.\tn",TRUE,ch,wpn,0,TO_CHAR);
    act("$p suddenly begins to hum and shake in $n's hand.",TRUE,ch,wpn,0,TO_ROOM);
 
    if (spell_info[GET_WEAPON_SPELL(wpn,i)].violent == TRUE) 
@@ -1304,7 +1322,7 @@ void perform_violence(void)
 
     /* should master auto-assist followers?  */
     if (ch->master && PRF_FLAGGED(ch->master, PRF_AUTOASSIST) &&
-        FIGHTING(ch) && !FIGHTING(ch->master) &&
+        FIGHTING(ch) && !FIGHTING(ch->master) && !IS_NPC(ch) &&
         (IN_ROOM(ch->master) == IN_ROOM(ch)) && !IS_NPC(ch->master))
       do_assist(ch->master, GET_NAME(ch), 0, 0);
 

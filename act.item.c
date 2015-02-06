@@ -162,16 +162,19 @@ ACMD(do_put)
 
 static int can_take_obj(struct char_data *ch, struct obj_data *obj)
 {
-  if (IS_CARRYING_N(ch) >= CAN_CARRY_N(ch)) {
-    act("$p: you can't carry that many items.", FALSE, ch, obj, 0, TO_CHAR);
-    return (0);
-  } else if ((IS_CARRYING_W(ch) + GET_OBJ_WEIGHT(obj)) > CAN_CARRY_W(ch)) {
-    act("$p: you can't carry that much weight.", FALSE, ch, obj, 0, TO_CHAR);
-    return (0);
-  } else if (!(CAN_WEAR(obj, ITEM_WEAR_TAKE))) {
-    act("$p: you can't take that!", FALSE, ch, obj, 0, TO_CHAR);
-    return (0);
-  } else if (OBJ_SAT_IN_BY(obj)){
+  if (!PRF_FLAGGED(ch, PRF_NOHASSLE)) {
+    if (IS_CARRYING_N(ch) >= CAN_CARRY_N(ch)) {
+      act("$p: you can't carry that many items.", FALSE, ch, obj, 0, TO_CHAR);
+      return (0);
+    } else if ((IS_CARRYING_W(ch) + GET_OBJ_WEIGHT(obj)) > CAN_CARRY_W(ch)) {
+      act("$p: you can't carry that much weight.", FALSE, ch, obj, 0, TO_CHAR);
+      return (0);
+    } else if (!(CAN_WEAR(obj, ITEM_WEAR_TAKE))) {
+      act("$p: you can't take that!", FALSE, ch, obj, 0, TO_CHAR);
+      return (0);
+    }
+  }
+  if (OBJ_SAT_IN_BY(obj)){
     act("It appears someone is sitting on $p..", FALSE, ch, obj, 0, TO_CHAR);
     return (0);
   }
@@ -187,7 +190,7 @@ static void get_check_money(struct char_data *ch, struct obj_data *obj)
 
   extract_obj(obj);
 
-  GET_GOLD(ch) += value;
+  increase_gold(ch, value);
 
   if (value == 1)
     send_to_char(ch, "There was 1 coin.\r\n");
@@ -425,7 +428,7 @@ static void perform_drop_gold(struct char_data *ch, int amount, byte mode, room_
 
       send_to_char(ch, "You drop some gold which disappears in a puff of smoke!\r\n");
     }
-    GET_GOLD(ch) -= amount;
+    decrease_gold(ch, amount);
   }
 }
 
@@ -664,8 +667,9 @@ static void perform_give_gold(struct char_data *ch, struct char_data *vict,
   act(buf, TRUE, ch, 0, vict, TO_NOTVICT);
 
   if (IS_NPC(ch) || (GET_LEVEL(ch) < LVL_GOD))
-    GET_GOLD(ch) -= amount;
-  GET_GOLD(vict) += amount;
+    decrease_gold(ch, amount);
+ 
+  increase_gold(vict, amount);
 
   bribe_mtrigger(vict, ch, amount);
 }
@@ -922,15 +926,14 @@ ACMD(do_drink)
   if (GET_COND(ch, HUNGER) > 20)
     send_to_char(ch, "You are full.\r\n");
 
-  if (GET_OBJ_VAL(temp, 3)) { /* The crap was poisoned ! */
+  if (GET_OBJ_VAL(temp, 3) && GET_LEVEL(ch) < LVL_IMMORT) { /* The crap was poisoned ! */
     send_to_char(ch, "Oops, it tasted rather strange!\r\n");
     act("$n chokes and utters some strange sounds.", TRUE, ch, 0, 0, TO_ROOM);
 
-    af.type = SPELL_POISON;
+    new_affect(&af);
+    af.spell = SPELL_POISON;
     af.duration = amount * 3;
-    af.modifier = 0;
-    af.location = APPLY_NONE;
-    af.bitvector = AFF_POISON;
+    SET_BIT_AR(af.bitvector, AFF_POISON);
     affect_join(ch, &af, FALSE, FALSE, FALSE, FALSE);
   }
   /* Empty the container (unless unlimited), and no longer poison. */
@@ -1002,11 +1005,10 @@ ACMD(do_eat)
     send_to_char(ch, "Oops, that tasted rather strange!\r\n");
     act("$n coughs and utters some strange sounds.", FALSE, ch, 0, 0, TO_ROOM);
 
-    af.type = SPELL_POISON;
+    new_affect(&af);
+    af.spell = SPELL_POISON;
     af.duration = amount * 2;
-    af.modifier = 0;
-    af.location = APPLY_NONE;
-    af.bitvector = AFF_POISON;
+    SET_BIT_AR(af.bitvector, AFF_POISON);
     affect_join(ch, &af, FALSE, FALSE, FALSE, FALSE);
   }
   if (subcmd == SCMD_EAT)
@@ -1609,7 +1611,7 @@ ACMD(do_sac)
       break;
       default:
         send_to_char(ch, "You sacrifice %s to the Gods.\r\nYou receive one gold coin for your humility.\r\n", GET_OBJ_SHORT(j));
-        GET_GOLD(ch) += 1;
+        increase_gold(ch, 1);
       break;
   }
   for (jj = j->contains; jj; jj = next_thing2) {

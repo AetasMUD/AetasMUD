@@ -29,7 +29,7 @@ static int extractions_pending = 0;
 /* local file scope functions */
 static int apply_ac(struct char_data *ch, int eq_pos);
 static void update_object(struct obj_data *obj, int use);
-static void affect_modify(struct char_data *ch, byte loc, sbyte mod, long bitv, bool add);
+static void affect_modify_ar(struct char_data * ch, byte loc, sbyte mod, int bitv[], bool add);
 
 
 char *fname(const char *namelist)
@@ -50,7 +50,7 @@ int is_name(const char *str, const char *namelist)
 {
   const char *curname, *curstr;
 
-  if (!*str || !*namelist || !str || !namelist)
+  if (!str || !namelist || !*str || !*namelist)
     return (0);
 
   curname = namelist;
@@ -203,19 +203,7 @@ void aff_apply_modify(struct char_data *ch, byte loc, sbyte mod, char *msg)
   } /* switch */
 }
 
-static void affect_modify(struct char_data * ch, byte loc, sbyte mod, long bitv, bool add)
-{
-  if (add) {
-    SET_BIT_AR(AFF_FLAGS(ch), bitv);
-  } else {
-    REMOVE_BIT_AR(AFF_FLAGS(ch), bitv);
-    mod = -mod;
-  }
-
-  aff_apply_modify(ch, loc, mod, "affect_modify");
-}
-
-void affect_modify_ar(struct char_data * ch, byte loc, sbyte mod, int bitv[], bool add)
+static void affect_modify_ar(struct char_data * ch, byte loc, sbyte mod, int bitv[], bool add)
 {
   int i , j;
 
@@ -251,7 +239,7 @@ void affect_total(struct char_data *ch)
   }
 
   for (af = ch->affected; af; af = af->next)
-    affect_modify(ch, af->location, af->modifier, af->bitvector, FALSE);
+    affect_modify_ar(ch, af->location, af->modifier, af->bitvector, FALSE);
 
   ch->aff_abils = ch->real_abils;
 
@@ -264,7 +252,7 @@ void affect_total(struct char_data *ch)
   }
 
   for (af = ch->affected; af; af = af->next)
-    affect_modify(ch, af->location, af->modifier, af->bitvector, TRUE);
+    affect_modify_ar(ch, af->location, af->modifier, af->bitvector, TRUE);
 
   /* Make certain values are between 0..25, not < 0 and not > 25! */
   i = (IS_NPC(ch) || GET_LEVEL(ch) >= LVL_GRGOD) ? 25 : 18;
@@ -299,7 +287,7 @@ void affect_to_char(struct char_data *ch, struct affected_type *af)
   affected_alloc->next = ch->affected;
   ch->affected = affected_alloc;
 
-  affect_modify(ch, af->location, af->modifier, af->bitvector, TRUE);
+  affect_modify_ar(ch, af->location, af->modifier, af->bitvector, TRUE);
   affect_total(ch);
 }
 
@@ -315,20 +303,20 @@ void affect_remove(struct char_data *ch, struct affected_type *af)
     return;
   }
 
-  affect_modify(ch, af->location, af->modifier, af->bitvector, FALSE);
+  affect_modify_ar(ch, af->location, af->modifier, af->bitvector, FALSE);
   REMOVE_FROM_LIST(af, ch->affected, next);
   free(af);
   affect_total(ch);
 }
 
-/* Call affect_remove with every spell of spelltype "skill" */
+/* Call affect_remove with every affect from the spell "type" */
 void affect_from_char(struct char_data *ch, int type)
 {
   struct affected_type *hjp, *next;
 
   for (hjp = ch->affected; hjp; hjp = next) {
     next = hjp->next;
-    if (hjp->type == type)
+    if (hjp->spell == type)
       affect_remove(ch, hjp);
   }
 }
@@ -340,7 +328,7 @@ bool affected_by_spell(struct char_data *ch, int type)
   struct affected_type *hjp;
 
   for (hjp = ch->affected; hjp; hjp = hjp->next)
-    if (hjp->type == type)
+    if (hjp->spell == type)
       return (TRUE);
 
   return (FALSE);
@@ -355,7 +343,7 @@ void affect_join(struct char_data *ch, struct affected_type *af,
   for (hjp = ch->affected; !found && hjp; hjp = next) {
     next = hjp->next;
 
-    if ((hjp->type == af->type) && (hjp->location == af->location)) {
+    if ((hjp->spell == af->spell) && (hjp->location == af->location)) {
       if (add_dur)
 	af->duration += hjp->duration;
       else if (avg_dur)

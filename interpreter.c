@@ -38,12 +38,14 @@
 #include "asciimap.h"
 #include "prefedit.h"
 #include "ibt.h"
+#include "mud_event.h"
 
 /* local (file scope) functions */
 static int perform_dupe_check(struct descriptor_data *d);
 static struct alias_data *find_alias(struct alias_data *alias_list, char *str);
 static void perform_complex_alias(struct txt_q *input_q, char *orig, struct alias_data *a);
 static int _parse_name(char *arg, char *name);
+static bool perform_new_char_dupe_check(struct descriptor_data *d);
 /* sort_commands utility */
 static int sort_commands_helper(const void *a, const void *b);
 
@@ -70,6 +72,14 @@ cpp_extern const struct command_info cmd_info[] = {
   { "west"     , "w"       , POS_STANDING, do_move     , 0, SCMD_WEST },
   { "up"       , "u"       , POS_STANDING, do_move     , 0, SCMD_UP },
   { "down"     , "d"       , POS_STANDING, do_move     , 0, SCMD_DOWN },
+  { "northwest", "northw"  , POS_STANDING, do_move     , 0, SCMD_NW },
+  { "nw"       , "nw"      , POS_STANDING, do_move     , 0, SCMD_NW },
+  { "northeast", "northe"  , POS_STANDING, do_move     , 0, SCMD_NE },
+  { "ne"       , "ne"      , POS_STANDING, do_move     , 0,  SCMD_NE },
+  { "southeast", "southe"  , POS_STANDING, do_move     , 0, SCMD_SE },
+  { "se"       , "se"      , POS_STANDING, do_move     , 0, SCMD_SE },
+  { "southwest", "southw"  , POS_STANDING, do_move     , 0, SCMD_SW },
+  { "sw"       , "sw"      , POS_STANDING, do_move     , 0, SCMD_SW },
 
   /* now, the main list */
   { "at"       , "at"      , POS_DEAD    , do_at       , LVL_IMMORT, 0 },
@@ -166,10 +176,12 @@ cpp_extern const struct command_info cmd_info[] = {
   { "gtell"    , "gt"      , POS_SLEEPING, do_gsay     , 0, 0 },
 
   { "help"     , "h"       , POS_DEAD    , do_help     , 0, 0 },
+  { "happyhour", "ha"      , POS_DEAD    , do_happyhour, 0, 0 },
   { "hedit"    , "hedit"   , POS_DEAD    , do_oasis_hedit, LVL_GOD , 0 },
   { "hindex"   , "hind"    , POS_DEAD    , do_hindex   , 0, 0 },
   { "helpcheck", "helpch"  , POS_DEAD    , do_helpcheck, LVL_GOD, 0 },
   { "hide"     , "hi"      , POS_RESTING , do_hide     , 1, 0 },
+  { "hindex"   , "hind"    , POS_DEAD    , do_hindex   , 0, 0 },
   { "handbook" , "handb"   , POS_DEAD    , do_gen_ps   , LVL_IMMORT, SCMD_HANDBOOK },
   { "hcontrol" , "hcontrol", POS_DEAD    , do_hcontrol , LVL_GRGOD, 0 },
   { "history"  , "history" , POS_DEAD    , do_history, 0, 0},
@@ -229,6 +241,7 @@ cpp_extern const struct command_info cmd_info[] = {
   { "olc"      , "olc"     , POS_DEAD    , do_show_save_list, LVL_BUILDER, 0 },
   { "olist"    , "olist"   , POS_DEAD    , do_oasis_list, LVL_BUILDER, SCMD_OASIS_OLIST },
   { "oedit"    , "oedit"   , POS_DEAD    , do_oasis_oedit, LVL_BUILDER, 0 },
+  { "oset"     , "oset"    , POS_DEAD    , do_oset,        LVL_BUILDER, 0 },  
   { "ocopy"    , "ocopy"   , POS_DEAD    , do_oasis_copy, LVL_GOD, CON_OEDIT },
 
   { "put"      , "p"       , POS_RESTING , do_put      , 0, 0 },
@@ -261,6 +274,7 @@ cpp_extern const struct command_info cmd_info[] = {
   { "reload"   , "reload"  , POS_DEAD    , do_reboot   , LVL_IMPL, 0 },
   { "recite"   , "reci"    , POS_RESTING , do_use      , 0, SCMD_RECITE },
   { "receive"  , "rece"    , POS_STANDING, do_not_here , 1, 0 },
+  { "recent"   , "recent"  , POS_DEAD    , do_recent   , LVL_IMMORT, 0 },
   { "remove"   , "rem"     , POS_RESTING , do_remove   , 0, 0 },
   { "rent"     , "rent"    , POS_STANDING, do_not_here , 1, 0 },
   { "report"   , "repo"    , POS_RESTING , do_report   , 0, 0 },
@@ -345,6 +359,7 @@ cpp_extern const struct command_info cmd_info[] = {
   { "whois"    , "whoi"    , POS_DEAD    , do_whois    , 0, 0 },
   { "whoami"   , "whoami"  , POS_DEAD    , do_gen_ps   , 0, SCMD_WHOAMI },
   { "where"    , "where"   , POS_RESTING , do_where    , 1, 0 },
+  { "whirlwind", "whirl"   , POS_FIGHTING, do_whirlwind, 0, 0 },
   { "whisper"  , "whisper" , POS_RESTING , do_spec_comm, 0, SCMD_WHISPER },
   { "wield"    , "wie"     , POS_RESTING , do_wield    , 0, 0 },
   { "wimpy"    , "wimp"    , POS_SLEEPING, do_wimpy    , 0, 0 },
@@ -1196,6 +1211,7 @@ static int perform_dupe_check(struct descriptor_data *d)
   REMOVE_BIT_AR(PLR_FLAGS(d->character), PLR_WRITING);
   REMOVE_BIT_AR(AFF_FLAGS(d->character), AFF_GROUP);
   STATE(d) = CON_PLAYING;
+  MXPSendTag( d, "<VERSION>" );
 
   switch (mode) {
   case RECON:
@@ -1220,6 +1236,59 @@ static int perform_dupe_check(struct descriptor_data *d)
   }
 
   return (1);
+}
+
+/* New Char dupe-check called at the start of character creation */
+static bool perform_new_char_dupe_check(struct descriptor_data *d)
+{
+  struct descriptor_data *k, *next_k;
+  bool found = FALSE;
+
+  /* Now that this descriptor has successfully logged in, disconnect all
+   * other descriptors controlling a character with the same ID number. */
+
+  for (k = descriptor_list; k; k = next_k) {
+    next_k = k->next;
+
+    if (k == d)
+      continue;
+
+    /* Do the player names match? */
+    if (!strcmp(GET_NAME(k->character), GET_NAME(d->character))) {
+      /* Check the other character is still in creation? */
+      if ((STATE(k) > CON_PLAYING) && (STATE(k) < CON_QCLASS)) {
+        /* Boot the older one */
+        k->character->desc = NULL;
+        k->character = NULL;
+        k->original = NULL;
+        write_to_output(k, "\r\nMultiple login detected -- disconnecting.\r\n");
+        STATE(k) = CON_CLOSE;
+
+        mudlog(NRM, LVL_GOD, TRUE, "Multiple logins detected in char creation for %s.", GET_NAME(d->character));
+
+        found = TRUE;
+      } else {
+        /* Something went VERY wrong, boot both chars */
+        k->character->desc = NULL;
+        k->character = NULL;
+        k->original = NULL;
+        write_to_output(k, "\r\nMultiple login detected -- disconnecting.\r\n");
+        STATE(k) = CON_CLOSE;
+
+        d->character->desc = NULL;
+        d->character = NULL;
+        d->original = NULL;
+        write_to_output(d, "\r\nSorry, due to multiple connections, all your connections are being closed.\r\n");
+        write_to_output(d, "\r\nPlease reconnect.\r\n");
+        STATE(d) = CON_CLOSE;
+
+        mudlog(NRM, LVL_GOD, TRUE, "SYSERR: Multiple logins with 1st in-game and the 2nd in char creation.");
+
+        found = TRUE;
+      }
+    }
+  }
+  return (found);
 }
 
 /* load the player, put them in the right room - used by copyover_recover too */
@@ -1272,6 +1341,42 @@ int enter_player_game (struct descriptor_data *d)
     return load_result;
 }
 
+EVENTFUNC(get_protocols)
+{
+	struct descriptor_data *d;
+	struct mud_event_data *pMudEvent;
+	char buf[MAX_STRING_LENGTH];
+	int len;
+	
+	if (event_obj == NULL)
+	  return 0;
+	  
+	pMudEvent = (struct mud_event_data *) event_obj;
+	d = (struct descriptor_data *) pMudEvent->pStruct;  
+	
+	/* Clear extra white space from the "protocol scroll" */
+	write_to_output(d, "[H[J");
+
+	len = snprintf(buf, MAX_STRING_LENGTH,   "\tO[\toClient\tO] \tw%s\tn | ", d->pProtocol->pVariables[eMSDP_CLIENT_ID]->pValueString);
+	
+	if (d->pProtocol->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt)
+	  len += snprintf(buf + len, MAX_STRING_LENGTH - len, "\tO[\toColors\tO] \tw256\tn | ");
+	else if (d->pProtocol->pVariables[eMSDP_ANSI_COLORS]->ValueInt)
+      len += snprintf(buf + len, MAX_STRING_LENGTH - len, "\tO[\toColors\tO] \twAnsi\tn | ");
+	else
+      len += snprintf(buf + len, MAX_STRING_LENGTH - len, "[Colors] No Color | ");
+ 
+	len += snprintf(buf + len, MAX_STRING_LENGTH - len,   "\tO[\toMXP\tO] \tw%s\tn | ", d->pProtocol->bMXP ? "Yes" : "No");
+	len += snprintf(buf + len, MAX_STRING_LENGTH - len,   "\tO[\toMSDP\tO] \tw%s\tn | ", d->pProtocol->bMSDP ? "Yes" : "No");	  
+	len += snprintf(buf + len, MAX_STRING_LENGTH - len,   "\tO[\toATCP\tO] \tw%s\tn\r\n\r\n", d->pProtocol->bATCP ? "Yes" : "No");
+		 
+	write_to_output(d, buf, 0);	 
+		  
+	write_to_output(d, GREETINGS, 0); 
+	STATE(d) = CON_GET_NAME;
+	return 0;
+}
+
 /* deal with newcomers and other non-playing sockets */
 void nanny(struct descriptor_data *d, char *arg)
 {
@@ -1310,11 +1415,19 @@ void nanny(struct descriptor_data *d, char *arg)
 
   /* Not in OLC. */
   switch (STATE(d)) {
+  case CON_GET_PROTOCOL:
+		write_to_output(d, "Collecting Protocol Information... Please Wait.\r\n"); 
+		return;
+  break;
   case CON_GET_NAME:		/* wait for input of name */
     if (d->character == NULL) {
       CREATE(d->character, struct char_data, 1);
       clear_char(d->character);
       CREATE(d->character->player_specials, struct player_special_data, 1);
+      
+      /* Allocate mobile event list */
+      d->character->events = create_list();
+
       GET_HOST(d->character) = strdup(d->host);
       d->character->desc = d;
     }
@@ -1349,6 +1462,9 @@ void nanny(struct descriptor_data *d, char *arg)
           CREATE(d->character, struct char_data, 1);
           clear_char(d->character);
           CREATE(d->character->player_specials, struct player_special_data, 1);
+          
+          /* Allocate mobile event list */
+          d->character->events = create_list();
 
           if (GET_HOST(d->character))
             free(GET_HOST(d->character));
@@ -1358,7 +1474,7 @@ void nanny(struct descriptor_data *d, char *arg)
           CREATE(d->character->player.name, char, strlen(tmp_name) + 1);
           strcpy(d->character->player.name, CAP(tmp_name));	/* strcpy: OK (size checked above) */
           GET_PFILEPOS(d->character) = player_i;
-          write_to_output(d, "Did I get that right, %s (Y/N)? ", tmp_name);
+          write_to_output(d, "Did I get that right, %s (\t(Y\t)/\t(N\t))? ", tmp_name);
           STATE(d) = CON_NAME_CNFRM;
         } else {
           /* undo it just in case they are set */
@@ -1383,7 +1499,7 @@ void nanny(struct descriptor_data *d, char *arg)
         CREATE(d->character->player.name, char, strlen(tmp_name) + 1);
         strcpy(d->character->player.name, CAP(tmp_name));	/* strcpy: OK (size checked above) */
 
-        write_to_output(d, "Did I get that right, %s (Y/N)? ", tmp_name);
+        write_to_output(d, "Did I get that right, %s (\t(Y\t)/\t(N\t))? ", tmp_name);
         STATE(d) = CON_NAME_CNFRM;
       }
     }
@@ -1403,6 +1519,7 @@ void nanny(struct descriptor_data *d, char *arg)
 	STATE(d) = CON_CLOSE;
 	return;
       }
+      perform_new_char_dupe_check(d);
       write_to_output(d, "New character.\r\nGive me a password for %s: ", GET_PC_NAME(d->character));
       echo_off(d);
       STATE(d) = CON_NEWPASSWD;
@@ -1482,6 +1599,12 @@ void nanny(struct descriptor_data *d, char *arg)
       else
         mudlog(BRF, LVL_IMMORT, TRUE, "%s has connected.", GET_NAME(d->character));
 
+      /* Add to the list of 'recent' players (since last reboot) */
+      if (AddRecentPlayer(GET_NAME(d->character), d->host, FALSE, FALSE) == FALSE)
+      {
+        mudlog(BRF, MAX(LVL_IMMORT, GET_INVIS_LEV(d->character)), TRUE, "Failure to AddRecentPlayer (returned FALSE).");
+      }
+    
       if (load_result) {
         write_to_output(d, "\r\n\r\n\007\007\007"
 		"%s%d LOGIN FAILURE%s SINCE LAST SUCCESSFUL LOGIN.%s\r\n",
@@ -1556,7 +1679,7 @@ void nanny(struct descriptor_data *d, char *arg)
 
   /**********************  SEX Selection *************************************/
   clear_screen(d);
-  write_to_output(d, "\r\n\r\n@cWhat will be your gender? [@nM@c]@nale@c or [@nF@c]@nemale@c?@n ");
+  write_to_output(d, "\r\n\r\n\tcWhat will be your gender? [\tnM\tc]\tnale\tc or [\tnF\tc]\tnemale\tc?\tn ");
   STATE(d) = CON_QSEX;
   break;
 
@@ -1571,15 +1694,15 @@ void nanny(struct descriptor_data *d, char *arg)
       d->character->player.sex = SEX_FEMALE;
       break;
     default:
-      write_to_output(d, "\r\n\r\n@wThat is not a gender..@n\r\n"
-		"@cWhat will be your gender? [@nM@c]@nale@c or [@nF@c]@nemale@c?@n ");
+      write_to_output(d, "\r\n\r\n\twThat is not a gender..\tn\r\n"
+		"\tcWhat will be your gender? [\tnM\tc]\tnale\tc or [\tnF\tc]\tnemale\tc?\tn ");
       return;
     }
 
   /**********************  CLASS Selection *************************************/
     clear_screen(d);
     write_to_output(d, "%s", class_menu);
-    write_to_output(d, "\r\n@GClass:@n ");
+    write_to_output(d, "\r\n\tGClass:\tn ");
     STATE(d) = CON_QCLASS;
     break;
 
@@ -1587,7 +1710,7 @@ void nanny(struct descriptor_data *d, char *arg)
     load_result = parse_class_by_abbrev(arg); 
     if (load_result == CLASS_UNDEFINED) 
 	{
-      write_to_output(d, "\r\n@WThat's not a class.@n\r\n@GClass:@n ");
+      write_to_output(d, "\r\n\tWThat's not a class.\tn\r\n\tGClass:\tn ");
       return;
     } 
 	else
@@ -1601,7 +1724,7 @@ void nanny(struct descriptor_data *d, char *arg)
   {
     clear_screen(d);
     write_to_output(d, "%s", race_mage_menu);
-    write_to_output(d, "\r\n@GRace:@n ");
+    write_to_output(d, "\r\n\tGRace:\tn ");
     STATE(d) = CON_QMAGERACE;
     break;
 
@@ -1610,14 +1733,14 @@ void nanny(struct descriptor_data *d, char *arg)
 	
       if (load_result == RACE_UNDEFINED)
 	  {
-        write_to_output(d, "\r\n@WThat is not a valid race for Mages.@n\r\n@GRace:@n ");
+        write_to_output(d, "\r\n\tWThat is not a valid race for Mages.\tn\r\n\tGRace:\tn ");
         return;
       }
       else
         GET_RACE(d->character) = load_result;
 
       write_to_output(d, 
-	  "\r\n@cWhat alignment will you begin with? [@Bg@c]@Bood@c, [@yn@c]@yeutral@c, or [@Re@c]@Rvil@c?@n ");
+	  "\r\n\tcWhat alignment will you begin with? [\tBg\tc]\tBood\tc, [\tyn\tc]\tyeutral\tc, or [\tRe\tc]\tRvil\tc?\tn ");
       STATE(d) = CON_QALIGN;
       break;
   }
@@ -1627,7 +1750,7 @@ void nanny(struct descriptor_data *d, char *arg)
   {
     clear_screen(d);
     write_to_output(d, "%s", race_necro_menu);
-    write_to_output(d, "\r\n@GRace:@n ");
+    write_to_output(d, "\r\n\tGRace:\tn ");
     STATE(d) = CON_QNECRORACE;
     break;
 
@@ -1636,14 +1759,14 @@ void nanny(struct descriptor_data *d, char *arg)
 	
       if (load_result == RACE_UNDEFINED)
 	  {
-        write_to_output(d, "\r\n@WThat is not a valid race for Necromancers.@n\r\n@GRace:@n ");
+        write_to_output(d, "\r\n\tWThat is not a valid race for Necromancers.\tn\r\n\tGRace:\tn ");
         return;
       }
 	  else
         GET_RACE(d->character) = load_result;
 
       write_to_output(d, 
-	    "\r\n@cWhat alignment will you begin with? [@Bg@c]@Bood@c, [@yn@c]@yeutral@c, or [@Re@c]@Rvil@c?@n ");
+	    "\r\n\tcWhat alignment will you begin with? [\tBg\tc]\tBood\tc, [\tyn\tc]\tyeutral\tc, or [\tRe\tc]\tRvil\tc?\tn ");
       STATE(d) = CON_QALIGN;
       break;
   }
@@ -1653,7 +1776,7 @@ void nanny(struct descriptor_data *d, char *arg)
   {
     clear_screen(d);
     write_to_output(d, "%s", race_monk_menu);
-    write_to_output(d, "\r\n@GRace:@n ");
+    write_to_output(d, "\r\n\tGRace:\tn ");
     STATE(d) = CON_QMONKRACE;
     break;
 
@@ -1662,14 +1785,14 @@ void nanny(struct descriptor_data *d, char *arg)
       
 	  if (load_result == RACE_UNDEFINED)
 	  {
-        write_to_output(d, "\r\n@WThat is not a valid race for Monks.@n\r\n@GRace:@n ");
+        write_to_output(d, "\r\n\tWThat is not a valid race for Monks.\tn\r\n\tGRace:\tn ");
         return;
       }
       else
         GET_RACE(d->character) = load_result;
 		
       clear_screen(d);
-      write_to_output(d, "\r\n@GPress enter to roll your stats.@n\r\n");
+      write_to_output(d, "\r\n\tGPress enter to roll your stats.\tn\r\n");
       STATE(d) = CON_QROLLSTATS;
       break;
    }
@@ -1679,7 +1802,7 @@ void nanny(struct descriptor_data *d, char *arg)
   {
     clear_screen(d);
     write_to_output(d, "%s", race_knig_menu);
-    write_to_output(d, "\r\n@GRace:@n ");
+    write_to_output(d, "\r\n\tGRace:\tn ");
     STATE(d) = CON_QKNIGRACE;
     break;
 
@@ -1688,14 +1811,14 @@ void nanny(struct descriptor_data *d, char *arg)
 	  
         if (load_result == RACE_UNDEFINED)
 		{
-          write_to_output(d, "\r\n@WThat is not a valid race for Knights.@n\r\n@GRace:@n ");
+          write_to_output(d, "\r\n\tWThat is not a valid race for Knights.\tn\r\n\tGRace:\tn ");
           return;
         }
         else 
           GET_RACE(d->character) = load_result;
  
-      write_to_output(d, "\r\n@cKnights must remain either good or evil.@n\r\n "
-              "@cWhich alignment shall you begin with? [@Bg@c]@Bood @cor [@Re@c]@Rvil@c?@n ");
+      write_to_output(d, "\r\n\tcKnights must remain either good or evil.\tn\r\n "
+              "\tcWhich alignment shall you begin with? [\tBg\tc]\tBood \tcor [\tRe\tc]\tRvil\tc?\tn ");
       STATE(d) = CON_QKNIGALIGN;
       break;
   }
@@ -1705,7 +1828,7 @@ void nanny(struct descriptor_data *d, char *arg)
   {
     clear_screen(d);
     write_to_output(d, "%s", race_cler_menu);
-    write_to_output(d, "\r\n@GRace:@n ");
+    write_to_output(d, "\r\n\tGRace:\tn ");
     STATE(d) = CON_QCLERRACE;
     break;
 
@@ -1714,14 +1837,14 @@ void nanny(struct descriptor_data *d, char *arg)
 	  
       if (load_result == RACE_UNDEFINED)
 	  {
-        write_to_output(d, "\r\n@WThat is not a valid race for Clerics.@n\r\n@GRace:@n ");
+        write_to_output(d, "\r\n\tWThat is not a valid race for Clerics.\tn\r\n\tGRace:\tn ");
         return;
       }
       else 
         GET_RACE(d->character) = load_result;
  
-      write_to_output(d, "\r\n@cClerics must remain either good or evil.\r\n "
-              "Which alignment shall you begin as? [@Bg@c]@Bood @cor [@Re@c]@Rvil@c?@n ");
+      write_to_output(d, "\r\n\tcClerics must remain either good or evil.\r\n "
+              "Which alignment shall you begin as? [\tBg\tc]\tBood \tcor [\tRe\tc]\tRvil\tc?\tn ");
       STATE(d) = CON_QCLERALIGN;
       break;
   }
@@ -1731,7 +1854,7 @@ void nanny(struct descriptor_data *d, char *arg)
   {
     clear_screen(d);
     write_to_output(d, "%s", race_barb_menu);
-    write_to_output(d, "\r\n@GRace:@n ");
+    write_to_output(d, "\r\n\tGRace:\tn ");
     STATE(d) = CON_QBARBRACE;
     break;
 
@@ -1740,14 +1863,14 @@ void nanny(struct descriptor_data *d, char *arg)
 	  
       if (load_result == RACE_UNDEFINED)
 	  {
-        write_to_output(d, "\r\n@WThat is not a valid race for Barbarians.@n\r\n@GRace:@n ");
+        write_to_output(d, "\r\n\tWThat is not a valid race for Barbarians.\tn\r\n\tGRace:\tn ");
         return;
       }
 	  else
         GET_RACE(d->character) = load_result;
 
       write_to_output(d, 
-	  "\r\n@cWhat alignment will you begin with? [@Bg@c]@Bood@c, [@yn@c]@yeutral@c, or [@Re@c]@Rvil@c?@n ");
+	  "\r\n\tcWhat alignment will you begin with? [\tBg\tc]\tBood\tc, [\tyn\tc]\tyeutral\tc, or [\tRe\tc]\tRvil\tc?\tn ");
       STATE(d) = CON_QALIGN;
       break;
   }
@@ -1757,7 +1880,7 @@ void nanny(struct descriptor_data *d, char *arg)
   {
     clear_screen(d);
     write_to_output(d, "%s", race_druid_menu);
-    write_to_output(d, "\r\n@GRace:@n ");
+    write_to_output(d, "\r\n\tGRace:\tn ");
     STATE(d) = CON_QDRUIDRACE;
     break;
 
@@ -1766,14 +1889,14 @@ void nanny(struct descriptor_data *d, char *arg)
 	  
       if (load_result == RACE_UNDEFINED)
 	  {
-        write_to_output(d, "\r\n@WThat is not a valid race for Druids.@n\r\n@GRace:@n ");
+        write_to_output(d, "\r\n\tWThat is not a valid race for Druids.\tn\r\n\tGRace:\tn ");
         return;
       }
       else
         GET_RACE(d->character) = load_result;
 		
       clear_screen(d);
-      write_to_output(d, "\r\n@GPress enter to roll your stats.@n\r\n");
+      write_to_output(d, "\r\n\tGPress enter to roll your stats.\tn\r\n");
       STATE(d) = CON_QROLLSTATS;
       break;
   }
@@ -1783,7 +1906,7 @@ void nanny(struct descriptor_data *d, char *arg)
   {
     clear_screen(d);
     write_to_output(d, "%s", race_psio_menu);
-    write_to_output(d, "\r\n@GRace:@n ");
+    write_to_output(d, "\r\n\tGRace:\tn ");
     STATE(d) = CON_QPSIORACE;
     break;
 
@@ -1792,14 +1915,14 @@ void nanny(struct descriptor_data *d, char *arg)
 	  
       if (load_result == RACE_UNDEFINED)
 	  {
-        write_to_output(d, "\r\n@WThat is not a valid race for Psionicists.@n\r\n@GRace:@n ");
+        write_to_output(d, "\r\n\tWThat is not a valid race for Psionicists.\tn\r\n\tGRace:\tn ");
         return;
       }
 	  else
         GET_RACE(d->character) = load_result;
 
       write_to_output(d, 
-	  "\r\n@cWhat alignment will you begin with? [@Bg@c]@Bood@c, [@yn@c]@yeutral@c, or [@Re@c]@Rvil@c?@n ");
+	  "\r\n\tcWhat alignment will you begin with? [\tBg\tc]\tBood\tc, [\tyn\tc]\tyeutral\tc, or [\tRe\tc]\tRvil\tc?\tn ");
       STATE(d) = CON_QALIGN;
       break;
   }
@@ -1808,7 +1931,7 @@ void nanny(struct descriptor_data *d, char *arg)
   else
     clear_screen(d);
     write_to_output(d, "%s", race_menu);
-    write_to_output(d, "\r\n@GRace:@n ");
+    write_to_output(d, "\r\n\tGRace:\tn ");
     STATE(d) = CON_QRACE;
     break;
 
@@ -1817,14 +1940,14 @@ void nanny(struct descriptor_data *d, char *arg)
 	
     if (load_result == RACE_UNDEFINED)
 	{
-      write_to_output(d, "\r\n@WThat's not a valid race.@n\r\n@GRace:@n ");
+      write_to_output(d, "\r\n\tWThat's not a valid race.\tn\r\n\tGRace:\tn ");
       return;
     }
 	else
       GET_RACE(d->character) = load_result;
 
     write_to_output(d, 
-	"\r\n@cWhat alignment will you begin with? [@Bg@c]@Bood@c, [@yn@c]@yeutral@c, or [@Re@c]@Rvil@c?@n ");
+	"\r\n\tcWhat alignment will you begin with? [\tBg\tc]\tBood\tc, [\tyn\tc]\tyeutral\tc, or [\tRe\tc]\tRvil\tc?\tn ");
     STATE(d) = CON_QALIGN;
     break;
 
@@ -1844,13 +1967,13 @@ void nanny(struct descriptor_data *d, char *arg)
         break;
       case 'n':
       case 'N':
-        write_to_output(d, "\r\n@WKnights must remain either good or evil.@n\r\n "
-          "@cWhich alignment shall you begin with? [@Bg@c]@Bood @cor [@Re@c]@Rvil@c?@n ");
+        write_to_output(d, "\r\n\tWKnights must remain either good or evil.\tn\r\n "
+          "\tcWhich alignment shall you begin with? [\tBg\tc]\tBood \tcor [\tRe\tc]\tRvil\tc?\tn ");
         return;
       default:
-        write_to_output(d, "\r\n@WThat is not an alignment..@n\r\n"
-                "@cKnights must remain either good or evil.@n\r\n"
-                "@c What IS your alignment? [@Bg@c]@Bood @cor [@Re@c]@Rvil@c?@n");
+        write_to_output(d, "\r\n\tWThat is not an alignment..\tn\r\n"
+                "\tcKnights must remain either good or evil.\tn\r\n"
+                "\tc What IS your alignment? [\tBg\tc]\tBood \tcor [\tRe\tc]\tRvil\tc?\tn");
         return;
     }
 
@@ -1868,13 +1991,13 @@ void nanny(struct descriptor_data *d, char *arg)
         break;
       case 'n':
       case 'N':
-        write_to_output(d, "\r\n@WClerics must remain either good or evil.\r\n"
-              "@c Which alignment shall you begin as? [@Bg@c]@Bood @cor [@Re@c]@Rvil@c?@n ");
+        write_to_output(d, "\r\n\tWClerics must remain either good or evil.\r\n"
+              "\tc Which alignment shall you begin as? [\tBg\tc]\tBood \tcor [\tRe\tc]\tRvil\tc?\tn ");
         return;
       default:
-        write_to_output(d, "\r\n@WThat is not an alignment..@n\r\n"
-                "@cClerics must remain either good or evil.@n\r\n"
-                "@c What IS your alignment? [@Bg@c]@Bood @cor [@Re@c]@Rvil@c?@n");
+        write_to_output(d, "\r\n\tWThat is not an alignment..\tn\r\n"
+                "\tcClerics must remain either good or evil.\tn\r\n"
+                "\tc What IS your alignment? [\tBg\tc]\tBood \tcor [\tRe\tc]\tRvil\tc?\tn");
         return;
     }
 
@@ -1895,15 +2018,15 @@ void nanny(struct descriptor_data *d, char *arg)
         d->character->char_specials.saved.alignment = -1000;
         break;
       default:
-        write_to_output(d, "\r\n@WThat is not an alignment..@n\r\n"
-                "@cWhat IS your alignment? [@Bg@c]@Bood@c, [@yn@c]@yeutral o@cr [@Re@c]@Rvil @c?@n");
+        write_to_output(d, "\r\n\tWThat is not an alignment..\tn\r\n"
+                "\tcWhat IS your alignment? [\tBg\tc]\tBood\tc, [\tyn\tc]\tyeutral o\tcr [\tRe\tc]\tRvil \tc?\tn");
         return;
     }
 	
   /**********************  ROLL STATS *************************************/
   
   clear_screen(d);
-  write_to_output(d, "\r\n@GPress enter to roll your stats.@n\r\n");
+  write_to_output(d, "\r\n\tGPress enter to roll your stats.\tn\r\n");
   STATE(d) = CON_QROLLSTATS;
   break;
 
@@ -1917,19 +2040,19 @@ void nanny(struct descriptor_data *d, char *arg)
       case 'N':
       default:
         roll_real_abils(d->character);
-        sprintf(buf, "\r\n@cStr: [@w%d@c] Int: [@w%d@c] "
-          "Wis: [@w%d@c] Dex: [@w%d@c] Con: [@w%d@c] Cha: [@w%d@c]@n",
+        sprintf(buf, "\r\n\tcStr: [\tw%d\tc] Int: [\tw%d\tc] "
+          "Wis: [\tw%d\tc] Dex: [\tw%d\tc] Con: [\tw%d\tc] Cha: [\tw%d\tc]\tn",
           GET_STR(d->character), GET_INT(d->character), GET_WIS(d->character),
           GET_DEX(d->character), GET_CON(d->character), GET_CHA(d->character));
         write_to_output(d, "%s", buf);
-        write_to_output(d, "\r\n\r\n@GKeep these stats? @B(@cy@B/@cn@B)@n");
+        write_to_output(d, "\r\n\r\n\tGKeep these stats? \tB(\tcy\tB/\tcn\tB)\tn");
         return;
     }
 
   // I'm not sure what this check is for
   if (GET_STR(d->character) == 0)
   {
-    write_to_output(d, "\r\n@GPress enter to roll your stats.@n\r\n");
+    write_to_output(d, "\r\n\tGPress enter to roll your stats.\tn\r\n");
     STATE(d) = CON_QROLLSTATS;
     break;
   }	
@@ -1956,13 +2079,24 @@ void nanny(struct descriptor_data *d, char *arg)
     GET_PREF(d->character)= rand_number(1, 128000);
     GET_HOST(d->character)= strdup(d->host);
 
-    mudlog(NRM, LVL_GOD, TRUE, "%s [%s] new player.", GET_NAME(d->character), d->host);                               
+    mudlog(NRM, LVL_GOD, TRUE, "%s [%s] new player.", GET_NAME(d->character), d->host);
+
+    /* Add to the list of 'recent' players (since last reboot) */
+    if (AddRecentPlayer(GET_NAME(d->character), d->host, TRUE, FALSE) == FALSE)
+    {
+      mudlog(BRF, MAX(LVL_IMMORT, GET_INVIS_LEV(d->character)), TRUE, "Failure to AddRecentPlayer (returned FALSE).");
+    }
+    
     break;                      
-	
 	
   case CON_RMOTD:		/* read CR after printing motd   */
     clear_screen(d);
 	write_to_output(d, "%s", CONFIG_MENU);
+    if (IS_HAPPYHOUR > 0){
+      write_to_output(d, "\r\n");
+      write_to_output(d, "\tyThere is currently a Happyhour!\tn\r\n");
+      write_to_output(d, "\r\n");
+    }
     add_llog_entry(d->character, LAST_CONNECT);
     STATE(d) = CON_MENU;
     break;
@@ -1991,6 +2125,7 @@ void nanny(struct descriptor_data *d, char *arg)
       act("$n has entered the game.", TRUE, d->character, 0, 0, TO_ROOM);
 
       STATE(d) = CON_PLAYING;
+      MXPSendTag( d, "<VERSION>" );
       if (GET_LEVEL(d->character) == 0) {
 	do_start(d->character);
 	send_to_char(d->character, "%s", CONFIG_START_MESSG);

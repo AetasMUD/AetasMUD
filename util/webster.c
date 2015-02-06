@@ -57,10 +57,10 @@ void parse_webster_html(char *arg) {
   
   for ( ; get_line(infile, buf)!=0; ) {
     
-    if (strncmp(buf, "<script>write_ads(AdsNum, 0)</script>", 37) != 0)
+    if (strncmp(buf, "<script>write_ads(AdsNum, 0, 1)</script>", 40) != 0)
     	continue; // read until we hit the line with results in it.
     
-    p = buf+37;
+    p = buf+40;
 
     if (strncmp(p, "<br>", 4) == 0)
     	{

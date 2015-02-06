@@ -67,11 +67,11 @@ void affect_update(void)
       else if (af->duration == -1)	/* No action */
 	;
       else {
-	if ((af->type > 0) && (af->type <= MAX_SPELLS))
-	  if (!af->next || (af->next->type != af->type) ||
+	if ((af->spell > 0) && (af->spell <= MAX_SPELLS))
+	  if (!af->next || (af->next->spell != af->spell) ||
 	      (af->next->duration > 0))
-	    if (spell_info[af->type].wear_off_msg)
-	      send_to_char(i, "%s\r\n", spell_info[af->type].wear_off_msg);
+	    if (spell_info[af->spell].wear_off_msg)
+	      send_to_char(i, "%s\r\n", spell_info[af->spell].wear_off_msg);
 	affect_remove(i, af);
       }
     }
@@ -305,17 +305,15 @@ void mag_affects(int level, struct char_data *ch, struct char_data *victim,
   struct affected_type af[MAX_SPELL_AFFECTS];
   bool accum_affect = FALSE, accum_duration = FALSE;
   const char *to_vict = NULL, *to_room = NULL;
-  int i;
+  int i, j;
 
 
   if (victim == NULL || ch == NULL)
     return;
 
   for (i = 0; i < MAX_SPELL_AFFECTS; i++) {
-    af[i].type = spellnum;
-    af[i].bitvector = 0;
-    af[i].modifier = 0;
-    af[i].location = APPLY_NONE;
+    new_affect(&(af[i]));
+    af[i].spell = spellnum;
   }
 
   switch (spellnum) {
@@ -361,12 +359,12 @@ void mag_affects(int level, struct char_data *ch, struct char_data *victim,
     af[0].location = APPLY_HITROLL;
     af[0].modifier = -4;
     af[0].duration = 2;
-    af[0].bitvector = AFF_BLIND;
+    SET_BIT_AR(af[0].bitvector, AFF_BLIND);
 
     af[1].location = APPLY_AC;
     af[1].modifier = 40;
     af[1].duration = 2;
-    af[1].bitvector = AFF_BLIND;
+    SET_BIT_AR(af[1].bitvector, AFF_BLIND);
 
     to_room = "$n seems to be blinded!";
     to_vict = "You have been blinded!";
@@ -381,12 +379,12 @@ void mag_affects(int level, struct char_data *ch, struct char_data *victim,
     af[0].location = APPLY_HITROLL;
     af[0].duration = 1 + (GET_LEVEL(ch) / 2);
     af[0].modifier = -1;
-    af[0].bitvector = AFF_CURSE;
+    SET_BIT_AR(af[0].bitvector, AFF_CURSE);
 
     af[1].location = APPLY_DAMROLL;
     af[1].duration = 1 + (GET_LEVEL(ch) / 2);
     af[1].modifier = -1;
-    af[1].bitvector = AFF_CURSE;
+    SET_BIT_AR(af[1].bitvector, AFF_CURSE);
 
     accum_duration = TRUE;
     accum_affect = TRUE;
@@ -396,28 +394,35 @@ void mag_affects(int level, struct char_data *ch, struct char_data *victim,
 
   case SPELL_DETECT_ALIGN:
     af[0].duration = 12 + level;
-    af[0].bitvector = AFF_DETECT_ALIGN;
+    SET_BIT_AR(af[0].bitvector, AFF_DETECT_ALIGN);
     accum_duration = TRUE;
     to_vict = "Your eyes tingle.";
     break;
 
   case SPELL_DETECT_INVIS:
     af[0].duration = 12 + level;
-    af[0].bitvector = AFF_DETECT_INVIS;
+    SET_BIT_AR(af[0].bitvector, AFF_DETECT_INVIS);
     accum_duration = TRUE;
     to_vict = "Your eyes tingle.";
     break;
 
   case SPELL_DETECT_MAGIC:
     af[0].duration = 12 + level;
-    af[0].bitvector = AFF_DETECT_MAGIC;
+    SET_BIT_AR(af[0].bitvector, AFF_DETECT_MAGIC);
     accum_duration = TRUE;
     to_vict = "Your eyes tingle.";
+    break;
+    
+  case SPELL_FLY:
+    af[0].duration = 24;
+    SET_BIT_AR(af[0].bitvector, AFF_FLYING);
+    accum_duration = TRUE;
+    to_vict = "You float above the ground.";
     break;
 
   case SPELL_INFRAVISION:
     af[0].duration = 12 + level;
-    af[0].bitvector = AFF_INFRAVISION;
+    SET_BIT_AR(af[0].bitvector, AFF_INFRAVISION);
     accum_duration = TRUE;
     to_vict = "Your eyes glow red.";
     to_room = "$n's eyes glow red.";
@@ -430,7 +435,7 @@ void mag_affects(int level, struct char_data *ch, struct char_data *victim,
     af[0].duration = 12 + (GET_LEVEL(ch) / 4);
     af[0].modifier = -40;
     af[0].location = APPLY_AC;
-    af[0].bitvector = AFF_INVISIBLE;
+    SET_BIT_AR(af[0].bitvector, AFF_INVISIBLE);
     accum_duration = TRUE;
     to_vict = "You vanish.";
     to_room = "$n slowly fades out of existence.";
@@ -445,21 +450,21 @@ void mag_affects(int level, struct char_data *ch, struct char_data *victim,
     af[0].location = APPLY_STR;
     af[0].duration = GET_LEVEL(ch);
     af[0].modifier = -2;
-    af[0].bitvector = AFF_POISON;
+    SET_BIT_AR(af[0].bitvector, AFF_POISON);
     to_vict = "You feel very sick.";
     to_room = "$n gets violently ill!";
     break;
 
   case SPELL_PROT_FROM_EVIL:
     af[0].duration = 24;
-    af[0].bitvector = AFF_PROTECT_EVIL;
+    SET_BIT_AR(af[0].bitvector, AFF_PROTECT_EVIL);
     accum_duration = TRUE;
     to_vict = "You feel invulnerable!";
     break;
 
   case SPELL_SANCTUARY:
     af[0].duration = 4;
-    af[0].bitvector = AFF_SANCTUARY;
+    SET_BIT_AR(af[0].bitvector, AFF_SANCTUARY);
 
     accum_duration = TRUE;
     to_vict = "A white aura momentarily surrounds you.";
@@ -475,7 +480,7 @@ void mag_affects(int level, struct char_data *ch, struct char_data *victim,
       return;
 
     af[0].duration = 4 + (GET_LEVEL(ch) / 4);
-    af[0].bitvector = AFF_SLEEP;
+    SET_BIT_AR(af[0].bitvector, AFF_SLEEP);
 
     if (GET_POS(victim) > POS_SLEEPING) {
       send_to_char(victim, "You feel very sleepy...  Zzzz......\r\n");
@@ -499,13 +504,13 @@ void mag_affects(int level, struct char_data *ch, struct char_data *victim,
   case SPELL_SENSE_LIFE:
     to_vict = "Your feel your awareness improve.";
     af[0].duration = GET_LEVEL(ch);
-    af[0].bitvector = AFF_SENSE_LIFE;
+    SET_BIT_AR(af[0].bitvector, AFF_SENSE_LIFE);
     accum_duration = TRUE;
     break;
 
   case SPELL_WATERWALK:
     af[0].duration = 24;
-    af[0].bitvector = AFF_WATERWALK;
+    SET_BIT_AR(af[0].bitvector, AFF_WATERWALK);
     accum_duration = TRUE;
     to_vict = "You feel webbing between your toes.";
     break;
@@ -514,12 +519,16 @@ void mag_affects(int level, struct char_data *ch, struct char_data *victim,
   /* If this is a mob that has this affect set in its mob file, do not perform 
    * the affect.  This prevents people from un-sancting mobs by sancting them 
    * and waiting for it to fade, for example. */
-  if (IS_NPC(victim) && !affected_by_spell(victim, spellnum))
-    for (i = 0; i < MAX_SPELL_AFFECTS; i++)
-      if (AFF_FLAGGED(victim, af[i].bitvector) && (af[i].bitvector > 0)) {
+  if (IS_NPC(victim) && !affected_by_spell(victim, spellnum)) {
+    for (i = 0; i < MAX_SPELL_AFFECTS; i++) {
+      for (j=0; j<NUM_AFF_FLAGS; j++) {
+        if (IS_SET_AR(af[i].bitvector, j) && AFF_FLAGGED(victim, j)) {
 	send_to_char(ch, "%s", CONFIG_NOEFFECT);
 	return;
       }
+      }
+    }
+  }
 
   /* If the victim is already affected by this spell, and the spell does not 
    * have an accumulative effect, then fail the spell. */
@@ -529,7 +538,9 @@ void mag_affects(int level, struct char_data *ch, struct char_data *victim,
   }
 
   for (i = 0; i < MAX_SPELL_AFFECTS; i++)
-    if (af[i].bitvector || (af[i].location != APPLY_NONE))
+    if (af[i].bitvector[0] || af[i].bitvector[1] ||
+        af[i].bitvector[2] || af[i].bitvector[3] ||
+        (af[i].location != APPLY_NONE))
       affect_join(victim, af+i, accum_duration, FALSE, accum_affect, FALSE);
 
   if (to_vict != NULL)
@@ -642,7 +653,8 @@ void mag_areas(int level, struct char_data *ch, int spellnum, int savetype)
      *            2: immortals
      *            3: if no pk on this mud, skips over all players
      *            4: pets (charmed NPCs)
-     *            5: other players in the same group (if the spell is 'violent') */
+     *            5: other players in the same group (if the spell is 'violent') 
+     *            6: Flying people if earthquake is the spell                         */
     if (tch == ch)
       continue;
     if (!IS_NPC(tch) && GET_LEVEL(tch) >= LVL_IMMORT)
@@ -654,6 +666,9 @@ void mag_areas(int level, struct char_data *ch, int spellnum, int savetype)
     if (!IS_NPC(tch) && spell_info[spellnum].violent && AFF_FLAGGED(tch, AFF_GROUP) && AFF_FLAGGED(ch, AFF_GROUP) &&
       ( ((ch->master == NULL) ? ch : ch->master) == ((tch->master == NULL) ? tch : tch->master) )  )
       continue;
+      
+	if ((spellnum == SPELL_EARTHQUAKE) && AFF_FLAGGED(tch, AFF_FLYING))
+	  continue;
 
     /* Doesn't matter if they die here so we don't check. -gg 6/24/98 */
     mag_damage(level, ch, tch, spellnum, 1);
@@ -891,7 +906,7 @@ void mag_alter_objs(int level, struct char_data *ch, struct obj_data *obj,
       }
       break;
     case SPELL_INVISIBLE:
-      if (!OBJ_FLAGGED(obj, ITEM_NOINVIS) || !OBJ_FLAGGED(obj, ITEM_INVISIBLE)) {
+      if (!OBJ_FLAGGED(obj, ITEM_NOINVIS) && !OBJ_FLAGGED(obj, ITEM_INVISIBLE)) {
         SET_BIT_AR(GET_OBJ_EXTRA(obj), ITEM_INVISIBLE);
         to_char = "$p vanishes.";
       }
