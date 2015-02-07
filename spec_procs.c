@@ -116,29 +116,29 @@ void list_skills(struct char_data *ch)
   size_t len = 0, nlen;
   char buf2[MAX_STRING_LENGTH];
 
-  send_to_char(ch, "You have @G%d@n practice session%s remaining.\r\n", GET_PRACTICES(ch),
+  send_to_char(ch, "You have \tG%d\tn practice session%s remaining.\r\n", GET_PRACTICES(ch),
 	GET_PRACTICES(ch) == 1 ? "" : "s");
   
-  len = snprintf(buf2, sizeof(buf2), "@YYou know of the following spells:@n\r\n");
+  len = snprintf(buf2, sizeof(buf2), "\tYYou know of the following spells:\tn\r\n");
 
   for (sortpos = 1; sortpos <= MAX_SPELLS; sortpos++) {
     i = spell_sort_info[sortpos];
     if ((GET_LEVEL(ch) >= spell_info[i].min_level[(int) GET_CLASS(ch)]) ||
 	    (GET_LEVEL(ch) >= spell_info[i].min_level[(int) GET_REMORT(ch)]) ||
 		(GET_SKILL(ch,i) > 0)) {
-      nlen = snprintf(buf2 + len, sizeof(buf2) - len, "%-20s @G%s@n\r\n", spell_info[i].name, how_good(GET_SKILL(ch, i)));
+      nlen = snprintf(buf2 + len, sizeof(buf2) - len, "%-20s \tG%s\tn\r\n", spell_info[i].name, how_good(GET_SKILL(ch, i)));
       if (len + nlen >= sizeof(buf2) || nlen < 0)
         break;
       len += nlen;
     }
   }
   
-  len += snprintf(buf2 + len, sizeof(buf2) - len, "\r\n@YYou know of the following skills:@n\r\n");
+  len += snprintf(buf2 + len, sizeof(buf2) - len, "\r\n\tYYou know of the following skills:\tn\r\n");
   for (sortpos = MAX_SPELLS; sortpos <= MAX_SKILLS; sortpos++) {
     i = skill_sort_info[sortpos];
     if ((GET_LEVEL(ch) >= spell_info[i].min_level[(int) GET_CLASS(ch)]) ||
 	   (GET_LEVEL(ch) >= spell_info[i].min_level[(int)GET_REMORT(ch)])) {
-      nlen = snprintf(buf2 + len, sizeof(buf2) - len, "%-20s @G%s@n\r\n", spell_info[i].name, how_good(GET_SKILL(ch, i)));
+      nlen = snprintf(buf2 + len, sizeof(buf2) - len, "%-20s \tG%s\tn\r\n", spell_info[i].name, how_good(GET_SKILL(ch, i)));
       if (len + nlen >= sizeof(buf2) || nlen < 0)
         break;
       len += nlen;

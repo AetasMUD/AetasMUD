@@ -857,9 +857,9 @@ static char *list_object(struct obj_data *obj, int cnt, int aindex, int shop_nr,
 	quantity[16];	/* "Unlimited" or "%d" */
 
   if (shop_producing(obj, shop_nr))
-    strcpy(quantity, "@gUnlimited@n");	/* strcpy: OK (for 'quantity >= 10') */
+    strcpy(quantity, "\tgUnlimited\tn");	/* strcpy: OK (for 'quantity >= 10') */
   else
-    sprintf(quantity, "@y%d@n", cnt);	/* sprintf: OK (for 'quantity >= 11', 32-bit int) */
+    sprintf(quantity, "\ty%d\tn", cnt);	/* sprintf: OK (for 'quantity >= 11', 32-bit int) */
 
   switch (GET_OBJ_TYPE(obj)) {
   case ITEM_DRINKCON:
@@ -881,7 +881,7 @@ static char *list_object(struct obj_data *obj, int cnt, int aindex, int shop_nr,
   }
   CAP(itemname);
 
-  snprintf(result, sizeof(result), " @w%2d@b)@n  %9s   %-*s @y%6d@Y%s@n\r\n",
+  snprintf(result, sizeof(result), " \tw%2d\tb)\tn  %9s   %-*s \ty%6d\tY%s\tn\r\n",
       aindex, quantity, count_color_chars(itemname)+48, itemname,
       buy_price(obj, shop_nr, keeper, ch), OBJ_FLAGGED(obj, ITEM_QUEST) ? " qp" : "");
 

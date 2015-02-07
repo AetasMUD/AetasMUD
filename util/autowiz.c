@@ -157,9 +157,9 @@ void write_wizlist(FILE * out, int minlev, int maxlev)
   int i, j;
 
   fprintf(out,
-"@b*******************************************************************************\n"
-"*                         @WThe Immortals of AetasMUD.@b                          *\n"
-"*******************************************************************************@n\n\n");
+"\tb*******************************************************************************\n"
+"*                         \tWThe Immortals of AetasMUD.\tb                          *\n"
+"*******************************************************************************\tn\n\n");
 
   for (curr_level = levels; curr_level; curr_level = curr_level->next) {
     if (curr_level->params->level < minlev ||
@@ -168,13 +168,13 @@ void write_wizlist(FILE * out, int minlev, int maxlev)
     i = 39 - (strlen(curr_level->params->level_name) >> 1);
     for (j = 1; j <= i; j++)
       fputc(' ', out);
-    fprintf(out, "@D%s@n\n", curr_level->params->level_name);
+    fprintf(out, "\tD%s\tn\n", curr_level->params->level_name);
     for (j = 1; j <= i; j++)
       fputc(' ', out);
-    fprintf(out, "@w");
+    fprintf(out, "\tw");
 	for (j = 1; j <= strlen(curr_level->params->level_name); j++)
       fputc('~', out);
-    fprintf(out, "@n\n");
+    fprintf(out, "\tn\n");
 
     strcpy(buf, "");
     curr_name = curr_level->names;
@@ -208,7 +208,7 @@ void write_wizlist(FILE * out, int minlev, int maxlev)
 	i = 40 - (strlen(buf) >> 1);
 	for (j = 1; j <= i; j++)
 	  fputc(' ', out);
-	fprintf(out, "@c%s@n\n", buf);
+	fprintf(out, "\tc%s\tn\n", buf);
       }
     }
     fprintf(out, "\n");
