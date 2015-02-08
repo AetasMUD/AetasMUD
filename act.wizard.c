@@ -1078,8 +1078,7 @@ ACMD(do_stat)
       CREATE(victim, struct char_data, 1);
       clear_char(victim);
       CREATE(victim->player_specials, struct player_special_data, 1);
-      /* Allocate mobile event list */
-      victim->events = create_list();      
+      new_mobile_data(victim);     
       if (load_char(buf2, victim) >= 0) {
         char_to_room(victim, 0);
         if (GET_LEVEL(victim) > GET_LEVEL(ch))
@@ -1298,20 +1297,8 @@ void do_cheat(struct char_data *ch)
   save_char(ch);
 }
 
-ACMD(do_return)
+void return_to_char(struct char_data * ch)
 {
-  if (!IS_NPC(ch) && !ch->desc->original) {
-    int level, newlevel;
-    level = GET_LEVEL(ch);
-    do_cheat(ch);
-    newlevel = GET_LEVEL(ch);
-    if (!PLR_FLAGGED(ch, PLR_NOWIZLIST)&& level != newlevel)
-      run_autowiz();
-  }
-
-  if (ch->desc && ch->desc->original) {
-    send_to_char(ch, "You return to your original body.\r\n");
-
     /* If someone switched into your original body, disconnect them. - JE
      * Zmey: here we put someone switched in our body to disconnect state but
      * we must also NULL his pointer to our character, otherwise close_socket()
@@ -1329,7 +1316,23 @@ ACMD(do_return)
     /* And our body's pointer to descriptor now points to our descriptor. */
     ch->desc->character->desc = ch->desc;
     ch->desc = NULL;
+}
+
+ACMD(do_return)
+{
+  if (!IS_NPC(ch) && !ch->desc->original) {
+    int level, newlevel;
+    level = GET_LEVEL(ch);
+    do_cheat(ch);
+    newlevel = GET_LEVEL(ch);
+    if (!PLR_FLAGGED(ch, PLR_NOWIZLIST)&& level != newlevel)
+      run_autowiz();
   }
+
+  if (ch->desc && ch->desc->original) {
+    send_to_char(ch, "You return to your original body.\r\n");
+    return_to_char(ch);
+   }
 }
 
 ACMD(do_load)
@@ -2103,8 +2106,7 @@ ACMD(do_last)
     CREATE(vict, struct char_data, 1);
     clear_char(vict);
     CREATE(vict->player_specials, struct player_special_data, 1);
-    /* Allocate mobile event list */
-    vict->events = create_list();
+    new_mobile_data(vict);
     if (load_char(name, vict) <  0) {
       send_to_char(ch, "There is no such player.\r\n");
       free_char(vict);
@@ -2223,7 +2225,6 @@ ACMD(do_wiznet)
   int level = LVL_IMMORT;
 
   skip_spaces(&argument);
-  delete_doubledollar(argument);
 
   if (!*argument) {
     send_to_char(ch, "Usage: wiznet [ #<level> ] [<text> | *<emotetext> | @ ]\r\n");
@@ -2625,8 +2626,7 @@ ACMD(do_show)
     CREATE(vict, struct char_data, 1);
     clear_char(vict);
     CREATE(vict->player_specials, struct player_special_data, 1);
-    /* Allocate mobile event list */
-    vict->events = create_list();
+    new_mobile_data(vict);
     if (load_char(value, vict) < 0) {
       send_to_char(ch, "There is no such player.\r\n");
       free_char(vict);
@@ -3514,8 +3514,7 @@ ACMD(do_set)
     CREATE(cbuf, struct char_data, 1);
     clear_char(cbuf);
     CREATE(cbuf->player_specials, struct player_special_data, 1);
-    /* Allocate mobile event list */
-    cbuf->events = create_list();
+    new_mobile_data(cbuf);
     if ((player_i = load_char(name, cbuf)) > -1) {
       if (GET_LEVEL(cbuf) > GET_LEVEL(ch)) {
 	free_char(cbuf);
@@ -3803,10 +3802,9 @@ ACMD (do_zcheck)
           len += snprintf(buf + len, sizeof(buf) - len,
                           "- Has %d experience (limit: %d)\r\n",
                               GET_EXP(mob), MAX_EXP_ALLOWED);
-        if ((AFF_FLAGGED(mob, AFF_GROUP) || AFF_FLAGGED(mob, AFF_CHARM) || AFF_FLAGGED(mob, AFF_POISON)) && (found = 1))
-	  len += snprintf(buf + len, sizeof(buf) - len,
-                          "- Has illegal affection bits set (%s %s %s)\r\n",
-                              AFF_FLAGGED(mob, AFF_GROUP) ? "GROUP" : "",
+        if ((AFF_FLAGGED(mob, AFF_CHARM) || AFF_FLAGGED(mob, AFF_POISON)) && (found = 1))
+	      len += snprintf(buf + len, sizeof(buf) - len,
+                          "- Has illegal affection bits set (%s %s)\r\n",
                               AFF_FLAGGED(mob, AFF_CHARM) ? "CHARM" : "",
                               AFF_FLAGGED(mob, AFF_POISON) ? "POISON" : "");
 
@@ -4319,6 +4317,11 @@ ACMD(do_copyover)
    /* For each playing descriptor, save its state */
    for (d = descriptor_list; d ; d = d_next) {
      struct char_data * och = d->character;
+     
+   /* If d is currently in someone else's body, return them. */  
+   if (och && d->original)
+     return_to_char(och);
+ 
    /* We delete from the list , so need to save this */
      d_next = d->next;
 
@@ -4783,8 +4786,7 @@ bool change_player_name(struct char_data *ch, struct char_data *vict, char *new_
     CREATE(temp_ch, struct char_data, 1);
     clear_char(temp_ch);
     CREATE(temp_ch->player_specials, struct player_special_data, 1);
-    /* Allocate mobile event list */
-    temp_ch->events = create_list();
+    new_mobile_data(temp_ch);
     if ((plr_i = load_char(new_name, temp_ch)) > -1) {
       free_char(temp_ch);
       send_to_char(ch, "Sorry, the new name already exists.\r\n");

@@ -219,6 +219,7 @@ cpp_extern const struct command_info cmd_info[] = {
   { "medit"    , "med"     , POS_DEAD    , do_oasis_medit, LVL_BUILDER, 0 },
   { "mlist"    , "mlist"   , POS_DEAD    , do_oasis_list, LVL_BUILDER, SCMD_OASIS_MLIST },
   { "mcopy"    , "mcopy"   , POS_DEAD    , do_oasis_copy, LVL_GOD, CON_MEDIT },
+  { "msgedit"  , "msgedit" , POS_DEAD    , do_msgedit,   LVL_GOD, 0 },
   { "mute"     , "mute"    , POS_DEAD    , do_wizutil  , LVL_GOD, SCMD_MUTE },
 
   { "news"     , "news"    , POS_SLEEPING, do_gen_ps   , 0, SCMD_NEWS },
@@ -338,7 +339,6 @@ cpp_extern const struct command_info cmd_info[] = {
   { "tstat"    , "tstat"   , POS_DEAD    , do_tstat    , LVL_BUILDER, 0 },
 
   { "unlock"   , "unlock"  , POS_SITTING , do_gen_door , 0, SCMD_UNLOCK },
-  { "ungroup"  , "ungroup" , POS_DEAD    , do_ungroup  , 0, 0 },
   { "unban"    , "unban"   , POS_DEAD    , do_unban    , LVL_GRGOD, 0 },
   { "unaffect" , "unaffect", POS_DEAD    , do_wizutil  , LVL_GOD, SCMD_UNAFFECT },
   { "uptime"   , "uptime"  , POS_DEAD    , do_date     , LVL_GOD, SCMD_UPTIME },
@@ -857,7 +857,7 @@ int is_number(const char *str)
 /* Function to skip over the leading spaces of a string. */
 void skip_spaces(char **string)
 {
-  for (; **string && isspace(**string); (*string)++);
+  for (; **string && **string != '\t' && isspace(**string); (*string)++);
 }
 
 /* Given a string, change all instances of double dollar signs ($$) to single
@@ -1209,7 +1209,6 @@ static int perform_dupe_check(struct descriptor_data *d)
   d->character->char_specials.timer = 0;
   REMOVE_BIT_AR(PLR_FLAGS(d->character), PLR_MAILING);
   REMOVE_BIT_AR(PLR_FLAGS(d->character), PLR_WRITING);
-  REMOVE_BIT_AR(AFF_FLAGS(d->character), AFF_GROUP);
   STATE(d) = CON_PLAYING;
   MXPSendTag( d, "<VERSION>" );
 
@@ -1251,6 +1250,9 @@ static bool perform_new_char_dupe_check(struct descriptor_data *d)
     next_k = k->next;
 
     if (k == d)
+      continue;
+  
+    if (k->character == NULL)
       continue;
 
     /* Do the player names match? */
@@ -1333,7 +1335,10 @@ int enter_player_game (struct descriptor_data *d)
       character_list = d->character;
       char_to_room(d->character, load_room);
       load_result = Crash_load(d->character);
+      
+      /* Save the character and their object file */
       save_char(d->character);
+      Crash_crashsave(d->character);
 
       /* Check for a login trigger in the players' start room */
       login_wtrigger(&world[IN_ROOM(d->character)], d->character);
@@ -1401,6 +1406,7 @@ void nanny(struct descriptor_data *d, char *arg)
     { CON_QEDIT, qedit_parse },
     { CON_PREFEDIT, prefedit_parse },
     { CON_IBTEDIT, ibtedit_parse },
+    { CON_MSGEDIT, msgedit_parse },
     { -1, NULL }
   };
 
@@ -1425,8 +1431,7 @@ void nanny(struct descriptor_data *d, char *arg)
       clear_char(d->character);
       CREATE(d->character->player_specials, struct player_special_data, 1);
       
-      /* Allocate mobile event list */
-      d->character->events = create_list();
+      new_mobile_data(d->character);
 
       GET_HOST(d->character) = strdup(d->host);
       d->character->desc = d;
@@ -1463,8 +1468,7 @@ void nanny(struct descriptor_data *d, char *arg)
           clear_char(d->character);
           CREATE(d->character->player_specials, struct player_special_data, 1);
           
-          /* Allocate mobile event list */
-          d->character->events = create_list();
+          new_mobile_data(d->character);
 
           if (GET_HOST(d->character))
             free(GET_HOST(d->character));
@@ -1481,7 +1485,6 @@ void nanny(struct descriptor_data *d, char *arg)
           REMOVE_BIT_AR(PLR_FLAGS(d->character), PLR_WRITING);
           REMOVE_BIT_AR(PLR_FLAGS(d->character), PLR_MAILING);
           REMOVE_BIT_AR(PLR_FLAGS(d->character), PLR_CRYO);
-          REMOVE_BIT_AR(AFF_FLAGS(d->character), AFF_GROUP);
           d->character->player.time.logon = time(0);
           write_to_output(d, "Password: ");
           echo_off(d);

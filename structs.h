@@ -22,7 +22,7 @@
  * on an older version. You are supposed to compare this with the macro
  * TBAMUD_VERSION() in utils.h.
  * It is read as Major/Minor/Patchlevel - MMmmPP */
-#define _TBAMUD    0x030630
+#define _TBAMUD    0x030640
 
 /** If you want equipment to be automatically equipped to the same place
  * it was when players rented, set the define below to 1 because
@@ -148,6 +148,11 @@
 #define NUM_HIST       9 /**< Total number of history indexes */
 
 #define HISTORY_SIZE   5 /**< Number of last commands kept in each history */
+
+/* Group Defines */
+#define GROUP_OPEN    (1 << 0)  /**< Group is open for members */
+#define GROUP_ANON    (1 << 1)  /**< Group is Anonymous */
+#define GROUP_NPC     (1 << 2)  /**< Group created by NPC and thus not listed */
 
 /* Classes */
 #define CLASS_UNDEFINED	  -1
@@ -311,7 +316,7 @@
 #define AFF_SENSE_LIFE      6   /**< Char can sense hidden life */
 #define AFF_WATERWALK       7   /**< Char can walk on water */
 #define AFF_SANCTUARY       8   /**< Char protected by sanct */
-#define AFF_GROUP           9   /**< (R) Char is grouped */
+#define AFF_UNUSED          9   /**< UNUSED */
 #define AFF_CURSE          10   /**< Char is cursed */
 #define AFF_INFRAVISION    11   /**< Char can see in dark */
 #define AFF_POISON         12   /**< (R) Char is poisoned */
@@ -377,11 +382,12 @@
 #define CON_QCLERALIGN   45 /* Alignment restrictions       */
 #define CON_QDRUIDALIGN  46 /* Alignment restrictions       */
 #define CON_GET_PROTOCOL 47 /**< Used at log-in while attempting to get protocols > */
+#define CON_MSGEDIT      48 /**< OLC mode - message editor */
 
 
 /* OLC States range - used by IS_IN_OLC and IS_PLAYING */
 #define FIRST_OLC_STATE CON_OEDIT     /**< The first CON_ state that is an OLC */
-#define LAST_OLC_STATE  CON_IBTEDIT   /**< The last CON_ state that is an OLC  */
+#define LAST_OLC_STATE  CON_MSGEDIT   /**< The last CON_ state that is an OLC  */
 
 /* Character equipment positions: used as index for char_data.equipment[] */
 /* NOTE: Don't confuse these constants with the ITEM_ bitvectors
@@ -881,6 +887,8 @@ struct obj_data
   struct obj_data *next;          /**< For the object list */
   struct char_data *sitting_here; /**< For furniture, who is sitting in it */
   
+  struct list_data *events;      /**< Used for object events */
+  
   bool has_spells;		/* for weapon casting */
   struct weapon_spells wpn_spells[MAX_WEAPON_SPELLS];
 };
@@ -961,6 +969,8 @@ struct room_data
   struct script_data *script; /**< script info for the room */
   struct obj_data *contents;  /**< List of items in room */
   struct char_data *people;   /**< List of NPCs / PCs in room */
+  
+  struct list_data * events;
 };
 
 /* char-related structures */
@@ -990,6 +1000,14 @@ struct time_data
   time_t birth; /**< Represents the PCs birthday, used to calculate age. */
   time_t logon; /**< Time of the last logon, used to calculate time played */
   int played;   /**< This is the total accumulated time played in secs */
+};
+
+/* Group Data Struct */
+struct group_data
+{
+  struct char_data * leader;
+  struct list_data * members;
+  int group_flags;
 };
 
 /** The pclean_criteria_data is set up in config.c and used in db.c to determine
@@ -1203,6 +1221,8 @@ struct char_data
 
   struct follow_type *followers; /**< List of characters following */
   struct char_data *master;      /**< List of character being followed */
+  
+  struct group_data *group;      /**< Character's Group */
 
   long pref; /**< unique session id */
   
@@ -1520,6 +1540,8 @@ struct game_operation
   int medit_advanced; /**< Does the medit OLC show the advanced stats menu ? */
   int ibt_autosave; /**< Does "bug resolve" autosave ? */
   int protocol_negotiation; /**< Enable the protocol negotiation system ? */
+  int special_in_comm; /**< Enable use of a special character in communication channels ? */
+  int debug_mode; /**< Current Debug Mode */
 };
 
 /** The Autowizard options. */

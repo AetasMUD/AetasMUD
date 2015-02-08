@@ -260,7 +260,6 @@ ACMD(do_sneak);
 ACMD(do_split);
 ACMD(do_steal);
 ACMD(do_title);
-ACMD(do_ungroup);
 ACMD(do_visible);
 ACMD(do_wimpy);
 ACMD(do_clan);
@@ -295,6 +294,7 @@ void perform_immort_vis(struct char_data *ch);
 void snoop_check(struct char_data *ch);
 bool change_player_name(struct char_data *ch, struct char_data *vict, char *new_name);
 bool AddRecentPlayer(char *chname, char *chhost, bool newplr, bool cpyplr);
+void return_to_char(struct char_data * ch);
 /* Functions with subcommands */
 /* do_date */
 ACMD(do_date);

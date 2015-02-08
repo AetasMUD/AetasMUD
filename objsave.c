@@ -1024,7 +1024,8 @@ obj_save_data *objsave_parse_objects(FILE *fl)
 	  while (tempsave) {
             if (tempsave->next == current)
               tempsave->next = NULL;
-            tempsave = tempsave->next;          }
+            tempsave = tempsave->next;
+      }
           free(current);
         }
       }
@@ -1044,10 +1045,15 @@ obj_save_data *objsave_parse_objects(FILE *fl)
     if (*line == '#') {
       /* check for false alarm. */
       if (sscanf(line, "#%d", &nr) == 1) {
-        if (real_object(nr) == NOTHING) { //object does not exist
-        	  log("SYSERR: Protection: deleting object %d.", nr);
+        /* If we attempt to load an object with a legal VNUM 0-65534, that
+         * does not exist, skip it. If the object has a VNUM of NOTHING or
+         * 65535, then we assume it doesn't exist on purpose. (Custom Item,
+         * Coins, Corpse, etc...) */
+        if (real_object(nr) == NOTHING && nr != NOTHING) {
+            log("SYSERR: Prevented loading of non-existant item #%d.", nr);
             continue;
           }
+          
       	if (temp) {
       	  current->obj = temp;
     	  CREATE(current->next, obj_save_data, 1);
@@ -1056,9 +1062,9 @@ obj_save_data *objsave_parse_objects(FILE *fl)
        	  current->locate = 0;
           temp = NULL;
         }
-      }
-      else
-      	continue;
+      } else
+      	  continue;
+    
       /* we have the number, check it, load obj. */
       if (nr == NOTHING) {   /* then it is unique */
         temp = create_obj();
@@ -1076,6 +1082,12 @@ obj_save_data *objsave_parse_objects(FILE *fl)
       /* go read next line - nothing more to see here. */
       continue;
     }
+    
+    /* If "temp" is NULL, we are most likely progressing through
+     * a non-existant object, so just keep continuing till we find 
+     * the next object */
+    if (temp == NULL)
+      continue;
 
     tag_argument(line, tag);
     num = atoi(line);

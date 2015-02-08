@@ -28,12 +28,16 @@
    to adjust these numbers if you ever add more. Note: Most of the NUM_ and
    MAX_ limits have been moved to more appropriate locations. */
 
+#define TOGGLE_VAR(var)	if (var == YES) { var = NO; } else { var = YES; }
+#define CHECK_VAR(var)  ((var == YES) ? "Yes" : "No")
+   
 #define MAX_PEOPLE 10 /* Max # of people you want to sit in furniture. */
 
 /* Limit information. */
-#define MAX_ROOM_NAME	75
-#define MAX_MOB_NAME	50
-#define MAX_OBJ_NAME	50
+/* Name size increased due to larger colour/mxp codes. -Vatiken */
+#define MAX_ROOM_NAME	150
+#define MAX_MOB_NAME	100
+#define MAX_OBJ_NAME	100
 #define MAX_ROOM_DESC	2048
 #define MAX_EXIT_DESC	256
 #define MAX_EXTRA_DESC  512
@@ -97,6 +101,8 @@ struct oasis_olc_data {
   struct trig_data *trig;
   struct prefs_data *prefs;      /* used for 'prefedit'      */
   struct ibt_data *ibt;          /* used for 'ibtedit'       */
+  struct message_list *msg;
+  struct message_type *m_type;
   int script_mode;
   int trigger_position;
   int item_type;
@@ -124,6 +130,7 @@ extern const char *nrm, *grn, *cyn, *yel;
 #define OLC_CONFIG(d)  (OLC(d)->config)   /**< Config structure.	*/
 #define OLC_TRIG(d)    (OLC(d)->trig)     /**< Trigger structure.   */
 #define OLC_QUEST(d)   (OLC(d)->quest)    /**< Quest structure      */
+#define OLC_MSG_LIST(d) (OLC(d)->msg)      /**< Message structure    */
 
 #define OLC_ACTION(d)  (OLC(d)->action)   /**< Action structure     */
 #define OLC_HELP(d)    (OLC(d)->help)     /**< Hedit structure      */
@@ -131,6 +138,7 @@ extern const char *nrm, *grn, *cyn, *yel;
 #define OLC_IBT(d)     (OLC(d)->ibt)      /**< IBT (idea/bug/typo) structure */
 /* Other macros. */
 #define OLC_EXIT(d)		(OLC_ROOM(d)->dir_option[OLC_VAL(d)])
+#define OLC_MSG(d)     (OLC(d)->m_type)
 
 /* Cleanup types. */
 #define CLEANUP_ALL		1	/* Free the whole lot.			*/
@@ -384,6 +392,7 @@ extern const char *nrm, *grn, *cyn, *yel;
 #define CEDIT_MAP_OPTION   54
 #define CEDIT_MAP_SIZE     55
 #define CEDIT_MINIMAP_SIZE   56
+#define CEDIT_DEBUG_MODE     57
 
 /* Hedit Submodes of connectedness. */
 #define HEDIT_CONFIRM_SAVESTRING        0
@@ -462,6 +471,10 @@ ACMD(do_tedit);
 
 /* public functions from qedit.c */
 ACMD(do_oasis_qedit);
+
+/* public functions from msgedit.c */
+ACMD(do_msgedit);
+void msgedit_parse(struct descriptor_data *d, char *arg);
 
 /* public functions from oasis_copy.c */
 int buildwalk(struct char_data *ch, int dir);

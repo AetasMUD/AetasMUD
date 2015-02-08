@@ -69,6 +69,7 @@ char *strpaste(char *str1, char *str2, char *joiner);
 void new_affect(struct affected_type *af);
 int get_class_by_name(char *classname);
 char * convert_from_tabs(char * string);
+int count_non_protocol_chars(char * str);
 
 /* Public functions made available form weather.c */
 void weather_and_time(int mode);
@@ -929,6 +930,11 @@ do                                                              \
 /** Defines if ch is outdoors or not. */
 #define OUTSIDE(ch) (!ROOM_FLAGGED(IN_ROOM(ch), ROOM_INDOORS))
 
+/* Group related defines */
+#define GROUP(ch)            (ch->group)
+#define GROUP_LEADER(group)  (group->leader)
+#define GROUP_FLAGS(group)   (group->group_flags)
+
 /* Happy-hour defines */
 #define IS_HAPPYQP   (happy_data.qp_rate > 0)
 #define IS_HAPPYEXP  (happy_data.exp_rate > 0)
@@ -1111,6 +1117,10 @@ do                                                              \
 #define CONFIG_IBT_AUTOSAVE config_info.operation.ibt_autosave
 /** Use the protocol negotiation system? */
 #define CONFIG_PROTOCOL_NEGOTIATION config_info.operation.protocol_negotiation
+/** Use the special character in comm channels? */
+#define CONFIG_SPECIAL_IN_COMM config_info.operation.special_in_comm
+/** Activate debug mode? */
+#define CONFIG_DEBUG_MODE config_info.operation.debug_mode
 
 /* Autowiz */
 /** Use autowiz or not? */
