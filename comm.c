@@ -76,6 +76,7 @@
 #include "boards.h"
 #include "act.h"
 #include "ban.h"
+#include "msgedit.h"
 #include "fight.h"
 #include "spells.h" /* for affect_update */
 #include "modify.h"
@@ -450,8 +451,7 @@ void copyover_recover()
     clear_char(d->character);
     CREATE(d->character->player_specials, struct player_special_data, 1);
        
-    /* Allocate mobile event list */
-    d->character->events = create_list();
+    new_mobile_data(d->character);
 
     d->character->desc = d;
 
@@ -473,7 +473,13 @@ void copyover_recover()
     } else {
       write_to_descriptor (desc, "\n\rCopyover recovery complete.\n\r");
       GET_PREF(d->character) = pref;
+      
       enter_player_game(d);
+      
+      /* Clear their load room if it's not persistant. */
+      if (!PLR_FLAGGED(d->character, PLR_LOADROOM))
+        GET_LOADROOM(d->character) = NOWHERE;
+      
       d->connected = CON_PLAYING;
       look_at_room(d->character, 0);
 
@@ -2213,6 +2219,7 @@ void close_socket(struct descriptor_data *d)
     case CON_AEDIT:
     case CON_HEDIT:
     case CON_QEDIT:
+    case CON_MSGEDIT:
       cleanup_olc(d, CLEANUP_ALL);
       break;
     default:
@@ -2477,12 +2484,12 @@ void send_to_all(const char *messg, ...)
 void send_to_outdoor(const char *messg, ...)
 {
   struct descriptor_data *i;
+  va_list args;
 
   if (!messg || !*messg)
     return;
 
   for (i = descriptor_list; i; i = i->next) {
-    va_list args;
 
     if (STATE(i) != CON_PLAYING || i->character == NULL)
       continue;
@@ -2510,6 +2517,28 @@ void send_to_room(room_rnum room, const char *messg, ...)
     va_start(args, messg);
     vwrite_to_output(i->desc, messg, args);
     va_end(args);
+  }
+}
+
+/* Sends a message to the entire group, except for ch.
+ * Send 'ch' as NULL, if you want to message to reach
+ * everyone. -Vatiken */
+void send_to_group(struct char_data *ch, struct group_data *group, const char * msg, ...)
+{
+	struct char_data *tch;
+  va_list args;
+
+  if (msg == NULL)
+    return;
+    	
+  while ((tch = simple_list(group->members)) != NULL) {
+    if (tch != ch && !IS_NPC(tch) && tch->desc && STATE(tch->desc) == CON_PLAYING) {
+      write_to_output(tch->desc, "%s[%sGroup%s]%s ", 
+      CCGRN(tch, C_NRM), CBGRN(tch, C_NRM), CCGRN(tch, C_NRM), CCNRM(tch, C_NRM));
+      va_start(args, msg);
+      vwrite_to_output(tch->desc, msg, args);
+      va_end(args);
+    }
   }
 }
 

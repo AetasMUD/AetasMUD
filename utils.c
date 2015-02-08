@@ -584,7 +584,6 @@ void stop_follower(struct char_data *ch)
 
   ch->master = NULL;
   REMOVE_BIT_AR(AFF_FLAGS(ch), AFF_CHARM);
-  REMOVE_BIT_AR(AFF_FLAGS(ch), AFF_GROUP);
 }
 
 /** Finds the number of follows that are following, and charmed by, the
@@ -829,6 +828,38 @@ int count_color_chars(char *string)
     }
   }
   return num;
+}
+
+/* Not the prettiest thing I've ever written but it does the task which
+ * is counting all characters in a string which are not part of the
+ * protocol system. This is with the exception of detailed MXP codes. */
+int count_non_protocol_chars(char * str)
+{
+  int count = 0;
+  char *string = str;
+  
+  while (*string) {
+    if (*string == '\r' || *string == '\n') {
+      string++;
+      continue;
+    }
+    if (*string == '@' || *string == '\t') {
+      string++;
+      if (*string != '[' && *string != '<' && *string != '>' && *string != '(' && *string != ')')
+        string++;
+      else if (*string == '[') {
+        while (*string && *string != ']')
+          string++;
+        string++;
+      } else
+        string++;
+      continue;
+    }
+    count++;
+    string++;
+  }
+  
+  return count;
 }
 
 /** Tests to see if a room is dark. Rules (unless overridden by ROOM_DARK):

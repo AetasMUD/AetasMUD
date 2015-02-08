@@ -647,14 +647,11 @@ ACMD(do_gen_door)
     keynum = DOOR_KEY(ch, obj, door);
     if (!(DOOR_IS_OPENABLE(ch, obj, door)))
       send_to_char(ch, "You can't %s that!\r\n", cmd_door[subcmd]);
-    else if (!DOOR_IS_OPEN(ch, obj, door) &&
-	     IS_SET(flags_door[subcmd], NEED_OPEN))
+    else if (!DOOR_IS_OPEN(ch, obj, door) && IS_SET(flags_door[subcmd], NEED_OPEN))
       send_to_char(ch, "But it's already closed!\r\n");
-    else if (!DOOR_IS_CLOSED(ch, obj, door) &&
-	     IS_SET(flags_door[subcmd], NEED_CLOSED))
+    else if (!DOOR_IS_CLOSED(ch, obj, door) && IS_SET(flags_door[subcmd], NEED_CLOSED))
       send_to_char(ch, "But it's currently open!\r\n");
-    else if (!(DOOR_IS_LOCKED(ch, obj, door)) &&
-	     IS_SET(flags_door[subcmd], NEED_LOCKED))
+    else if (!(DOOR_IS_LOCKED(ch, obj, door)) && IS_SET(flags_door[subcmd], NEED_LOCKED))
       send_to_char(ch, "Oh.. it wasn't locked, after all..\r\n");
     else if (!(DOOR_IS_UNLOCKED(ch, obj, door)) && IS_SET(flags_door[subcmd], NEED_UNLOCKED) && ((!IS_NPC(ch) && PRF_FLAGGED(ch, PRF_AUTOKEY))) && (has_key(ch, keynum)) )
     {
@@ -970,8 +967,8 @@ ACMD(do_follow)
 	return;
       }
       if (ch->master)
-	stop_follower(ch);
-      REMOVE_BIT_AR(AFF_FLAGS(ch), AFF_GROUP);
+	    stop_follower(ch);
+    
       add_follower(ch, leader);
     }
   }

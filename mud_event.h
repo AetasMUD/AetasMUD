@@ -18,6 +18,7 @@
 #define EVENT_WORLD 0
 #define EVENT_DESC  1
 #define EVENT_CHAR  2
+#define EVENT_ROOM  3
 
 #define NEW_EVENT(event_id, struct, var, time) (attach_mud_event(new_mud_event(event_id, struct,  var), time))
 
@@ -25,6 +26,7 @@ typedef enum {
     eNULL,
     ePROTOCOLS, /* The Protocol Detection Event */
     eWHIRLWIND, /* The Whirlwind Attack */
+    eSPL_DARKNESS, /* Darkness Spell */
 } event_id;
 
 struct mud_event_list {
@@ -49,6 +51,7 @@ struct mud_event_data *new_mud_event(event_id iId, void *pStruct, char *sVariabl
 void attach_mud_event(struct mud_event_data *pMudEvent, long time);
 void free_mud_event(struct mud_event_data *pMudEvent);
 struct mud_event_data * char_has_mud_event(struct char_data * ch, event_id iId);
+void clear_char_event_list(struct char_data * ch);
 
 /* Events */
 EVENTFUNC(event_countdown);

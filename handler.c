@@ -15,6 +15,7 @@
 #include "comm.h"
 #include "db.h"
 #include "handler.h"
+#include "screen.h"
 #include "interpreter.h"
 #include "spells.h"
 #include "dg_scripts.h"
@@ -22,6 +23,7 @@
 #include "class.h"
 #include "fight.h"
 #include "quest.h"
+#include "mud_event.h"
 
 /* local file scope variables */
 static int extractions_pending = 0;
@@ -833,6 +835,17 @@ void extract_obj(struct obj_data *obj)
   if (SCRIPT(obj))
     extract_script(obj, OBJ_TRIGGER);
 
+  if (obj->events != NULL) {
+	  if (obj->events->iSize > 0) {
+		struct event * pEvent;
+
+		while ((pEvent = simple_list(obj->events)) != NULL)
+		  event_cancel(pEvent);
+	  }
+	  free_list(obj->events);
+    obj->events = NULL;
+  }
+
   if (GET_OBJ_RNUM(obj) == NOTHING || obj->proto_script != obj_proto[GET_OBJ_RNUM(obj)].proto_script)
     free_proto_script(obj, OBJ_TRIGGER);
 
@@ -929,6 +942,10 @@ void extract_char_final(struct char_data *ch)
   if (ch->followers || ch->master)
     die_follower(ch);
 
+  /* Check to see if we are grouped! */
+  if (GROUP(ch))
+    leave_group(ch);
+
   /* transfer objects to room, if any */
   while (ch->carrying) {
     obj = ch->carrying;
@@ -949,10 +966,20 @@ void extract_char_final(struct char_data *ch)
     if (FIGHTING(k) == ch)
       stop_fighting(k);
   }
-  /* we can't forget the hunters either... */
-  for (temp = character_list; temp; temp = temp->next)
+  
+  /* Wipe character from the memory of hunters and other intelligent NPCs... */
+  for (temp = character_list; temp; temp = temp->next) {
+    /* PCs can't use MEMORY, and don't use HUNTING() */
+    if (!IS_NPC(temp))
+      continue;
+    /* If "temp" is hunting our extracted char, stop the hunt. */
     if (HUNTING(temp) == ch)
       HUNTING(temp) = NULL;
+    /* If "temp" has allocated memory data and our ch is a PC, forget the 
+     * extracted character (if he/she is remembered) */  
+    if (!IS_NPC(ch) && GET_POS(ch) == POS_DEAD && MEMORY(temp))
+      forget(temp, ch); /* forget() is safe to use without a check. */
+  }
 
   char_from_room(ch);
 
@@ -985,6 +1012,7 @@ void extract_char_final(struct char_data *ch)
 void extract_char(struct char_data *ch)
 {
   char_from_furniture(ch);
+  clear_char_event_list(ch);
 
   if (IS_NPC(ch))
     SET_BIT_AR(MOB_FLAGS(ch), MOB_NOTDEADYET);
@@ -1393,4 +1421,101 @@ int find_all_dots(char *arg)
     return (FIND_ALLDOT);
   } else
     return (FIND_INDIV);
+}
+
+/* Group Handlers */
+struct group_data * create_group(struct char_data * leader) 
+{
+  struct group_data * new_group;
+  
+  /* Allocate Group Memory & Attach to Group List*/
+  CREATE(new_group, struct group_data, 1);
+  add_to_list(new_group, group_list);
+  
+  /* Allocate Members List */
+  new_group->members = create_list();
+  
+  /* Clear Data */
+  new_group->group_flags = 0;
+  
+  /* Assign Data */
+  SET_BIT(GROUP_FLAGS(new_group), GROUP_OPEN);
+  
+  if (IS_NPC(leader))
+    SET_BIT(GROUP_FLAGS(new_group), GROUP_NPC);
+  
+  join_group(leader, new_group);
+  
+  return (new_group);
+}
+
+void free_group(struct group_data * group)
+{
+  struct char_data *tch;
+	struct iterator_data Iterator;
+	
+  if (group->members->iSize) {
+		for (tch = (struct char_data *) merge_iterator(&Iterator, group->members);
+		  tch; 
+		    tch = next_in_list(&Iterator))
+          leave_group(tch);
+          
+    remove_iterator(&Iterator);
+  }
+  
+  free_list(group->members);
+  remove_from_list(group, group_list);
+  free(group);
+}
+
+void leave_group(struct char_data *ch)
+{
+  struct group_data *group;
+  struct char_data *tch;
+  struct iterator_data Iterator;
+  bool found_pc = FALSE;
+	
+  if ((group = ch->group) == NULL)
+    return;
+
+  send_to_group(NULL, group, "%s has left the group.\r\n", GET_NAME(ch));
+
+  remove_from_list(ch, group->members);
+  ch->group = NULL;
+  
+  if (group->members->iSize) {
+    for (tch = (struct char_data *) merge_iterator(&Iterator, group->members);
+      tch; tch = next_in_list(&Iterator))
+        if (!IS_NPC(tch)) 
+          found_pc = TRUE;
+          
+    remove_iterator(&Iterator);  
+  }
+
+  if (!found_pc)
+    SET_BIT(GROUP_FLAGS(group), GROUP_NPC);
+  
+  if (GROUP_LEADER(group) == ch && group->members->iSize) {
+    group->leader = (struct char_data *) random_from_list(group->members);
+    send_to_group(NULL, group, "%s has assumed leadership of the group.\r\n", GET_NAME(GROUP_LEADER(group)));
+  } else if (group->members->iSize == 0)
+    free_group(group); 
+}
+
+void join_group(struct char_data *ch, struct group_data *group)
+{
+  add_to_list(ch, group->members);
+	
+  if (group->leader == NULL)
+    group->leader = ch;
+	  
+  ch->group = group;  
+  
+  if (IS_SET(group->group_flags, GROUP_NPC) && !IS_NPC(ch))
+    REMOVE_BIT(GROUP_FLAGS(group), GROUP_NPC);
+	
+  if (group->leader == ch)
+    send_to_group(NULL, group, "%s becomes leader of the group.\r\n", GET_NAME(ch));
+  else
+    send_to_group(NULL, group, "%s joins the group.\r\n", GET_NAME(ch));		
 }

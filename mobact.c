@@ -155,9 +155,11 @@ void mobile_activity(void)
       for (vict = world[IN_ROOM(ch)].people; vict && !found; vict = vict->next_in_room) 
       {
 	      if (ch == vict || !IS_NPC(vict) || !FIGHTING(vict))
-          continue; 
+            continue;
+          if (GROUP(vict) && GROUP(vict) == GROUP(ch))
+            continue;
 	      if (IS_NPC(FIGHTING(vict)) || ch == FIGHTING(vict))
-          continue;
+            continue;
 
 	      act("$n jumps to the aid of $N!", FALSE, ch, 0, vict, TO_ROOM);
 	      hit(ch, FIGHTING(vict), TYPE_UNDEFINED);

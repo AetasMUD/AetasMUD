@@ -176,6 +176,9 @@ void redit_setup_existing(struct descriptor_data *d, int real_num)
   /* an infinite loop when you next act() in the new room (goto?) */ 
   /* and you are your next_in_room          -- anderyu (10-05-22) */ 
   room->people = NULL; 
+  
+  /* Nullify the events structure. */
+  room->events = NULL;
 
   /* Allocate space for all strings. */
   room->name = str_udup(world[real_num].name);
@@ -680,6 +683,10 @@ void redit_parse(struct descriptor_data *d, char *arg)
   case REDIT_NAME:
     if (!genolc_checkstring(d, arg))
       break;
+    if (count_non_protocol_chars(arg) > MAX_ROOM_NAME / 2) {
+      write_to_output(d, "Size limited to %d non-protocol characters.\r\n", MAX_ROOM_NAME / 2);
+      break;
+    }
     if (OLC_ROOM(d)->name)
       free(OLC_ROOM(d)->name);
     arg[MAX_ROOM_NAME - 1] = '\0';

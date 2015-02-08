@@ -51,7 +51,6 @@ static void show_obj_modifiers(struct obj_data *obj, struct char_data *ch);
 static void perform_immort_where(struct char_data *ch, char *arg);
 static void perform_mortal_where(struct char_data *ch, char *arg);
 static void print_object_location(int num, struct obj_data *obj, struct char_data *ch, int recur);
-bool in_same_group(struct char_data *ch, struct char_data *vict);
 
 
 /* Subcommands */
@@ -59,31 +58,6 @@ bool in_same_group(struct char_data *ch, struct char_data *vict);
 #define SHOW_OBJ_LONG     0
 #define SHOW_OBJ_SHORT    1
 #define SHOW_OBJ_ACTION   2
-
-
-bool in_same_group(struct char_data *ch, struct char_data *vict)
-{
-  struct char_data *gr_leader;
-  struct follow_type *f, *f_next;
-
-  if (IS_NPC(ch) || IS_NPC(vict))
-    return FALSE;
-
-  if (!AFF_FLAGGED(ch, AFF_GROUP) || (!AFF_FLAGGED(vict, AFF_GROUP)))
-    return FALSE;
-
-  if (ch->master != NULL)
-    gr_leader = ch->master;
-  else
-    gr_leader = ch;
-
-  for (f = gr_leader->followers; f; f = f_next) {
-    f_next = f->next;
-    if (vict == f->follower) return TRUE;
-	if (vict == ch->master) return TRUE;
-  }
-  return FALSE;
-}
 
 
 ACMD(do_spells)
@@ -515,6 +489,17 @@ static void list_one_char(struct char_data *i, struct char_data *ch)
     }
   }  
   
+  if (GROUP(i)) {
+    if (GROUP(i) == GROUP(ch))
+      send_to_char(ch, "(%s%s%s) ", CBGRN(ch, C_NRM),
+	GROUP_LEADER(GROUP(i)) == i ? "leader" : "group",
+        CCYEL(ch, C_NRM));
+    else
+      send_to_char(ch, "(%s%s%s) ", CBRED(ch, C_NRM),
+        GROUP_LEADER(GROUP(i)) == i ? "leader" : "group",
+	CCYEL(ch, C_NRM));
+  }
+  
   // if they are a mob and are in default position, then use their long description
   // the new line at the end is stripped off in db.c so there isn't an extra new line
   if (IS_NPC(i) && i->player.long_descr && GET_POS(i) == GET_DEFAULT_POS(i))
@@ -531,15 +516,15 @@ static void list_one_char(struct char_data *i, struct char_data *ch)
       send_to_char(ch, "%s%s%s", i->player.name, *GET_TITLE(i) ? " " : "", GET_TITLE(i));
 
     if (AFF_FLAGGED(i, AFF_HIDE))
-      send_to_char(ch, " %s(hidden)%s", CCRED(ch, C_NRM), in_same_group(ch,i) ? CBYEL(ch, C_NRM) : CCYEL(ch, C_NRM));
+      send_to_char(ch, " %s(hidden)%s", CCRED(ch, C_NRM), CCYEL(ch, C_NRM));
     if (!IS_NPC(i) && !i->desc)
-      send_to_char(ch, " %s(linkless)%s", CBWHT(ch, C_NRM), in_same_group(ch,i) ? CBYEL(ch, C_NRM) : CCYEL(ch, C_NRM));
+      send_to_char(ch, " %s(linkless)%s", CBWHT(ch, C_NRM), CCYEL(ch, C_NRM));
     if (!IS_NPC(i) && PLR_FLAGGED(i, PLR_WRITING))
-      send_to_char(ch, " %s(writing)%s", CCGRN(ch, C_NRM), in_same_group(ch,i) ? CBYEL(ch, C_NRM) : CCYEL(ch, C_NRM));
+      send_to_char(ch, " %s(writing)%s", CCGRN(ch, C_NRM), CCYEL(ch, C_NRM));
     if (!IS_NPC(i) && PRF_FLAGGED(i, PRF_BUILDWALK))
-      send_to_char(ch, " %s(buildwalk)%s", CCGRN(ch, C_NRM), in_same_group(ch,i) ? CBYEL(ch, C_NRM) : CCYEL(ch, C_NRM));
+      send_to_char(ch, " %s(buildwalk)%s", CCGRN(ch, C_NRM), CCYEL(ch, C_NRM));
     if (!IS_NPC(i) && PRF_FLAGGED(i, PRF_AFK))
-      send_to_char(ch, " %s(AFK)%s", CBGRN(ch, C_NRM), in_same_group(ch,i) ? CBYEL(ch, C_NRM) : CCYEL(ch, C_NRM));
+      send_to_char(ch, " %s(AFK)%s", CBGRN(ch, C_NRM), CCYEL(ch, C_NRM));
 
     if (GET_POS(i) != POS_FIGHTING) 
 	{
@@ -605,7 +590,7 @@ static void list_char_to_char(struct char_data *list, struct char_data *ch)
       if (!IS_NPC(ch) && !PRF_FLAGGED(ch, PRF_HOLYLIGHT) &&
       	   IS_NPC(i) && i->player.long_descr && *i->player.long_descr == '.')
         continue;
-      send_to_char(ch, "%s", in_same_group(ch,i) ? CBYEL(ch, C_NRM) : CCYEL(ch, C_NRM));
+      send_to_char(ch, "%s", CCYEL(ch, C_NRM));
       if (CAN_SEE(ch, i))
         list_one_char(i, ch);
       else if (IS_DARK(IN_ROOM(ch)) && !CAN_SEE_IN_DARK(ch) &&
@@ -725,7 +710,7 @@ void look_at_room(struct char_data *ch, int ignore_brief)
 
 	sprinttype(rm->sector_type, sector_types, buf, sizeof(buf));
     send_to_char(ch, "[%5d] ", GET_ROOM_VNUM(IN_ROOM(ch)));
-    send_to_char(ch, "%s [%s] ", world[IN_ROOM(ch)].name, buf);
+    send_to_char(ch, "%s [%s] [ %s ]", world[IN_ROOM(ch)].name, buf, sector_types[world[IN_ROOM(ch)].sector_type]);
 	sprintbitarray(ROOM_FLAGS(IN_ROOM(ch)), room_bits, RF_ARRAY_MAX, buf);
 	send_to_char(ch, "[ %s] ", buf);
 
@@ -741,16 +726,11 @@ void look_at_room(struct char_data *ch, int ignore_brief)
   send_to_char(ch, "%s\r\n", CCNRM(ch, C_NRM));
 
   if ((!IS_NPC(ch) && !PRF_FLAGGED(ch, PRF_BRIEF)) || ignore_brief ||
-      ROOM_FLAGGED(IN_ROOM(ch), ROOM_DEATH))
-  {
+      ROOM_FLAGGED(IN_ROOM(ch), ROOM_DEATH)) {
       if(!IS_NPC(ch) && PRF_FLAGGED(ch, PRF_AUTOMAP) && can_see_map(ch))
-      {
         str_and_map(world[target_room].description, ch, target_room);
-      }
       else
-      {
-    send_to_char(ch, "%s", world[IN_ROOM(ch)].description);
-      }
+        send_to_char(ch, "%s", world[IN_ROOM(ch)].description);
   }
 
   /* autoexits */
@@ -1423,11 +1403,10 @@ int search_help(const char *argument, int level)
       while (level < help_table[mid].min_level && mid < (bot + top) / 2)
         mid++;
 
-//    if (strn_cmp(argument, help_table[mid].keywords, minlen) || level < help_table[mid].min_level)
-      if (strn_cmp(argument, help_table[mid].keywords, minlen))
+      if (strn_cmp(argument, help_table[mid].keywords, minlen) || level < help_table[mid].min_level)
 	      break;
 
-      return mid;
+      return (mid);
     }
     else if (chk > 0)
       bot = mid + 1;
@@ -1477,7 +1456,7 @@ ACMD(do_help)
           send_to_char(ch, "\r\nDid you mean:\r\n");
           found = 1;
         }
-        send_to_char(ch, "  %s\r\n", help_table[i].keywords);
+        send_to_char(ch, "  \t<send link=\"Help %s\">%s\t</send>\r\n", help_table[i].keywords, help_table[i].keywords);
       }
     }
     return;
@@ -1622,9 +1601,9 @@ ACMD(do_who)
         continue;
       if (showclass && !(showclass & (1 << GET_CLASS(tch))))
         continue;
-      if (showgroup && (!tch->master || !AFF_FLAGGED(tch, AFF_GROUP)))
+      if (showgroup && !GROUP(tch))
         continue;
-      if (showleader && (!tch->followers || !AFF_FLAGGED(tch, AFF_GROUP)))
+      if (showleader && (!GROUP(tch) || GROUP_LEADER(GROUP(tch)) != tch))
         continue;
     
 	 for (i = 0; *rank[i].disp != '\n'; i++)
@@ -1672,9 +1651,9 @@ ACMD(do_who)
         continue;
       if (showclass && !(showclass & (1 << GET_CLASS(tch))))
         continue;
-      if (showgroup && (!tch->master || !AFF_FLAGGED(tch, AFF_GROUP)))
+      if (showgroup && !GROUP(tch))
         continue;
-      if (showleader && (!tch->followers || !AFF_FLAGGED(tch, AFF_GROUP)))
+      if (showleader && (!GROUP(tch) || GROUP_LEADER(GROUP(tch)) != tch))
         continue;
 
 	if (!PRF_FLAGGED(tch, PRF_NOWHO) || GET_LEVEL(ch) >= LVL_IMMORT) {
@@ -1907,7 +1886,7 @@ ACMD(do_users)
     }
   }				/* end while (parser) */
   send_to_char(ch,
-	 "Num Class     Name         State          Idl   Login@@   Site\r\n"
+	 "Num Class     Name         State          Idl   Login\t*   Site\r\n"
 	 "--- --------- ------------ -------------- ----- -------- ------------------------\r\n");
 
   one_argument(argument, arg);
@@ -1976,8 +1955,7 @@ ACMD(do_users)
       sprintf(line2, "%s%s%s", CCGRN(ch, C_SPR), line, CCNRM(ch, C_SPR));
       strcpy(line, line2);
     }
-    if (STATE(d) != CON_PLAYING ||
-		(STATE(d) == CON_PLAYING && CAN_SEE(ch, d->character))) {
+    if (STATE(d) != CON_PLAYING || (STATE(d) == CON_PLAYING && CAN_SEE(ch, d->character))) {
       send_to_char(ch, "%s", line);
       num_can_see++;
     }
@@ -2884,8 +2862,7 @@ ACMD(do_whois)
      CREATE(victim, struct char_data, 1);
      clear_char(victim);
      
-     /* Allocate mobile event list */
-     victim->events = create_list();
+     new_mobile_data(victim);
  
      CREATE(victim->player_specials, struct player_special_data, 1);
 
@@ -2908,40 +2885,29 @@ ACMD(do_whois)
 
   send_to_char(ch, "Level: %d\r\n", GET_LEVEL(victim));
 
-  if (!(GET_LEVEL(victim) < LVL_IMMORT) || (GET_LEVEL(ch) >= GET_LEVEL(victim)))
-  {
+  if (!(GET_LEVEL(victim) < LVL_IMMORT) || (GET_LEVEL(ch) >= GET_LEVEL(victim))) {
     strcpy (buf, (char *) asctime(localtime(&(victim->player.time.logon))));
     buf[10] = '\0';
 
     hours = (time(0) - victim->player.time.logon) / 3600;
 
-    if (!got_from_file)
-    {
+    if (!got_from_file) {
       send_to_char(ch, "Last Logon: They're playing now!  (Idle %d Minutes)",
            victim->char_specials.timer * SECS_PER_MUD_HOUR / SECS_PER_REAL_MIN);
 
       if (!victim->desc)
-      {
         send_to_char(ch, "  (Linkless)\r\n");
-      }
       else
-      {
         send_to_char(ch, "\r\n");
-      }
+    
       if (PRF_FLAGGED(victim, PRF_AFK))
-      {
         send_to_char(ch, "%s%s is afk right now, so %s may not respond to communication.%s\r\n", CBGRN(ch, C_NRM), GET_NAME(victim), GET_SEX(victim) == SEX_NEUTRAL ? "it" : (GET_SEX(victim) == SEX_MALE ? "he" : "she"), CCNRM(ch, C_NRM));
-      }
     }
     else if (hours > 0)
-    {
       send_to_char(ch, "Last Logon: %s (%d days & %d hours ago.)\r\n", buf, hours/24, hours%24);
-    }
     else
-    {
       send_to_char(ch, "Last Logon: %s (0 hours & %d minutes ago.)\r\n",
                    buf, (int)(time(0) - victim->player.time.logon)/60);
-    }
   }
 
   if (has_mail(GET_IDNUM(victim)))
@@ -2955,7 +2921,8 @@ ACMD(do_whois)
   if (!got_from_file && victim->desc != NULL && GET_LEVEL(ch) >= LVL_GOD) 
   {
     protocol_t * prot = victim->desc->pProtocol;
-    send_to_char(ch, "Client:  %s\r\n", prot->pVariables[eMSDP_CLIENT_ID]->pValueString);
+    send_to_char(ch, "Client:  %s [%s]\r\n", prot->pVariables[eMSDP_CLIENT_ID]->pValueString,
+      prot->pVariables[eMSDP_CLIENT_VERSION]->pValueString ? prot->pVariables[eMSDP_CLIENT_VERSION]->pValueString : "Unknown");
     send_to_char(ch, "Color:   %s\r\n", prot->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt ? "Xterm" : (prot->pVariables[eMSDP_ANSI_COLORS]->ValueInt ? "Ansi" : "None"));
     send_to_char(ch, "MXP:     %s\r\n", prot->bMXP ? "Yes" : "No");
     send_to_char(ch, "Charset: %s\r\n", prot->bCHARSET ? "Yes" : "No");

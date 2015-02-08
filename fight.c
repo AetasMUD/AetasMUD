@@ -58,7 +58,6 @@ static struct char_data *next_combat_list = NULL;
 /* local file scope utility functions */
 static void perform_group_gain(struct char_data *ch, int base, struct char_data *victim);
 static void dam_message(int dam, struct char_data *ch, struct char_data *victim, int w_type);
-static void free_messages_type(struct msg_type *msg);
 static void make_corpse(struct char_data *ch);
 static void make_head(struct char_data * ch);
 static void change_alignment(struct char_data *ch, struct char_data *victim);
@@ -95,89 +94,6 @@ int compute_armor_class(struct char_data *ch)
     armorclass += dex_app[GET_DEX(ch)].defensive * 10;
 
   return (MAX(-100, armorclass));      /* -100 is lowest */
-}
-
-static void free_messages_type(struct msg_type *msg)
-{
-  if (msg->attacker_msg)	free(msg->attacker_msg);
-  if (msg->victim_msg)		free(msg->victim_msg);
-  if (msg->room_msg)		free(msg->room_msg);
-}
-
-void free_messages(void)
-{
-  int i;
-
-  for (i = 0; i < MAX_MESSAGES; i++)
-    while (fight_messages[i].msg) {
-      struct message_type *former = fight_messages[i].msg;
-
-      free_messages_type(&former->die_msg);
-      free_messages_type(&former->miss_msg);
-      free_messages_type(&former->hit_msg);
-      free_messages_type(&former->god_msg);
-
-      fight_messages[i].msg = fight_messages[i].msg->next;
-      free(former);
-    }
-}
-
-void load_messages(void)
-{
-  FILE *fl;
-  int i, type;
-  struct message_type *messages;
-  char chk[128], *buf;
-
-  if (!(fl = fopen(MESS_FILE, "r"))) {
-    log("SYSERR: Error reading combat message file %s: %s", MESS_FILE, strerror(errno));
-    exit(1);
-  }
-
-  for (i = 0; i < MAX_MESSAGES; i++) {
-    fight_messages[i].a_type = 0;
-    fight_messages[i].number_of_attacks = 0;
-    fight_messages[i].msg = NULL;
-  }
-
-  while (!feof(fl)) {
-    buf = fgets(chk, 128, fl);
-    while (!feof(fl) && (*chk == '\n' || *chk == '*'))
-      buf = fgets(chk, 128, fl);
-
-    while (*chk == 'M') {
-      buf = fgets(chk, 128, fl);
-      sscanf(chk, " %d\n", &type);
-      for (i = 0; (i < MAX_MESSAGES) && (fight_messages[i].a_type != type) &&
-         (fight_messages[i].a_type); i++);
-      if (i >= MAX_MESSAGES) {
-        log("SYSERR: Too many combat messages.  Increase MAX_MESSAGES and recompile.");
-        exit(1);
-      }
-      CREATE(messages, struct message_type, 1);
-      fight_messages[i].number_of_attacks++;
-      fight_messages[i].a_type = type;
-      messages->next = fight_messages[i].msg;
-      fight_messages[i].msg = messages;
-
-      messages->die_msg.attacker_msg = fread_action(fl, i);
-      messages->die_msg.victim_msg = fread_action(fl, i);
-      messages->die_msg.room_msg = fread_action(fl, i);
-      messages->miss_msg.attacker_msg = fread_action(fl, i);
-      messages->miss_msg.victim_msg = fread_action(fl, i);
-      messages->miss_msg.room_msg = fread_action(fl, i);
-      messages->hit_msg.attacker_msg = fread_action(fl, i);
-      messages->hit_msg.victim_msg = fread_action(fl, i);
-      messages->hit_msg.room_msg = fread_action(fl, i);
-      messages->god_msg.attacker_msg = fread_action(fl, i);
-      messages->god_msg.victim_msg = fread_action(fl, i);
-      messages->god_msg.room_msg = fread_action(fl, i);
-      buf  = fgets(chk, 128, fl);
-      while (!feof(fl) && (*chk == '\n' || *chk == '*'))
-        buf  = fgets(chk, 128, fl);
-    }
-  }
-  fclose(fl);
 }
 
 void update_pos(struct char_data *victim)
@@ -537,6 +453,10 @@ void raw_kill(struct char_data * ch, struct char_data * killer)
   if (killer)
     autoquest_trigger_check(killer, ch, NULL, AQ_MOB_KILL);
 
+  /* Alert Group if Applicable */
+  if (GROUP(ch))
+    send_to_group(ch, GROUP(ch), "%s has died.\r\n", GET_NAME(ch));
+
   update_pos(ch);
 
   make_corpse(ch);
@@ -594,20 +514,11 @@ static void perform_group_gain(struct char_data *ch, int base,
 
 static void group_gain(struct char_data *ch, struct char_data *victim)
 {
-  int tot_members, base, tot_gain;
+  int tot_members = 0, base, tot_gain;
   struct char_data *k;
-  struct follow_type *f;
 
-  if (!(k = ch->master))
-    k = ch;
-
-  if (AFF_FLAGGED(k, AFF_GROUP) && (IN_ROOM(k) == IN_ROOM(ch)))
-    tot_members = 1;
-  else
-    tot_members = 0;
-
-  for (f = k->followers; f; f = f->next)
-    if (AFF_FLAGGED(f->follower, AFF_GROUP) && IN_ROOM(f->follower) == IN_ROOM(ch))
+  while ((k = (struct char_data *) simple_list(GROUP(ch)->members)) != NULL)
+    if (IN_ROOM(ch) == IN_ROOM(k))
       tot_members++;
 
   /* round up to the nearest tot_members */
@@ -622,12 +533,9 @@ static void group_gain(struct char_data *ch, struct char_data *victim)
   else
     base = 0;
 
-  if (AFF_FLAGGED(k, AFF_GROUP) && IN_ROOM(k) == IN_ROOM(ch))
+  while ((k = (struct char_data *) simple_list(GROUP(ch)->members)) != NULL)
+    if (IN_ROOM(k) == IN_ROOM(ch))
     perform_group_gain(k, base, victim);
-
-  for (f = k->followers; f; f = f->next)
-    if (AFF_FLAGGED(f->follower, AFF_GROUP) && IN_ROOM(f->follower) == IN_ROOM(ch))
-      perform_group_gain(f->follower, base, victim);
 }
 
 static void solo_gain(struct char_data *ch, struct char_data *victim)
@@ -836,6 +744,9 @@ int skill_message(int dam, struct char_data *ch, struct char_data *vict,
   struct message_type *msg;
 
   struct obj_data *weap = GET_EQ(ch, WEAR_WIELD);
+  
+  /* @todo restructure the messages library to a pointer based system as
+   * opposed to the current cyclic location system. */
 
   for (i = 0; i < MAX_MESSAGES; i++) {
     if (fight_messages[i].a_type == attacktype) {
@@ -1056,7 +967,7 @@ int damage(struct char_data *ch, struct char_data *victim, int dam, int attackty
   /* Uh oh.  Victim died. */
   if (GET_POS(victim) == POS_DEAD) {
     if (ch != victim && (IS_NPC(victim) || victim->desc)) {
-      if (AFF_FLAGGED(ch, AFF_GROUP))
+      if (GROUP(ch))
 	group_gain(ch, victim);
       else
         solo_gain(ch, victim);
@@ -1088,7 +999,7 @@ int damage(struct char_data *ch, struct char_data *victim, int dam, int attackty
         increase_blood(victim->in_room);
  
     die(victim, ch);
-    if (IS_AFFECTED(ch, AFF_GROUP) && (local_gold > 0) && PRF_FLAGGED(ch, PRF_AUTOSPLIT) ) {
+    if (GROUP(ch) && (local_gold > 0) && PRF_FLAGGED(ch, PRF_AUTOSPLIT) ) {
       generic_find("corpse", FIND_OBJ_ROOM, ch, &tmp_char, &corpse_obj);
 	  generic_find("remains", FIND_OBJ_ROOM, ch, &tmp_char, &remains_obj);
       if (corpse_obj) {
@@ -1184,6 +1095,11 @@ void hit(struct char_data *ch, struct char_data *victim, int type)
 
   /* roll the die and take your chances... */
   diceroll = rand_number(1, 20);
+  
+  /* report for debugging if necessary */
+  if (CONFIG_DEBUG_MODE >= NRM)
+    send_to_char(ch, "\t1Debug:\r\n   \t2Thaco: \t3%d\r\n   \t2AC: \t3%d\r\n   \t2Diceroll: \t3%d\tn\r\n", 
+      calc_thaco, victim_ac, diceroll);
 
   /* Decide whether this is a hit or a miss.
    *  Victim asleep = hit, otherwise:
@@ -1285,8 +1201,7 @@ void weapon_spells(struct char_data *ch, struct char_data *vict, struct obj_data
 /* control the fights going on.  Called every 2 seconds from comm.c. */
 void perform_violence(void)
 {
-  struct char_data *ch;
-  struct follow_type *k;
+  struct char_data *ch, *tch;
 
   for (ch = combat_list; ch; ch = next_combat_list) {
     next_combat_list = ch->next_fighting;
@@ -1313,18 +1228,24 @@ void perform_violence(void)
       continue;
     }
 
-    for (k = ch->followers; k; k=k->next) {
-      /* should followers auto-assist master? */
-      if (!IS_NPC(k->follower) && !FIGHTING(k->follower) && PRF_FLAGGED(k->follower,
-	  PRF_AUTOASSIST) && (IN_ROOM(k->follower) == IN_ROOM(ch)))
-        do_assist(k->follower, GET_NAME(ch), 0, 0);
-    }
+    if (GROUP(ch)) {
+      while ((tch = (struct char_data *) simple_list(GROUP(ch)->members)) != NULL) {
+        if (tch == ch)
+          continue;
+        if (!IS_NPC(tch) && !PRF_FLAGGED(tch, PRF_AUTOASSIST))
+          continue;
+        if (IN_ROOM(ch) != IN_ROOM(tch))
+          continue;
+        if (FIGHTING(tch))
+          continue;
+        if (GET_POS(tch) != POS_STANDING)
+          continue;
+        if (!CAN_SEE(tch, ch))
+          continue;
 
-    /* should master auto-assist followers?  */
-    if (ch->master && PRF_FLAGGED(ch->master, PRF_AUTOASSIST) &&
-        FIGHTING(ch) && !FIGHTING(ch->master) && !IS_NPC(ch) &&
-        (IN_ROOM(ch->master) == IN_ROOM(ch)) && !IS_NPC(ch->master))
-      do_assist(ch->master, GET_NAME(ch), 0, 0);
+        do_assist(tch, GET_NAME(ch), 0, 0);				  
+      }
+    }
 
     hit(ch, FIGHTING(ch), TYPE_UNDEFINED);
     if (MOB_FLAGGED(ch, MOB_SPEC) && GET_MOB_SPEC(ch) && !MOB_FLAGGED(ch, MOB_NOTDEADYET)) {

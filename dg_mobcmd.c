@@ -935,11 +935,13 @@ ACMD(do_mtransform)
     tmpmob.proto_script = ch->proto_script;
     tmpmob.script = ch->script;
     tmpmob.memory = ch->memory;
+    tmpmob.events = ch->events;
     tmpmob.next_in_room = ch->next_in_room;
     tmpmob.next = ch->next;
     tmpmob.next_fighting = ch->next_fighting;
     tmpmob.followers = ch->followers;
     tmpmob.master = ch->master;
+    tmpmob.group = ch->group;
 
     GET_WAS_IN(&tmpmob) = GET_WAS_IN(ch);
     if (keep_hp) {
