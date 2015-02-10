@@ -8,7 +8,10 @@
  Header files.
  ******************************************************************************/
 
+#include "conf.h"
+#ifndef CIRCLE_WINDOWS
 #include <arpa/telnet.h>
+#endif
 #include <sys/types.h>
 #include "protocol.h"
 

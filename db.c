@@ -185,8 +185,9 @@ char *fread_action(FILE *fl, int nr)
     return (NULL);
 
   parse_at(buf);
-  /* Some clients interpret '\r' the same as { '\r' '\n' }, so the original way of just
-     replacing '\n' with '\0' would appear as 2 new lines following the action */
+  /* Some clients interpret '\r' the same as { '\r' '\n' }, so the original way
+   * of just replacing '\n' with '\0' would appear as 2 new lines following the
+   * action */
   for (i = 0; buf[i] != '\0'; i++)
     if (buf[i] == '\r' || buf[i] == '\n') {
       buf[i] = '\0';
@@ -3532,7 +3533,7 @@ void init_char(struct char_data *ch)
 
   GET_NUM_QUESTS(ch) = 0;
   ch->player_specials->saved.completed_quests = NULL;
-  GET_QUEST(ch) = -1;
+  GET_QUEST(ch) = NOTHING;
 
   ch->player.time.birth = time(0);
   ch->player.time.logon = time(0);
