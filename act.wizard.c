@@ -1266,7 +1266,7 @@ ACMD(do_switch)
   else if (victim->desc)
     send_to_char(ch, "You can't do that, the body is already in use!\r\n");
   else if ((GET_LEVEL(ch) < LVL_IMPL) && !IS_NPC(victim))
-    send_to_char(ch, "You aren't holy enough to use a mortal's body.\r\n");
+    send_to_char(ch, "You are not holy enough to use their body.\r\n");
   else if (GET_LEVEL(ch) < LVL_GRGOD && ROOM_FLAGGED(IN_ROOM(victim), ROOM_GODROOM))
     send_to_char(ch, "You are not godly enough to use that room!\r\n");
   else if (GET_LEVEL(ch) < LVL_GRGOD && ROOM_FLAGGED(IN_ROOM(victim), ROOM_HOUSE)
@@ -1897,11 +1897,11 @@ struct last_entry *find_llog_entry(int punique, long idnum) {
   /* we'll search last to first, since it's faster than any thing else we can
    * do (like searching for the last shutdown/etc..) */
   for(tmp=recs-1; tmp > 0; tmp--) {
-    fseek(fp,-1*(sizeof(struct last_entry)),SEEK_CUR);
+    fseek(fp,-1*((long)sizeof(struct last_entry)),SEEK_CUR);
     if (fread(&mlast,sizeof(struct last_entry),1,fp) != 1)
       return NULL;
         /*another one to keep that stepback */
-    fseek(fp,-1*(sizeof(struct last_entry)),SEEK_CUR);
+    fseek(fp,-1*((long)sizeof(struct last_entry)),SEEK_CUR);
 
     if(mlast.idnum == idnum && mlast.punique == punique) {
       /* then we've found a match */
@@ -1936,10 +1936,10 @@ static void mod_llog_entry(struct last_entry *llast,int type) {
   /* We'll search last to first, since it's faster than any thing else we can
    * do (like searching for the last shutdown/etc..) */
   for(tmp=recs; tmp > 0; tmp--) {
-    fseek(fp,-1*(sizeof(struct last_entry)),SEEK_CUR);
+    fseek(fp,-1*((long)sizeof(struct last_entry)),SEEK_CUR);
     i = fread(&mlast,sizeof(struct last_entry),1,fp);
     /* Another one to keep that stepback. */
-    fseek(fp,-1*(sizeof(struct last_entry)),SEEK_CUR);
+    fseek(fp,-1*((long)sizeof(struct last_entry)),SEEK_CUR);
 
     if(mlast.idnum == llast->idnum && mlast.punique == llast->punique) {
       /* Then we've found a match, lets assume quit is inviolate, mainly
@@ -2140,9 +2140,9 @@ ACMD(do_last)
 
   send_to_char(ch, "Last log\r\n");
   while(num > 0 && recs > 0) {
-    fseek(fp,-1* (sizeof(struct last_entry)),SEEK_CUR);
+    fseek(fp,-1* ((long)sizeof(struct last_entry)),SEEK_CUR);
     i = fread(&mlast,sizeof(struct last_entry),1,fp);
-    fseek(fp,-1*(sizeof(struct last_entry)),SEEK_CUR);
+    fseek(fp,-1*((long)sizeof(struct last_entry)),SEEK_CUR);
     if(!*name ||(*name && !str_cmp(name, mlast.username))) {
       send_to_char(ch,"%10.10s %20.20s %16.16s - ",
         mlast.username, mlast.hostname, ctime(&mlast.time));
@@ -2218,7 +2218,7 @@ ACMD(do_force)
 ACMD(do_wiznet)
 {
   char buf1[MAX_INPUT_LENGTH + MAX_NAME_LENGTH + 32],
-       buf2[MAX_INPUT_LENGTH + MAX_NAME_LENGTH + 32], *msg;
+       buf2[MAX_INPUT_LENGTH + MAX_NAME_LENGTH + 32];
   struct descriptor_data *d;
   char emote = FALSE;
   char any = FALSE;
@@ -2278,23 +2278,26 @@ ACMD(do_wiznet)
     return;
   }
    if (level > LVL_IMMORT) {
-     snprintf(buf1, sizeof(buf1), "\tc%s: <%d> %s%s\tn", GET_NAME(ch), level, emote ? "<--- " : "", argument);
-     snprintf(buf2, sizeof(buf1), "\tcSomeone: <%d> %s%s\tn", level, emote ? "<--- " : "", argument);
+    snprintf(buf1, sizeof(buf1), "\tc%s: <%d> %s%s\tn\r\n", GET_NAME(ch), level, emote ? "<--- " : "", argument);
+    snprintf(buf2, sizeof(buf1), "\tcSomeone: <%d> %s%s\tn\r\n", level, emote ? "<--- " : "", argument);
    } else {
-     snprintf(buf1, sizeof(buf1), "\tc%s: %s%s\tn", GET_NAME(ch), emote ? "<--- " : "", argument);
-     snprintf(buf2, sizeof(buf1), "\tcSomeone: %s%s\tn", emote ? "<--- " : "", argument);
+    snprintf(buf1, sizeof(buf1), "\tc%s: %s%s\tn\r\n", GET_NAME(ch), emote ? "<--- " : "", argument);
+    snprintf(buf2, sizeof(buf1), "\tcSomeone: %s%s\tn\r\n", emote ? "<--- " : "", argument);
    }
 
   for (d = descriptor_list; d; d = d->next) {
     if (IS_PLAYING(d) && (GET_LEVEL(d->character) >= level) &&
 	(!PRF_FLAGGED(d->character, PRF_NOWIZ))
 	&& (d != ch->desc || !(PRF_FLAGGED(d->character, PRF_NOREPEAT)))) {
-      if (CAN_SEE(d->character, ch)) 
-        msg = act(buf1, FALSE, d->character, 0, 0, TO_CHAR | DG_NO_TRIG);
-      else 
-        msg = act(buf2, FALSE, d->character, 0, 0, TO_CHAR | DG_NO_TRIG);
-     
-      add_history(d->character, msg, HIST_WIZNET);
+      if (CAN_SEE(d->character, ch)) {
+        parse_at(buf1);
+        send_to_char(d->character, "%s%s%s", CCCYN(d->character, C_NRM), buf1, CCNRM(d->character, C_NRM));
+        add_history(d->character, buf1, HIST_WIZNET);
+      } else {
+        parse_at(buf2);
+        send_to_char(d->character, "%s%s%s", CCCYN(d->character, C_NRM), buf2, CCNRM(d->character, C_NRM));
+        add_history(d->character, buf2, HIST_WIZNET);
+      }
     }
   }
 
@@ -3255,7 +3258,7 @@ static int perform_set(struct char_data *ch, struct char_data *vict, int mode, c
       break;
     case 39: /* poofin */
       if ((vict == ch) || (GET_LEVEL(ch) == LVL_IMPL)) {
-        skip_spaces(&val_arg);
+        parse_at(val_arg);
 
         if (POOFIN(vict))
           free(POOFIN(vict));
@@ -3268,7 +3271,7 @@ static int perform_set(struct char_data *ch, struct char_data *vict, int mode, c
       break;
     case 40: /* poofout */
       if ((vict == ch) || (GET_LEVEL(ch) == LVL_IMPL)) {
-        skip_spaces(&val_arg);
+        parse_at(val_arg);
 
         if (POOFOUT(vict))
           free(POOFOUT(vict));
@@ -4531,9 +4534,7 @@ ACMD(do_file)
    /* Must be able to access the file on disk. */
    if (!(req_file=fopen(fields[l].file,"r"))) {
      send_to_char(ch, "The file %s can not be opened.\r\n", fields[l].file);
-     mudlog(BRF, LVL_IMPL, TRUE,
-            "SYSERR: Error opening file %s using 'file' command.",
-            fields[l].file);
+     mudlog(BRF, LVL_IMPL, TRUE, "SYSERR: Error opening file %s using 'file' command.", fields[l].file);
      return;
    }
    /**/
@@ -4563,7 +4564,7 @@ ACMD(do_file)
      lines_read = file_head( req_file, buf, sizeof(buf), req_lines );
    }
 
-   /** Since file_head and file_tail will add the overflow message, we
+   /* Since file_head and file_tail will add the overflow message, we
     * don't check for status here. */
    if ( lines_read == req_file_lines )
    {
@@ -4754,7 +4755,7 @@ ACMD(do_wizupdate)
 bool change_player_name(struct char_data *ch, struct char_data *vict, char *new_name)
 {
   struct char_data *temp_ch=NULL;
-  int plr_i = 0, i, j, k;
+  int plr_i = 0, i, k;
   char old_name[MAX_NAME_LENGTH], old_pfile[50], new_pfile[50], buf[MAX_STRING_LENGTH];
 
   if (!ch)
@@ -4777,7 +4778,7 @@ bool change_player_name(struct char_data *ch, struct char_data *vict, char *new_
     return FALSE;
   }
 
-  // Check that someone with new_name isn't already logged in
+  /* Check that someone with new_name isn't already logged in */
   if ((temp_ch = get_player_vis(ch, new_name, NULL, FIND_CHAR_WORLD)) != NULL) {
     send_to_char(ch, "Sorry, the new name already exists.\r\n");
     return FALSE;
@@ -4829,7 +4830,6 @@ bool change_player_name(struct char_data *ch, struct char_data *vict, char *new_
 
   /* Rename the player's pfile */
   sprintf(buf, "mv %s %s", old_pfile, new_pfile);
-  j = system(buf);
 
   /* Save the changed player index - the pfile is saved by perform_set */
   save_player_index();
@@ -5094,6 +5094,9 @@ bool AddRecentPlayer(char *chname, char *chhost, bool newplr, bool cpyplr)
   struct recent_player *this;
   time_t ct;
   int max_vnum;
+  
+  if (!chname || !*chname) // dropped connection with no name given
+       return FALSE;
 
   ct = time(0);  /* Grab the current time */
 

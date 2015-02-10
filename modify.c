@@ -443,7 +443,8 @@ static int count_pages(char *str, struct char_data *ch)
 {
   int pages;
 
-  for (pages = 1; (str = next_page(str, ch)); pages++);
+  for (pages = 1; (str = next_page(str, ch)); pages++)
+    ; /* moved semi-colon to suppress warning */
     return (pages);
 }
 
@@ -474,7 +475,7 @@ void page_string(struct descriptor_data *d, char *str, int keep_internal)
   if (!str || !*str)
     return;
 
-   if ((GET_PAGE_LENGTH(d->character) < 5 || GET_PAGE_LENGTH(d->character) > 254))
+   if ((GET_PAGE_LENGTH(d->character) < 5 || GET_PAGE_LENGTH(d->character) > 255))
     GET_PAGE_LENGTH(d->character) = PAGE_LENGTH;
   d->showstr_count = count_pages(str, d->character);
   CREATE(d->showstr_vector, char *, d->showstr_count);
