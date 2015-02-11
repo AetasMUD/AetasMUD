@@ -42,7 +42,8 @@ static void list_zones(struct char_data *ch, zone_rnum rnum, zone_vnum vmin, zon
 
 void perform_mob_flag_list(struct char_data * ch, char *arg)
 {
-  int num, mob_flag, found = 0, len;
+  int num, mob_flag, found = 0;
+  size_t len;
   struct char_data *mob;
   char buf[MAX_STRING_LENGTH];
 
@@ -55,8 +56,8 @@ void perform_mob_flag_list(struct char_data * ch, char *arg)
 
   len = snprintf(buf, sizeof(buf), "Listing mobiles with %s%s%s flag set.\r\n", QYEL, action_bits[mob_flag], QNRM);
 
-  for(num=0;num<=top_of_mobt;num++) {
-    if(IS_SET_AR((mob_proto[num].char_specials.saved.act), mob_flag)) {
+  for (num = 0; num <= top_of_mobt; num++) {
+    if (IS_SET_AR((mob_proto[num].char_specials.saved.act), mob_flag)) {
 
       if ((mob = read_mobile(num, REAL)) != NULL) {
         char_to_room(mob, 0);
@@ -78,7 +79,8 @@ void perform_mob_flag_list(struct char_data * ch, char *arg)
 
 void perform_mob_level_list(struct char_data * ch, char *arg)
 {
-  int num, mob_level, found = 0, len;
+  int num, mob_level, found = 0;
+  size_t len;
   struct char_data *mob;
   char buf[MAX_STRING_LENGTH];
 
@@ -90,8 +92,8 @@ void perform_mob_level_list(struct char_data * ch, char *arg)
   }
 
   len = snprintf(buf, sizeof(buf), "Listing mobiles of level %s%d%s\r\n", QYEL, mob_level, QNRM);
-  for(num=0;num<=top_of_mobt;num++) {
-    if((mob_proto[num].player.level) == mob_level) {
+  for (num = 0; num <= top_of_mobt; num++) {
+    if ((mob_proto[num].player.level) == mob_level) {
 
       if ((mob = read_mobile(num, REAL)) != NULL) {
         char_to_room(mob, 0);
@@ -117,8 +119,8 @@ void add_to_obj_list(struct obj_list_item *lst, int num_items, obj_vnum nvo, int
   int j, tmp_v;
   obj_vnum tmp_ov;
 
-  for(j=0;j<num_items;j++) {
-    if(nval > lst[j].val) {
+  for (j = 0; j < num_items; j++) {
+    if (nval > lst[j].val) {
       tmp_ov = lst[j].vobj;
       tmp_v  = lst[j].val;
 
@@ -133,7 +135,8 @@ void add_to_obj_list(struct obj_list_item *lst, int num_items, obj_vnum nvo, int
 
 void perform_obj_type_list(struct char_data * ch, char *arg)
 {
-  int num, itemtype, v1, v2, found = 0, len = 0, tmp_len = 0;
+  int num, itemtype, v1, v2, found = 0;
+  size_t len = 0, tmp_len = 0;
   obj_vnum ov;
   obj_rnum r_num;
   char buf[MAX_STRING_LENGTH];
@@ -143,8 +146,8 @@ void perform_obj_type_list(struct char_data * ch, char *arg)
   len = snprintf(buf, sizeof(buf), "Listing all objects of type %s[%s]%s\r\n",
        QYEL, item_types[itemtype], QNRM);
 
-  for(num=0;num<=top_of_objt;num++) {
-    if(obj_proto[num].obj_flags.type_flag == itemtype) {
+  for (num = 0; num <= top_of_objt; num++) {
+    if (obj_proto[num].obj_flags.type_flag == itemtype) {
       if ((r_num = real_object(obj_index[num].vnum)) != NOTHING) { /* Seems silly? */
         /* Set default vals, which may be changed below */
         ov = obj_index[num].vnum;
@@ -247,25 +250,26 @@ void perform_obj_type_list(struct char_data * ch, char *arg)
 
 void perform_obj_aff_list(struct char_data * ch, char *arg)
 {
-  int num, i, apply, v1 = 0, found = 0, len = 0, tmp_len = 0;
+  int num, i, apply, v1 = 0, found = 0;
+  size_t len = 0, tmp_len = 0;
   struct obj_list_item lst[MAX_OBJ_LIST];
   obj_rnum r_num;
   obj_vnum ov;
   char buf[MAX_STRING_LENGTH];
 
-  for(i=0;i<MAX_OBJ_LIST;i++){
+  for (i = 0; i < MAX_OBJ_LIST; i++) {
     lst[i].vobj = NOTHING;
     lst[i].val  = 0;
   }
   apply = atoi(arg);
 
-  if (!(apply>0 && apply<NUM_APPLIES) ){
+  if (apply <= 0 || apply >= NUM_APPLIES) {
      send_to_char(ch, "Not a valid affect");
      return;
   }                                   /* Special cases below */
   else if ((apply == APPLY_CLASS) ||  /* olist affect 7 is Weapon Damage      */
            (apply == APPLY_LEVEL) ) { /* olist affect 8 is AC-Apply for Armor */
-    for (num=0;num<=top_of_objt;num++) {
+    for (num = 0; num <= top_of_objt; num++) {
       if ((apply == APPLY_CLASS && obj_proto[num].obj_flags.type_flag == ITEM_WEAPON) ||
           (apply == APPLY_LEVEL && obj_proto[num].obj_flags.type_flag == ITEM_ARMOR) ) {
         ov = obj_index[num].vnum;
@@ -284,7 +288,7 @@ void perform_obj_aff_list(struct char_data * ch, char *arg)
     else if (apply == APPLY_LEVEL)
       len = snprintf(buf, sizeof(buf), "Highest AC Apply for Armor\r\n");
 
-    for(i=0;i<MAX_OBJ_LIST;i++){
+    for (i = 0; i < MAX_OBJ_LIST; i++){
       if ((r_num = real_object(lst[i].vobj)) != NOTHING) {
         tmp_len = snprintf(buf+len, sizeof(buf)-len, "%s%3d%s) %s[%s%5d%s] %s%3d %s%-*s %s[%s]%s%s\r\n",
                   QGRN, ++found, QNRM, QCYN, QYEL, lst[i].vobj, QCYN,
@@ -293,6 +297,8 @@ void perform_obj_aff_list(struct char_data * ch, char *arg)
                   QYEL, item_types[obj_proto[num].obj_flags.type_flag], QNRM,
                   obj_proto[num].proto_script ? " [TRIG]" : "");
         len += tmp_len;
+        if (len > sizeof(buf))
+          break;
       }
     }
     page_string(ch->desc, buf, TRUE);
@@ -313,7 +319,7 @@ void perform_obj_aff_list(struct char_data * ch, char *arg)
     }
   }
   len = snprintf(buf, sizeof(buf), "Objects with highest %s affect\r\n", apply_types[(apply)]);
-  for(i=0;i<MAX_OBJ_LIST;i++){
+  for (i = 0; i < MAX_OBJ_LIST; i++) {
     if ((r_num = real_object(lst[i].vobj)) != NOTHING) {
       tmp_len = snprintf(buf+len, sizeof(buf)-len, "%s%3d%s) %s[%s%8d%s] %s%3d %s%-*s %s[%s]%s%s\r\n",
                 QGRN, ++found, QNRM, QCYN, QYEL, lst[i].vobj, QCYN,
@@ -329,14 +335,15 @@ void perform_obj_aff_list(struct char_data * ch, char *arg)
 
 void perform_obj_name_list(struct char_data * ch, char *arg)
 {
-  int num, found = 0, len = 0, tmp_len = 0;
+  int num, found = 0;
+  size_t len = 0, tmp_len = 0;
   obj_vnum ov;
   char buf[MAX_STRING_LENGTH];
 
   len = snprintf(buf, sizeof(buf), "Objects with the name '%s'\r\n"
   "Index VNum    Num   Object Name                                Object Type\r\n"
   "----- ------- ----- ------------------------------------------ ----------------\r\n", arg);
-  for (num=0;num<=top_of_objt;num++) {
+  for (num = 0; num <= top_of_objt; num++) {
     if (is_name(arg, obj_proto[num].name)) {
       ov = obj_index[num].vnum;
       tmp_len = snprintf(buf+len, sizeof(buf)-len, "%s%4d%s) %s[%s%5d%s] %s(%s%3d%s)%s %-*s%s [%s]%s%s\r\n",
@@ -345,6 +352,8 @@ void perform_obj_name_list(struct char_data * ch, char *arg)
                 obj_proto[num].short_description, QYEL, item_types[obj_proto[num].obj_flags.type_flag], QNRM,
                 obj_proto[num].proto_script ? " [TRIG]" : "");
       len += tmp_len;
+      if (len > sizeof(buf))
+        break;
     }
   }
 
@@ -406,8 +415,7 @@ ACMD(do_oasis_list)
 
     if (!*arg2) {
     send_to_char(ch, "Which mobile flag or level do you want to list?\r\n");
-    for (i=0; i<NUM_MOB_FLAGS; i++)
-    {
+    for (i = 0; i < NUM_MOB_FLAGS; i++) {
       send_to_char(ch, "%s%2d%s-%s%-14s%s", CCNRM(ch, C_NRM), i, CCNRM(ch, C_NRM), CCYEL(ch, C_NRM), action_bits[i], CCNRM(ch, C_NRM));
       if (!((i+1)%4))  send_to_char(ch, "\r\n");
     }
@@ -436,8 +444,7 @@ ACMD(do_oasis_list)
         send_to_char(ch, "       %solist affect <num>%s  - List top %d objects with affect\r\n", QYEL, QNRM, MAX_OBJ_LIST);
         send_to_char(ch, "Just type %solist affect%s or %solist type%s to view available options\r\n", QYEL, QNRM, QYEL, QNRM);
         return;
-      }
-      else if (is_abbrev(arg, "type") || is_abbrev(arg, "affect")) {
+      } else if (is_abbrev(arg, "type") || is_abbrev(arg, "affect")) {
         if (is_abbrev(arg, "type")) {
           if (!*arg2) {
             send_to_char(ch, "Which object type do you want to list?\r\n");
@@ -456,8 +463,7 @@ ACMD(do_oasis_list)
         } else {  /* Assume arg = affect */
           if (!*arg2) {
             send_to_char(ch, "Which object affect do you want to list?\r\n");
-            for (i=0; i<NUM_APPLIES; i++)
-            {
+            for (i = 0; i < NUM_APPLIES; i++) {
               if (i == APPLY_CLASS)       /* Special Case 1 - Weapon Dam */
                 send_to_char(ch, "%s%2d-%s%-14s%s", QNRM, i, QYEL, "Weapon Dam", QNRM);
               else if (i == APPLY_LEVEL)  /* Special Case 2 - Armor AC Apply */
@@ -555,7 +561,8 @@ static void list_rooms(struct char_data *ch, zone_rnum rnum, room_vnum vmin, roo
 {
   room_rnum i;
   room_vnum bottom, top;
-  int j, counter = 0, len;
+  int j, counter = 0;
+  size_t len;
   char buf[MAX_STRING_LENGTH];
 
   /* Expect a minimum / maximum number if the rnum for the zone is NOWHERE. */
@@ -615,7 +622,8 @@ static void list_mobiles(struct char_data *ch, zone_rnum rnum, mob_vnum vmin, mo
 {
   mob_rnum i;
   mob_vnum bottom, top;
-  int counter = 0, len;
+  int counter = 0;
+  size_t len;
   char buf[MAX_STRING_LENGTH];
 
   if (rnum != NOWHERE) {
@@ -662,7 +670,7 @@ static void list_objects(struct char_data *ch, zone_rnum rnum, obj_vnum vmin, ob
   obj_vnum bottom, top;
   char buf[MAX_STRING_LENGTH];
   int counter = 0;
-  int len;
+  size_t len;
 
   if (rnum != NOWHERE) {
     bottom = zone_table[rnum].bot;
@@ -748,7 +756,8 @@ static void list_shops(struct char_data *ch, zone_rnum rnum, shop_vnum vmin, sho
 /* List all zones in the world (sort of like 'show zones'). */
 static void list_zones(struct char_data *ch, zone_rnum rnum, zone_vnum vmin, zone_vnum vmax, char *name)
 {
-  int counter = 0, len=0, tmp_len = 0;
+  int counter = 0;
+  size_t len = 0, tmp_len = 0;
   zone_rnum i;
   zone_vnum bottom, top;
   char buf[MAX_STRING_LENGTH];
@@ -779,13 +788,16 @@ static void list_zones(struct char_data *ch, zone_rnum rnum, zone_vnum vmin, zon
   for (i = 0; i <= top_of_zone_table; i++) {
     if (zone_table[i].number >= bottom && zone_table[i].number <= top) {
       if ((!use_name) || (is_name(name, zone_table[i].builders))) {
+          counter++;
+          
         tmp_len = snprintf(buf+len, sizeof(buf)-len, "[%s%3d%s] %s%-*s %s%-1s%s\r\n",
         QGRN, zone_table[i].number, QNRM, QCYN, count_color_chars(zone_table[i].name)+30, zone_table[i].name,
         QYEL, zone_table[i].builders ? zone_table[i].builders : "None.", QNRM);
         len += tmp_len;
-      counter++;
+        if (len > sizeof(buf))
+          break;
+      }
     }
-  }
   }
 
   if (!counter)

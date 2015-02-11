@@ -502,7 +502,7 @@ int delete_object(obj_rnum rnum)
 /* oset handling, this location should be temporary */
 bool oset_alias(struct obj_data *obj, char * argument)
 { 
-  static int max_len = 64;
+  static size_t max_len = 64;
   int i = GET_OBJ_RNUM(obj);
   
   skip_spaces(&argument);
@@ -573,7 +573,7 @@ bool oset_apply(struct obj_data *obj, char * argument)
 
 bool oset_short_description(struct obj_data *obj, char * argument)
 { 
-  static int max_len = 64;
+  static size_t max_len = 64;
   int i = GET_OBJ_RNUM(obj);
   
   skip_spaces(&argument);
@@ -591,7 +591,7 @@ bool oset_short_description(struct obj_data *obj, char * argument)
 
 bool oset_long_description(struct obj_data *obj, char * argument)
 {
-  static int max_len = 128;
+  static size_t max_len = 128;
   int i = GET_OBJ_RNUM(obj);  
   
   skip_spaces(&argument);

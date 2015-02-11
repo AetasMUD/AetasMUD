@@ -113,7 +113,7 @@ void list_skills(struct char_data *ch)
 {
   const char *overflow = "\r\n**OVERFLOW**\r\n";
   int i, sortpos, ret;
-  size_t len = 0, nlen;
+  size_t len = 0;
   char buf2[MAX_STRING_LENGTH];
 
   send_to_char(ch, "You have \tG%d\tn practice session%s remaining.\r\n", GET_PRACTICES(ch),
@@ -127,9 +127,9 @@ void list_skills(struct char_data *ch)
 	    (GET_LEVEL(ch) >= spell_info[i].min_level[(int) GET_REMORT(ch)]) ||
 		(GET_SKILL(ch,i) > 0)) {
     ret = snprintf(buf2 + len, sizeof(buf2) - len, "%-20s %s\r\n", spell_info[i].name, how_good(GET_SKILL(ch, i)));
-    if (len + nlen >= sizeof(buf2) || ret < 0)
+    if (ret < 0 || len + ret >= sizeof(buf2))
         break;
-      len += nlen;
+      len += ret;
     }
   }
   
@@ -138,10 +138,10 @@ void list_skills(struct char_data *ch)
     i = skill_sort_info[sortpos];
     if ((GET_LEVEL(ch) >= spell_info[i].min_level[(int) GET_CLASS(ch)]) ||
 	   (GET_LEVEL(ch) >= spell_info[i].min_level[(int)GET_REMORT(ch)])) {
-      nlen = snprintf(buf2 + len, sizeof(buf2) - len, "%-20s \tG%s\tn\r\n", spell_info[i].name, how_good(GET_SKILL(ch, i)));
-      if (len + nlen >= sizeof(buf2) || nlen < 0)
+      ret = snprintf(buf2 + len, sizeof(buf2) - len, "%-20s \tG%s\tn\r\n", spell_info[i].name, how_good(GET_SKILL(ch, i)));
+    if (ret < 0 || len + ret >= sizeof(buf2))
         break;
-      len += nlen;
+      len += ret;
     }
   }
   
