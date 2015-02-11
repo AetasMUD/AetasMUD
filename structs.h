@@ -172,7 +172,6 @@
 /** Total number of available Classes */
 #define NUM_CLASSES	  	  12
 
-
 /* Races */
 #define RACE_UNDEFINED   	-1
 #define RACE_ELF          	0
@@ -193,7 +192,6 @@
 
 // Total number of available Races
 #define NUM_RACES			15
-
 
 /* Sex */
 #define SEX_NEUTRAL   0   /**< Neutral Sex (Hermaphrodite) */
@@ -384,7 +382,6 @@
 #define CON_GET_PROTOCOL 47 /**< Used at log-in while attempting to get protocols > */
 #define CON_MSGEDIT      48 /**< OLC mode - message editor */
 
-
 /* OLC States range - used by IS_IN_OLC and IS_PLAYING */
 #define FIRST_OLC_STATE CON_OEDIT     /**< The first CON_ state that is an OLC */
 #define LAST_OLC_STATE  CON_MSGEDIT   /**< The last CON_ state that is an OLC  */
@@ -402,12 +399,12 @@
 #define WEAR_ABOUT      5  /**< Equipment Location about body (like a cape)*/
 #define WEAR_BACK		6  /**< Equipment Location back */
 #define WEAR_ARMS       7  /**< Equipment Location Arms */
-#define WEAR_WRIST_R    8  /**< Equipment Location Right Wrist */
-#define WEAR_WRIST_L    9  /**< Equipment Location Left Wrist */
-#define WEAR_HANDS      10  /**< Equipment Location Hands */
-#define WEAR_FINGER_R   11  /**< Equipment Location Right Finger */
-#define WEAR_FINGER_L   12 /**< Equipment Location Left Finger */
-#define WEAR_SHIELD     13 /**< Equipment Location Shield */
+#define WEAR_SHIELD     8 /**< Equipment Location Shield */
+#define WEAR_WRIST_R    9  /**< Equipment Location Right Wrist */
+#define WEAR_WRIST_L    10  /**< Equipment Location Left Wrist */
+#define WEAR_HANDS      11  /**< Equipment Location Hands */
+#define WEAR_FINGER_R   12  /**< Equipment Location Right Finger */
+#define WEAR_FINGER_L   13 /**< Equipment Location Left Finger */
 #define WEAR_LIGHT      14 /**< Equipment Location Light */
 #define WEAR_WIELD      15 /**< Equipment Location Weapon */
 #define WEAR_2WIELD		16 /**< Equipment Location 2nd Wield */
@@ -456,16 +453,15 @@
 #define ITEM_WEAR_ABOUT	    5   /**< Item can be worn about body */
 #define ITEM_WEAR_BACK		6   /**< Item can be worn on back */
 #define ITEM_WEAR_ARMS      7   /**< Item can be worn on arms */
-#define ITEM_WEAR_WRIST	    8   /**< Item can be worn on wrist */
-#define ITEM_WEAR_HANDS	    9   /**< Item can be worn on hands	*/
-#define ITEM_WEAR_FINGER   10   /**< Item can be worn on finger */
-#define ITEM_WEAR_SHIELD   11   /**< Item can be used as a shield */
+#define ITEM_WEAR_SHIELD    8   /**< Item can be used as a shield */
+#define ITEM_WEAR_WRIST	    9   /**< Item can be worn on wrist */
+#define ITEM_WEAR_HANDS	   10   /**< Item can be worn on hands	*/
+#define ITEM_WEAR_FINGER   11   /**< Item can be worn on finger */
 #define ITEM_WEAR_WIELD	   12   /**< Item can be wielded */
 #define ITEM_WEAR_HOLD     13   /**< Item can be held */
 #define ITEM_WEAR_WAIST    14   /**< Item can be worn around waist */
 #define ITEM_WEAR_LEGS     15   /**< Item can be worn on legs */
 #define ITEM_WEAR_FEET     16   /**< Item can be worn on feet */
-
 /** Total number of item wears */
 #define NUM_ITEM_WEARS    17
 
@@ -500,7 +496,7 @@
 #define ITEM_ANTI_DRUID    		10	/* Not usable by druids	        */
 #define ITEM_ANTI_THIEF    		11	/* Not usable by thieves	*/
 #define ITEM_ANTI_PSIONICIST  	12	/* Not usable by psionicists	*/
-
+/** Total number of anti class flags */
 #define NUM_ANTICLASS_FLAGS     13
 
 /* NEED flags: used by obj_data.obj_flags.need_class_flags */
@@ -514,11 +510,10 @@
 #define ITEM_NEED_DRUID    		7	/* Not usable by druids	        */
 #define ITEM_NEED_THIEF    		8	/* Not usable by thieves	*/
 #define ITEM_NEED_PSIONICIST  	9	/* Not usable by psionicists	*/
-
+/** Total number of need class flags */
 #define NUM_NEEDCLASS_FLAGS     10
 
 /* ANTI race flags: used by obj_data.obj_flags.anti_race_flags */
-
 #define ITEM_ANTI_ELF      		0   /* Not usable by elves          */
 #define ITEM_ANTI_DWARF    		1   /* Not usable by dwarves        */
 #define ITEM_ANTI_HUMAN    		2    /* Not usable by humans         */
@@ -526,7 +521,7 @@
 #define ITEM_ANTI_HALF_ORC  	4    /* Not usable by half orcs     */
 #define ITEM_ANTI_HALF_OGRE  	5    /* Not usable by half ogres   */
 #define ITEM_ANTI_BAKALI     	6    /* Not usable by bakali       */
-
+/** Total number of anti race flags */
 #define NUM_ANTIRACE_FLAGS		7
 
 /* Modifier constants used with obj affects ('A' fields) */

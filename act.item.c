@@ -1190,6 +1190,9 @@ static void wear_message(struct char_data *ch, struct obj_data *obj, int where)
   
     {"$n wears $p on $s arms.",
     "You wear $p on your arms."},
+    
+	{"$n straps $p around $s arm as a shield.",
+    "You start to use $p as a shield."},
 	
 	{"$n puts $p on around $s right wrist.",
     "You put $p on around your right wrist."},
@@ -1205,9 +1208,6 @@ static void wear_message(struct char_data *ch, struct obj_data *obj, int where)
 
     {"$n slides $p on to $s left ring finger.",
     "You slide $p on to your left ring finger."},
-	
-	{"$n straps $p around $s arm as a shield.",
-    "You start to use $p as a shield."},
 	
     {"$n lights $p and holds it.",
     "You light $p and hold it."},
@@ -1249,8 +1249,8 @@ static void perform_wear(struct char_data *ch, struct obj_data *obj, int where)
 
   int wear_bitvectors[] = {
     ITEM_WEAR_HEAD, ITEM_WEAR_FACE, ITEM_WEAR_NECK, ITEM_WEAR_NECK, ITEM_WEAR_BODY,
-	ITEM_WEAR_ABOUT, ITEM_WEAR_BACK, ITEM_WEAR_ARMS, ITEM_WEAR_WRIST, ITEM_WEAR_WRIST,
-	ITEM_WEAR_HANDS, ITEM_WEAR_FINGER, ITEM_WEAR_FINGER, ITEM_WEAR_SHIELD,
+	ITEM_WEAR_ABOUT, ITEM_WEAR_BACK, ITEM_WEAR_ARMS, ITEM_WEAR_SHIELD, ITEM_WEAR_WRIST, ITEM_WEAR_WRIST,
+	ITEM_WEAR_HANDS, ITEM_WEAR_FINGER, ITEM_WEAR_FINGER,
     ITEM_WEAR_TAKE, ITEM_WEAR_WIELD, ITEM_WEAR_WIELD, ITEM_WEAR_TAKE, ITEM_WEAR_WAIST, ITEM_WEAR_LEGS,
     ITEM_WEAR_FEET
   };
@@ -1264,12 +1264,12 @@ static void perform_wear(struct char_data *ch, struct obj_data *obj, int where)
 	"You're already wearing something about your body.\r\n",
 	"You're already wearing something on your back.\r\n",
 	"You're already wearing something on your arms.\r\n",
+	"You're already using a shield.\r\n",
 	"YOU SHOULD NEVER SEE THIS MESSAGE.  PLEASE REPORT.\r\n",
     "You're already wearing something around both of your wrists.\r\n",
 	"You're already wearing something on your hands.\r\n",
 	"YOU SHOULD NEVER SEE THIS MESSAGE.  PLEASE REPORT.\r\n",
     "You're already wearing something on both of your ring fingers.\r\n",
-	"You're already using a shield.\r\n",
     "You're already using a light.\r\n",
     "YOU SHOULD NEVER SEE THIS MESSAGE.  PLEASE REPORT.\r\n",
 	"You're already wielding a weapon in both hands.\r\n",
