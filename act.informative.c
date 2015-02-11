@@ -28,6 +28,7 @@
 #include "fight.h"
 #include "modify.h"
 #include "asciimap.h"
+#include "quest.h"
 
 /* prototypes of local functions */
 /* do_diagnose utility functions */
@@ -1157,11 +1158,18 @@ sprinttype(ch->player.chclass, class_types, buf3, sizeof(buf3));
        CCCYN(ch, C_NRM),GET_NUM_QUESTS(ch), CCNRM(ch, C_NRM),
        GET_NUM_QUESTS(ch) == 1 ? "" : "s");
 	   
-  if ((GET_QUEST(ch) == NOTHING) || (GET_QUEST(ch) == -1))
+  if ((GET_QUEST(ch) == NOTHING))
     send_to_char(ch, "and you are not on a quest at the moment.\r\n");
   else
-    send_to_char(ch, "and your current quest is %s%d%s.\r\n", CCCYN(ch, C_NRM),
-                     GET_QUEST(ch) == NOTHING ? -1 : GET_QUEST(ch), CCNRM(ch, C_NRM));
+  {
+    send_to_char(ch, "and your current quest is: %s%s%s", 
+        CCCYN(ch, C_NRM), QST_NAME(real_quest(GET_QUEST(ch))), CCNRM(ch, C_NRM));
+
+    if (!IS_NPC(ch) && PRF_FLAGGED(ch, PRF_SHOWVNUMS))
+        send_to_char(ch, " [%d]\r\n", GET_QUEST(ch));
+    else
+        send_to_char(ch, "\r\n");
+  }
 
   send_to_char(ch, "You are known as %s%s%s%s%s.\r\n",
 	  CCYEL(ch, C_NRM), GET_NAME(ch), (*GET_TITLE(ch) ? " " : ""), GET_TITLE(ch), CCNRM(ch, C_NRM));

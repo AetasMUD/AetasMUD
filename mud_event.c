@@ -231,13 +231,13 @@ void clear_char_event_list(struct char_data * ch)
 }
 
 /* change_event_duration contributed by Ripley */
-void change_event_duration(struct char_data * ch, event_id iId, long time) {
-
+void change_event_duration(struct char_data * ch, event_id iId, long time)
+{
   struct event * pEvent;
   struct mud_event_data * pMudEvent;
   bool found = FALSE;
 
-  if (ch->events == NULL);
+  if (ch->events == NULL)
     return;
 
   if (ch->events->iSize == 0)

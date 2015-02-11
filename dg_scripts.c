@@ -630,7 +630,7 @@ void script_trigger_check(void)
   char_data *ch;
   obj_data *obj;
   struct room_data *room=NULL;
-  int nr;
+  room_rnum nr;
   struct script_data *sc;
 
   for (ch = character_list; ch; ch = ch->next) {
@@ -2432,7 +2432,7 @@ static void dg_letter_value(struct script_data *sc, trig_data *trig, char *cmd)
     return;
   }
 
-  if (num > strlen(string)) {
+  if ((size_t)num > strlen(string)) {
     script_log("Trigger #%d : dg_letter number > strlen!", GET_TRIG_VNUM(trig));
     return;
   }
