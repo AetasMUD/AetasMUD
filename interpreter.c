@@ -159,6 +159,7 @@ cpp_extern const struct command_info cmd_info[] = {
   { "fill"     , "fil"     , POS_STANDING, do_pour     , 0, SCMD_FILL },
   { "file"     , "file"    , POS_SLEEPING, do_file     , LVL_GOD, 0 },
   { "flee"     , "fl"      , POS_FIGHTING, do_flee     , 1, 0 },
+  { "fly"      , "fly"     , POS_STANDING, do_fly      , 0, 0 },
   { "follow"   , "fol"     , POS_RESTING , do_follow   , 0, 0 },
   { "freeze"   , "freeze"  , POS_DEAD    , do_wizutil  , LVL_GRGOD, SCMD_FREEZE },
 

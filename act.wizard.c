@@ -2429,6 +2429,8 @@ ACMD(do_wizutil)
     for(taeller=0; taeller < AF_ARRAY_MAX; taeller++)
       AFF_FLAGS(vict)[taeller] = 0;
     send_to_char(vict, "There is a brief flash of light!\r\nYou feel slightly different.\r\n");
+    if (GET_POS(ch) == POS_FLYING);
+      GET_POS(ch) = POS_STANDING;
 	send_to_char(ch, "All spells removed.\r\n");
       } else {
 	send_to_char(ch, "Your victim does not have any affections!\r\n");
