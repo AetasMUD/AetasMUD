@@ -45,14 +45,14 @@ static void look_in_direction(struct char_data *ch, int dir);
 static void look_in_obj(struct char_data *ch, char *arg);
 /* do_look, do_inventory utility functions */
 static void list_obj_to_char(struct obj_data *list, struct char_data *ch, int mode, int show);
-/* do_look, do_equipment, do_examine, do_inventory */
+/* do_look, do_equipment, do_examine, do_inventory, do_affections */
 static void show_obj_to_char(struct obj_data *obj, struct char_data *ch, int mode);
 static void show_obj_modifiers(struct obj_data *obj, struct char_data *ch);
+static void list_affections_to_char(struct char_data *ch);
 /* do_where utility functions */
 static void perform_immort_where(struct char_data *ch, char *arg);
 static void perform_mortal_where(struct char_data *ch, char *arg);
 static void print_object_location(int num, struct obj_data *obj, struct char_data *ch, int recur);
-
 
 /* Subcommands */
 /* For show_obj_to_char 'mode'.	/-- arbitrary */
@@ -63,73 +63,73 @@ static void print_object_location(int num, struct obj_data *obj, struct char_dat
 
 ACMD(do_spells)
 {
- char arg[MAX_STRING_LENGTH];
- extern struct spell_info_type spell_info[];
- int i, j, class;
- bool flag = FALSE; 
+  char arg[MAX_STRING_LENGTH];
+  extern struct spell_info_type spell_info[];
+  int i, j, class;
+  bool flag = FALSE;
 	        
- one_argument(argument, arg);
+  one_argument(argument, arg);
 
- if (!*arg) 
-  class = GET_CLASS(ch); 	
- else
-  class = search_block_case(arg, class_types, FALSE);
+  if (!*arg)
+    class = GET_CLASS(ch); 	
+  else
+    class = search_block_case(arg, class_types, FALSE);
    
- if (class < 0 || class >= NUM_CLASSES) {
-  send_to_char(ch, "Not a valid class.\n\r");
-  return;
+  if (class < 0 || class >= NUM_CLASSES) {
+    send_to_char(ch, "Not a valid class.\n\r");
+    return;
   }  
 
- send_to_char(ch, "These are the spells available to the %s class:\r\n"
-				  "Level     Spell\r\n"
-				  "-----     ---------\r\n", class_types[class]);
+  send_to_char(ch, "These are the spells available to the %s class:\r\n"
+				   "Level     Spell\r\n"
+				   "-----     ---------\r\n", class_types[class]);
 	 	  
- for (j = 1; j < LVL_IMMORT; j++) {
-  for (i = 1; i < MAX_SPELLS+1; i++) {
-   if (spell_info[i].min_level[class] == j) {
+  for (j = 1; j < LVL_IMMORT; j++) {
+   for (i = 1; i < MAX_SPELLS+1; i++) {
+    if (spell_info[i].min_level[class] == j) {
     send_to_char(ch, "  %2d      %s\r\n", spell_info[i].min_level[class], spell_info[i].name);
     flag = TRUE;
     }
    }
   }
 
- if (flag == FALSE) 
-  send_to_char(ch, "   -      -None-   \r\n");
+  if (flag == FALSE) 
+    send_to_char(ch, "   -      -None-   \r\n");
 }
 
 ACMD(do_skills)
 {
- char arg[MAX_STRING_LENGTH];
- extern struct spell_info_type spell_info[];
- int i, j, class;
- bool flag = FALSE;
+  char arg[MAX_STRING_LENGTH];
+  extern struct spell_info_type spell_info[];
+  int i, j, class;
+  bool flag = FALSE;
         
- one_argument(argument, arg);
+  one_argument(argument, arg);
 
- if (!*arg) 
-  class = GET_CLASS(ch); 	
- else
-  class = search_block_case(arg, class_types, FALSE); 
+  if (!*arg) 
+    class = GET_CLASS(ch);
+  else
+    class = search_block_case(arg, class_types, FALSE); 
     
- if (class < 0 || class >= NUM_CLASSES) {
-  send_to_char(ch, "Not a valid class.\n\r");
-  return;
+  if (class < 0 || class >= NUM_CLASSES) {
+    send_to_char(ch, "Not a valid class.\n\r");
+    return;
   }
 
- send_to_char(ch, "These are the skills available to the %s class:\r\n"
-				  "Level     Skill\r\n"
-				  "-----     ---------\r\n", class_types[class]);
+  send_to_char(ch, "These are the skills available to the %s class:\r\n"
+				   "Level     Skill\r\n"
+				   "-----     ---------\r\n", class_types[class]);
 		 	  
   for (j = 1; j < LVL_IMMORT; j++) {
    for (i = MAX_SPELLS +1; i < MAX_SKILLS+1; i++) {
     if (spell_info[i].min_level[class] == j) {
      send_to_char(ch, "  %2d      %s\r\n", spell_info[i].min_level[class], spell_info[i].name);
      flag = TRUE;
-     }
     }
-   }   
+   }
+  }   
 
-  if (flag == FALSE) 
+  if (flag == FALSE)
     send_to_char(ch, "   -      -None-   \r\n");
 }
 
@@ -146,51 +146,50 @@ ACMD(do_experience)
       CCCYN(ch, C_NRM), level_exp(GET_CLASS(ch), GET_LEVEL(ch) + 1) - GET_EXP(ch), CCNRM(ch, C_NRM));
 }
 
-ACMD(do_affections)
+static void list_affections_to_char(struct char_data *ch)
 {
- int count = 0;
- 
- send_to_char(ch, "\tcYou are affected in the following ways:\tn \r\n");
- 
- if (AFF_FLAGGED(ch, AFF_BLIND) && GET_LEVEL(ch) < LVL_IMMORT) {
+  int count = 0;
+    
+  if (AFF_FLAGGED(ch, AFF_BLIND) && GET_LEVEL(ch) < LVL_IMMORT) {
     send_to_char(ch, "You have been blinded!\r\n");
     count++;
-	}
+  }
   if (AFF_FLAGGED(ch, AFF_INVISIBLE)) {
     send_to_char(ch, "You are invisible.\r\n");
     count++;
-	}
+  }
   if (AFF_FLAGGED(ch, AFF_DETECT_INVIS)) {
     send_to_char(ch, "You are sensitive to the presence of invisible things.\r\n");
 	count++;
-	}
+  }
   if (AFF_FLAGGED(ch, AFF_SANCTUARY)) {
     send_to_char(ch, "You are protected by Sanctuary.\r\n");
 	count++;
-	}
+  }
   if (AFF_FLAGGED(ch, AFF_POISON)) {
     send_to_char(ch, "You are poisoned!\r\n");
 	count++;
-	}
+  }
   if (AFF_FLAGGED(ch, AFF_CHARM)) {
     send_to_char(ch, "You have been charmed!\r\n");
 	count++;
-	}
+  }
   if (affected_by_spell(ch, SPELL_ARMOR)) {
     send_to_char(ch, "You feel protected.\r\n");
 	count++;
-	}
+  }
   if (AFF_FLAGGED(ch, AFF_INFRAVISION)) {
     send_to_char(ch, "Your eyes are glowing red.\r\n");
 	count++;
-	}
-  if (PRF_FLAGGED(ch, PRF_SUMMONABLE)) {
-    send_to_char(ch, "You are summonable by other players.\r\n");
-	count++;
-	}
- if (count == 0)
-  send_to_char(ch, "Nothing noticeable.\r\n");
+  }
+  if (count == 0)
+    send_to_char(ch, "You feel pretty normal.\r\n");
+}
 
+ACMD(do_affections)
+{
+  send_to_char(ch, "\tcYou are affected in the following ways:\tn \r\n");
+  list_affections_to_char(ch);
 }
 
 static void show_obj_to_char(struct obj_data *obj, struct char_data *ch, int mode)
@@ -263,7 +262,7 @@ static void show_obj_to_char(struct obj_data *obj, struct char_data *ch, int mod
         snprintf(notebuf, sizeof(notebuf), "There is something written on it:\r\n\r\n%s", obj->action_description);
         page_string(ch->desc, notebuf, TRUE);
       } else
-	send_to_char(ch, "It's blank.\r\n");
+	      send_to_char(ch, "It's blank.\r\n");
       return;
 
     case ITEM_DRINKCON:
@@ -295,16 +294,12 @@ static void show_obj_modifiers(struct obj_data *obj, struct char_data *ch)
 {
   if (OBJ_FLAGGED(obj, ITEM_INVISIBLE))
     send_to_char(ch, " %s(invisible)%s", CCCYN(ch, C_NRM), CCNRM(ch, C_NRM));
-
   if (OBJ_FLAGGED(obj, ITEM_BLESS) && AFF_FLAGGED(ch, AFF_DETECT_ALIGN))
     send_to_char(ch, " %s(holy aura)%s", CBBLU(ch, C_NRM), CCNRM(ch, C_NRM));
-
   if (OBJ_FLAGGED(obj, ITEM_MAGIC) && AFF_FLAGGED(ch, AFF_DETECT_MAGIC))
     send_to_char(ch, " %s(yellow aura)%s", CBYEL(ch, C_NRM), CCNRM(ch, C_NRM));
-
   if (OBJ_FLAGGED(obj, ITEM_GLOW))
     send_to_char(ch, " %s(glowing)%s", CCWHT(ch, C_NRM), CCNRM(ch, C_NRM));
-
   if (OBJ_FLAGGED(obj, ITEM_HUM))
     send_to_char(ch, " %s(humming)%s", CCRED(ch, C_NRM), CCNRM(ch, C_NRM));
 }
@@ -393,58 +388,53 @@ static void look_at_char(struct char_data *i, struct char_data *ch)
   int weight_guess = 0;
   int height_guess = 0;
 
-
   if (!ch->desc)
     return;
 
-   if (i->player.description)
+  if (i->player.description)
     send_to_char(ch, "%s", i->player.description);
   else
     act("You see nothing special about $m.", FALSE, i, 0, ch, TO_VICT);
 
- weight_guess = GET_WEIGHT(i) + rand_number(-20, 20);
- height_guess = GET_HEIGHT(i) + rand_number(-3, 3);
+  weight_guess = GET_WEIGHT(i) + rand_number(-20, 20);
+  height_guess = GET_HEIGHT(i) + rand_number(-3, 3);
  
-	
- sprinttype(GET_SEX(i), genders, buf, sizeof(buf));
- sprinttype(i->player.chrace, race_types, buf2, sizeof(buf2));
+  sprinttype(GET_SEX(i), genders, buf, sizeof(buf));
+  sprinttype(i->player.chrace, race_types, buf2, sizeof(buf2));
 	
   send_to_char(ch, "%s appears to be a %d'%d\" tall, %d pound %s %s.\r\n",
-   CAP(GET_NAME(i)), height_guess/12, height_guess%12, weight_guess, buf, buf2);
+    CAP(GET_NAME(i)), height_guess/12, height_guess%12, weight_guess, buf, buf2);
    
   diag_char_to_char(i, ch);
-
 }
 
 static void examine_char(struct char_data *i, struct char_data *ch)
 {
-  int j, found;
+  int j;
   char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
   int weight_guess = 0;
   int height_guess = 0;
-
+  bool found = FALSE;
 
   if (!ch->desc)
     return;
 
-   if (i->player.description)
+  if (i->player.description)
     send_to_char(ch, "%s", i->player.description);
   else
     act("You see nothing special about $m.", FALSE, i, 0, ch, TO_VICT);
 
- weight_guess = GET_WEIGHT(i) + rand_number(-20, 20);
- height_guess = GET_HEIGHT(i) + rand_number(-3, 3);
- 
+  weight_guess = GET_WEIGHT(i) + rand_number(-20, 20);
+  height_guess = GET_HEIGHT(i) + rand_number(-3, 3);
 	
- sprinttype(GET_SEX(i), genders, buf, sizeof(buf));
- sprinttype(i->player.chrace, race_types, buf2, sizeof(buf2));
+  sprinttype(GET_SEX(i), genders, buf, sizeof(buf));
+  sprinttype(i->player.chrace, race_types, buf2, sizeof(buf2));
 	
   send_to_char(ch, "%s appears to be a %d'%d\" tall, %d pound %s %s.\r\n",
-   CAP(GET_NAME(i)), height_guess/12, height_guess%12, weight_guess, buf, buf2);
+    CAP(GET_NAME(i)), height_guess/12, height_guess%12, weight_guess, buf, buf2);
 
   diag_char_to_char(i, ch);
 
-  found = FALSE;
   for (j = 0; !found && j < NUM_WEARS; j++)
     if (GET_EQ(i, j) && CAN_SEE_OBJ(ch, GET_EQ(i, j)))
       found = TRUE;
@@ -454,10 +444,10 @@ static void examine_char(struct char_data *i, struct char_data *ch)
     act("$n is using:", FALSE, i, 0, ch, TO_VICT);
     for (j = 0; j < NUM_WEARS; j++)
       if (GET_EQ(i, j) && CAN_SEE_OBJ(ch, GET_EQ(i, j))) {
-	send_to_char(ch, "%s", wear_where[j]);
-	show_obj_to_char(GET_EQ(i, j), ch, SHOW_OBJ_SHORT);
+	    send_to_char(ch, "%s", wear_where[j]);
+	    show_obj_to_char(GET_EQ(i, j), ch, SHOW_OBJ_SHORT);
       }
-  }
+    }
   if (ch != i && (IS_THIEF(ch) || GET_LEVEL(ch) >= LVL_IMMORT)) {
     act("\r\nYou attempt to peek at $s inventory:", FALSE, i, 0, ch, TO_VICT);
     list_obj_to_char(i->carrying, ch, SHOW_OBJ_SHORT, TRUE);
@@ -481,7 +471,7 @@ static void list_one_char(struct char_data *i, struct char_data *ch)
 
   if (!IS_NPC(ch) && PRF_FLAGGED(ch, PRF_SHOWVNUMS)) {
     if (IS_NPC(i))
-    send_to_char(ch, "[%d] ", GET_MOB_VNUM(i));
+      send_to_char(ch, "[%d] ", GET_MOB_VNUM(i));
     if (SCRIPT(i) && TRIGGERS(SCRIPT(i))) {
       if (!TRIGGERS(SCRIPT(i))->next)
         send_to_char(ch, "[T%d] ", GET_TRIG_VNUM(TRIGGERS(SCRIPT(i))));
@@ -493,25 +483,21 @@ static void list_one_char(struct char_data *i, struct char_data *ch)
   if (GROUP(i)) {
     if (GROUP(i) == GROUP(ch))
       send_to_char(ch, "(%s%s%s) ", CBGRN(ch, C_NRM),
-	GROUP_LEADER(GROUP(i)) == i ? "leader" : "group",
+	    GROUP_LEADER(GROUP(i)) == i ? "leader" : "group",
         CCYEL(ch, C_NRM));
     else
       send_to_char(ch, "(%s%s%s) ", CBRED(ch, C_NRM),
         GROUP_LEADER(GROUP(i)) == i ? "leader" : "group",
-	CCYEL(ch, C_NRM));
+	    CCYEL(ch, C_NRM));
   }
   
-  // if they are a mob and are in default position, then use their long description
-  // the new line at the end is stripped off in db.c so there isn't an extra new line
+  /* if they are a mob and are in default position, then use their long description
+     the new line at the end is stripped off in db.c so there isn't an extra new line */
   if (IS_NPC(i) && i->player.long_descr && GET_POS(i) == GET_DEFAULT_POS(i))
-  {
 	send_to_char(ch, "%s", i->player.long_descr);
-  }
-  // otherwise list everything in pieces
-  else
-  {
-	
-	if (IS_NPC(i))
+  /* otherwise list everything in pieces */
+  else {
+    if (IS_NPC(i))
       send_to_char(ch, "%c%s", UPPER(*i->player.short_descr), i->player.short_descr + 1);
     else
       send_to_char(ch, "%s%s%s", i->player.name, *GET_TITLE(i) ? " " : "", GET_TITLE(i));
@@ -527,28 +513,23 @@ static void list_one_char(struct char_data *i, struct char_data *ch)
     if (!IS_NPC(i) && PRF_FLAGGED(i, PRF_AFK))
       send_to_char(ch, " %s(AFK)%s", CBGRN(ch, C_NRM), CCYEL(ch, C_NRM));
 
-    if (GET_POS(i) != POS_FIGHTING) 
-	{
+    if (GET_POS(i) != POS_FIGHTING) {
       if (!SITTING(i))
         send_to_char(ch, "%s", positions[(int) GET_POS(i)]);
-	  else 
-	  {
+	  else {
         furniture = SITTING(i);
         send_to_char(ch, " is %s upon %s.", (GET_POS(i) == POS_SLEEPING ?
           "sleeping" : (GET_POS(i) == POS_RESTING ? "resting" : "sitting")),
           OBJS(furniture, ch));
       }
     } 
-    else 
-	{
-      if (FIGHTING(i)) 
-	  {
+    else {
+      if (FIGHTING(i)) {
         send_to_char(ch, " is here, fighting ");
         
 		if (FIGHTING(i) == ch)
 	      send_to_char(ch, "YOU!");
-        else 
-		{
+        else {
 	      if (IN_ROOM(i) == IN_ROOM(FIGHTING(i)))
 	        send_to_char(ch, "%s!", PERS(FIGHTING(i), ch));
 	      else
@@ -558,10 +539,9 @@ static void list_one_char(struct char_data *i, struct char_data *ch)
 	  else			/* NIL fighting pointer */
         send_to_char(ch, " is here struggling with thin air.");
     }
- 
   } // end of main else which lists pieces
   
-  // the rest of the function are pieces that are listed regardless
+  /* the rest of the function are pieces that are listed regardless */
   if (AFF_FLAGGED(ch, AFF_DETECT_ALIGN)) {
     if (IS_EVIL(i))
       send_to_char(ch, " %s(Red Aura)%s", CBRED(ch, C_NRM), CCYEL(ch, C_NRM));
@@ -569,9 +549,10 @@ static void list_one_char(struct char_data *i, struct char_data *ch)
       send_to_char(ch, " %s(Blue Aura)%s", CBBLU(ch, C_NRM), CCYEL(ch, C_NRM));
   }
   
-  // new line and then list the affect trailers in normal color
+  /* new line and then normal color */
   send_to_char(ch, "\r\n%s", CCNRM(ch, C_NRM));
 
+  /* list the affect trailers */
   if (AFF_FLAGGED(i, AFF_SANCTUARY))
     act("...$e glows with a bright light!", FALSE, i, 0, ch, TO_VICT);
   if (AFF_FLAGGED(i, AFF_BLIND) && GET_LEVEL(i) < LVL_IMMORT)
@@ -622,7 +603,6 @@ static void do_auto_exits(struct char_data *ch)
       send_to_char(ch, "\t(%s\t) ", autoexits[door]);
     slen++;
   }
-
   send_to_char(ch, "%s]%s\r\n", slen ? "" : "None!", CCNRM(ch, C_NRM));
 }
 
@@ -673,25 +653,25 @@ void look_at_room(struct char_data *ch, int ignore_brief)
   room_vnum target_room;
   
   char *blood_messages[] = {
-   "Should never see this.",
-   "\trThere is a little blood splattered about here.\tn",
-   "\trThere is a little blood splattered about here.\tn",
-   "\trThere is a little blood splattered about here.\tn",
-   "\trSome blood is splattered about here.\tn",
-   "\trSome blood is splattered about here.\tn",
-   "\trThere are some small pools of blood here.\tn",
-   "\trThere are some small pools of blood here.\tn",
-   "\trScattered pools of blood can be seen in this area.\tn",
-   "\trScattered pools of blood can be seen in this area.\tn",
-   "\trLarge splotches of splattered blood decorate the area.\tn",
-   "\trLarge splotches of splattered blood decorate the area.\tn",
-   "\trAn enormous amount of blood covers this area.\tn",
-   "\trAn enormous amount of blood covers this area.\tn",
-   "\trThis area is drenched in the blood of the fallen.\tn",
-   "\trThis area is drenched in the blood of the fallen.\tn",
-   "\trCrimson liquid drips from the walls in this blood drenched area.",
-   "\n"
-   };
+    "Should never see this.",
+    "\trThere is a little blood splattered about here.\tn",
+    "\trThere is a little blood splattered about here.\tn",
+    "\trThere is a little blood splattered about here.\tn",
+    "\trSome blood is splattered about here.\tn",
+    "\trSome blood is splattered about here.\tn",
+    "\trThere are some small pools of blood here.\tn",
+    "\trThere are some small pools of blood here.\tn",
+    "\trScattered pools of blood can be seen in this area.\tn",
+    "\trScattered pools of blood can be seen in this area.\tn",
+    "\trLarge splotches of splattered blood decorate the area.\tn",
+    "\trLarge splotches of splattered blood decorate the area.\tn",
+    "\trAn enormous amount of blood covers this area.\tn",
+    "\trAn enormous amount of blood covers this area.\tn",
+    "\trThis area is drenched in the blood of the fallen.\tn",
+    "\trThis area is drenched in the blood of the fallen.\tn",
+    "\trCrimson liquid drips from the walls in this blood drenched area.",
+    "\n"
+  };
 
   target_room = IN_ROOM(ch);
 
@@ -705,7 +685,9 @@ void look_at_room(struct char_data *ch, int ignore_brief)
     send_to_char(ch, "You see nothing but infinite darkness...\r\n");
     return;
   }
+  
   send_to_char(ch, "%s", CCCYN(ch, C_NRM));
+  
   if (!IS_NPC(ch) && PRF_FLAGGED(ch, PRF_SHOWVNUMS)) {
     char buf[MAX_STRING_LENGTH];
 
@@ -724,6 +706,7 @@ void look_at_room(struct char_data *ch, int ignore_brief)
   }
   else
     send_to_char(ch, "%s", world[IN_ROOM(ch)].name);
+  
   send_to_char(ch, "%s\r\n", CCNRM(ch, C_NRM));
 
   if ((!IS_NPC(ch) && !PRF_FLAGGED(ch, PRF_BRIEF)) || ignore_brief ||
@@ -740,7 +723,7 @@ void look_at_room(struct char_data *ch, int ignore_brief)
 
   /* room blood */	
   if (RM_BLOOD(ch->in_room) > 0)
-   act(blood_messages[RM_BLOOD(ch->in_room)], FALSE, ch, 0, 0, TO_CHAR);
+    act(blood_messages[RM_BLOOD(ch->in_room)], FALSE, ch, 0, 0, TO_CHAR);
 
   /* now list characters & objects */
   list_obj_to_char(world[IN_ROOM(ch)].contents, ch, SHOW_OBJ_LONG, FALSE);
@@ -808,14 +791,14 @@ static void look_in_obj(struct char_data *ch, char *arg)
           sprinttype(GET_OBJ_VAL(obj, 2), color_liquid, buf2, sizeof(buf2));
           send_to_char(ch, "It's full of a %s liquid.\r\n", buf2);
         }
-	else if (GET_OBJ_VAL(obj,1)>GET_OBJ_VAL(obj,0))
+	    else if (GET_OBJ_VAL(obj,1)>GET_OBJ_VAL(obj,0))
           send_to_char(ch, "Its contents seem somewhat murky.\r\n"); /* BUG */
         else {
           char buf2[MAX_STRING_LENGTH];
-	  amt = (GET_OBJ_VAL(obj, 1) * 3) / GET_OBJ_VAL(obj, 0);
-	  sprinttype(GET_OBJ_VAL(obj, 2), color_liquid, buf2, sizeof(buf2));
-	  send_to_char(ch, "It's %sfull of a %s liquid.\r\n", fullness[amt], buf2);
-	}
+	      amt = (GET_OBJ_VAL(obj, 1) * 3) / GET_OBJ_VAL(obj, 0);
+	      sprinttype(GET_OBJ_VAL(obj, 2), color_liquid, buf2, sizeof(buf2));
+	      send_to_char(ch, "It's %sfull of a %s liquid.\r\n", fullness[amt], buf2);
+	    } 
       }
     }
   }
@@ -880,25 +863,25 @@ static void look_at_target(struct char_data *ch, char *arg)
   for (j = 0; j < NUM_WEARS && !found; j++)
     if (GET_EQ(ch, j) && CAN_SEE_OBJ(ch, GET_EQ(ch, j)))
       if ((desc = find_exdesc(arg, GET_EQ(ch, j)->ex_description)) != NULL && ++i == fnum) {
-	send_to_char(ch, "%s", desc);
-	found = TRUE;
+	    send_to_char(ch, "%s", desc);
+	    found = TRUE;
       }
 
   /* Does the argument match an extra desc in the char's inventory? */
   for (obj = ch->carrying; obj && !found; obj = obj->next_content) {
     if (CAN_SEE_OBJ(ch, obj))
       if ((desc = find_exdesc(arg, obj->ex_description)) != NULL && ++i == fnum) {
-	send_to_char(ch, "%s", desc);
-	found = TRUE;
+	    send_to_char(ch, "%s", desc);
+	    found = TRUE;
       }
-  }
+    }
 
   /* Does the argument match an extra desc of an object in the room? */
   for (obj = world[IN_ROOM(ch)].contents; obj && !found; obj = obj->next_content)
     if (CAN_SEE_OBJ(ch, obj))
       if ((desc = find_exdesc(arg, obj->ex_description)) != NULL && ++i == fnum) {
-	send_to_char(ch, "%s", desc);
-	found = TRUE;
+	    send_to_char(ch, "%s", desc);
+	    found = TRUE;
       }
 
   /* If an object was found back in generic_find */
@@ -936,7 +919,8 @@ static void examine_target(struct char_data *ch, char *arg)
     examine_char(found_char, ch);
     if (ch != found_char) {
       if (CAN_SEE(found_char, ch))
-	act("$n examines you.", TRUE, ch, 0, found_char, TO_VICT);
+	    act("$n examines you.", TRUE, ch, 0, found_char, TO_VICT);
+    
       act("$n examines $N.", TRUE, ch, 0, found_char, TO_NOTVICT);
     }
     return;
@@ -958,16 +942,16 @@ static void examine_target(struct char_data *ch, char *arg)
   for (j = 0; j < NUM_WEARS && !found; j++)
     if (GET_EQ(ch, j) && CAN_SEE_OBJ(ch, GET_EQ(ch, j)))
       if ((desc = find_exdesc(arg, GET_EQ(ch, j)->ex_description)) != NULL && ++i == fnum) {
-	send_to_char(ch, "%s", desc);
-	found = TRUE;
+	    send_to_char(ch, "%s", desc);
+	    found = TRUE;
       }
 
   /* Does the argument match an extra desc in the char's inventory? */
   for (obj = ch->carrying; obj && !found; obj = obj->next_content) {
     if (CAN_SEE_OBJ(ch, obj))
       if ((desc = find_exdesc(arg, obj->ex_description)) != NULL && ++i == fnum) {
-	send_to_char(ch, "%s", desc);
-	found = TRUE;
+	    send_to_char(ch, "%s", desc);
+	    found = TRUE;
       }
   }
 
@@ -975,8 +959,8 @@ static void examine_target(struct char_data *ch, char *arg)
   for (obj = world[IN_ROOM(ch)].contents; obj && !found; obj = obj->next_content)
     if (CAN_SEE_OBJ(ch, obj))
       if ((desc = find_exdesc(arg, obj->ex_description)) != NULL && ++i == fnum) {
-	send_to_char(ch, "%s", desc);
-	found = TRUE;
+	    send_to_char(ch, "%s", desc);
+	    found = TRUE;
       }
 
   /* If an object was found back in generic_find */
@@ -1018,7 +1002,7 @@ ACMD(do_look)
 	look_at_target(ch, arg);
       return;
     }
-    if (!*arg)			/* "look" alone, without an argument at all */
+    if (!*arg)/* "look" alone, without an argument at all */
       look_at_room(ch, 1);
     else if (is_abbrev(arg, "in"))
       look_in_obj(ch, arg2);
@@ -1033,14 +1017,14 @@ ACMD(do_look)
       for (i = world[IN_ROOM(ch)].ex_description; i; i = i->next) {
         if (*i->keyword != '.') {
           send_to_char(ch, "%s%s:\r\n%s",
-          (found ? "\r\n" : ""), i->keyword, i->description);
+            (found ? "\r\n" : ""), i->keyword, i->description);
           found = 1;
         }
       }
       if (!found)
-         send_to_char(ch, "You couldn't find anything noticeable.\r\n");
+        send_to_char(ch, "You couldn't find anything noticeable.\r\n");
     } else
-      look_at_target(ch, arg);
+        look_at_target(ch, arg);
   }
 }
 
@@ -1065,10 +1049,10 @@ ACMD(do_examine)
 
   if (tmp_object) {
     if ((GET_OBJ_TYPE(tmp_object) == ITEM_DRINKCON) ||
-	(GET_OBJ_TYPE(tmp_object) == ITEM_FOUNTAIN) ||
-	(GET_OBJ_TYPE(tmp_object) == ITEM_CONTAINER)) {
-      send_to_char(ch, "When you look inside, you see:\r\n");
-      look_in_obj(ch, arg);
+	  (GET_OBJ_TYPE(tmp_object) == ITEM_FOUNTAIN) ||
+	  (GET_OBJ_TYPE(tmp_object) == ITEM_CONTAINER)) {
+        send_to_char(ch, "When you look inside, you see:\r\n");
+        look_in_obj(ch, arg);
     }
   }
 }
@@ -1093,19 +1077,24 @@ ACMD(do_score)
   if (IS_NPC(ch))
     return;
 
-  send_to_char(ch, "%s-------------------------------------------------------------------------------%s\r\n", CCRED(ch, C_NRM), CCNRM(ch, C_NRM));
-  send_to_char(ch, "%s----------------------------------   %sSCORE%s   ----------------------------------%s\r\n", CCYEL(ch, C_NRM), CBYEL(ch, C_NRM), CCYEL(ch, C_NRM), CCNRM(ch, C_NRM));
-  send_to_char(ch, "%s-------------------------------------------------------------------------------%s\r\n", CCRED(ch, C_NRM), CCNRM(ch, C_NRM));
+  send_to_char(ch, "%s-------------------------------------------------------------------------------%s\r\n", 
+    CCRED(ch, C_NRM), CCNRM(ch, C_NRM));
+  send_to_char(ch, "%s----------------------------------   %sSCORE%s   ----------------------------------%s\r\n", 
+    CCYEL(ch, C_NRM), CBYEL(ch, C_NRM), CCYEL(ch, C_NRM), CCNRM(ch, C_NRM));
+  send_to_char(ch, "%s-------------------------------------------------------------------------------%s\r\n", 
+    CCRED(ch, C_NRM), CCNRM(ch, C_NRM));
 	
-sprinttype(GET_SEX(ch), genders, buf, sizeof(buf));
-sprinttype(ch->player.chrace, racepos_types, buf2, sizeof(buf2));
-sprinttype(ch->player.chclass, class_types, buf3, sizeof(buf3));	
+  sprinttype(GET_SEX(ch), genders, buf, sizeof(buf));
+  sprinttype(ch->player.chrace, racepos_types, buf2, sizeof(buf2));
+  sprinttype(ch->player.chclass, class_types, buf3, sizeof(buf3));	
 	
-  send_to_char(ch, "%s%s%s:%s %d year old %s %s %s. Your level is %s%d%s.", CCCYN(ch, C_NRM), GET_NAME(ch), CBWHT(ch, C_NRM), CCNRM(ch, C_NRM), GET_AGE(ch), buf, buf2, buf3, CCCYN(ch, C_NRM), GET_LEVEL(ch), CCNRM(ch, C_NRM));
+  send_to_char(ch, "%s%s%s:%s %d year old %s %s %s. Your level is %s%d%s.", 
+    CCCYN(ch, C_NRM), GET_NAME(ch), CBWHT(ch, C_NRM), CCNRM(ch, C_NRM), GET_AGE(ch), 
+    buf, buf2, buf3, CCCYN(ch, C_NRM), GET_LEVEL(ch), CCNRM(ch, C_NRM));
   
    if (GET_GEN(ch) != 0) {
-   sprinttype(GET_REMORT(ch), class_types, buf, sizeof(buf));
-   send_to_char(ch, "\r\nYou have remortalized as a %s, generation %d.", buf, GET_GEN(ch));
+     sprinttype(GET_REMORT(ch), class_types, buf, sizeof(buf));
+     send_to_char(ch, "\r\nYou have remortalized as a %s, generation %d.", buf, GET_GEN(ch));
    }
 
   if (age(ch)->month == 0 && age(ch)->day == 0)
@@ -1113,23 +1102,28 @@ sprinttype(ch->player.chclass, class_types, buf3, sizeof(buf3));
   else
     send_to_char(ch, "\r\n\r\n");
 	
-	
-  send_to_char(ch, "     %sHit  :  %s%4d%s/%4d		   %sAC  :  %s%d%s/10\r\n", CCYEL(ch, C_NRM), CBGRN(ch, C_NRM), GET_HIT(ch), CCNRM(ch, C_NRM), GET_MAX_HIT(ch), CCYEL(ch, C_NRM), CCCYN(ch, C_NRM), compute_armor_class(ch), CCNRM(ch, C_NRM));
+  send_to_char(ch, "     %sHit  :  %s%4d%s/%4d		   %sAC  :  %s%d%s/10\r\n", 
+    CCYEL(ch, C_NRM), CBGRN(ch, C_NRM), GET_HIT(ch), CCNRM(ch, C_NRM), GET_MAX_HIT(ch), 
+    CCYEL(ch, C_NRM), CCCYN(ch, C_NRM), compute_armor_class(ch), CCNRM(ch, C_NRM));
   
-  send_to_char(ch, "    %sMana  :  %s%4d%s/%s%4d		%sAlign  :  %s%d%s\r\n", CCYEL(ch, C_NRM), 
-  CBMAG(ch, C_NRM), GET_MANA(ch), CCNRM(ch, C_NRM), CCMAG(ch, C_NRM), GET_MAX_MANA(ch), CCYEL(ch, C_NRM), 
-  (IS_EVIL(ch) ? CBRED(ch, C_SPR) :  IS_GOOD(ch) ? CBBLU(ch, C_SPR) : CCNRM(ch, C_NRM)), 
-  GET_ALIGNMENT(ch), CCNRM(ch, C_NRM));
+  send_to_char(ch, "    %sMana  :  %s%4d%s/%s%4d		%sAlign  :  %s%d%s\r\n", 
+    CCYEL(ch, C_NRM), CBMAG(ch, C_NRM), GET_MANA(ch), CCNRM(ch, C_NRM), CCMAG(ch, C_NRM), 
+    GET_MAX_MANA(ch), CCYEL(ch, C_NRM), 
+    (IS_EVIL(ch) ? CBRED(ch, C_SPR) :  IS_GOOD(ch) ? CBBLU(ch, C_SPR) : CCNRM(ch, C_NRM)), 
+    GET_ALIGNMENT(ch), CCNRM(ch, C_NRM));
   
-  send_to_char(ch, "    %sMove  :  %s%4d%s/%s%4d		  %sExp  :  %s%d%s\r\n", CCYEL(ch, C_NRM), CBCYN(ch, C_NRM), GET_MOVE(ch), CCNRM(ch, C_NRM), CCCYN(ch, C_NRM), GET_MAX_MOVE(ch), CCYEL(ch, C_NRM), CBGRN(ch, C_NRM), GET_EXP(ch), CCNRM(ch, C_NRM));
+  send_to_char(ch, "    %sMove  :  %s%4d%s/%s%4d		  %sExp  :  %s%d%s\r\n", 
+    CCYEL(ch, C_NRM), CBCYN(ch, C_NRM), GET_MOVE(ch), CCNRM(ch, C_NRM), CCCYN(ch, C_NRM), 
+    GET_MAX_MOVE(ch), CCYEL(ch, C_NRM), CBGRN(ch, C_NRM), GET_EXP(ch), CCNRM(ch, C_NRM));
   
-  send_to_char(ch, "\r\n    \twKills \ty:  \tn%6d		\trDeaths \ty:  \tn%d\r\n", GET_KILL_CNT(ch), GET_RIP_CNT(ch));
+  send_to_char(ch, "\r\n    \twKills \ty:  \tn%6d		\trDeaths \ty:  \tn%d\r\n", 
+    GET_KILL_CNT(ch), GET_RIP_CNT(ch));
   
   send_to_char(ch, "-------------------------------------------------------------------------------\r\n");
 
   send_to_char(ch, "You have %s%d%s practice point%s and %s%d%s soul point%s.\r\n", 
-   CCCYN(ch, C_NRM), GET_PRACTICES(ch), CCNRM(ch, C_NRM), GET_PRACTICES(ch) == 1 ? "" : "s", 
-   CCCYN(ch, C_NRM), GET_SOUL_POINTS(ch), CCNRM(ch, C_NRM), GET_SOUL_POINTS(ch) == 1 ? "" : "s");
+    CCCYN(ch, C_NRM), GET_PRACTICES(ch), CCNRM(ch, C_NRM), GET_PRACTICES(ch) == 1 ? "" : "s", 
+    CCCYN(ch, C_NRM), GET_SOUL_POINTS(ch), CCNRM(ch, C_NRM), GET_SOUL_POINTS(ch) == 1 ? "" : "s");
   
   send_to_char(ch, "You are %s%d'%d\"%s tall, and weigh %s%d%s pounds.\r\n", 
     CCCYN(ch, C_NRM), (GET_HEIGHT(ch)/12) , (GET_HEIGHT(ch)%12), CCNRM(ch, C_NRM), 
@@ -1137,7 +1131,7 @@ sprinttype(ch->player.chclass, class_types, buf3, sizeof(buf3));
 
   if ((GET_LEVEL(ch) < LVL_IMMORT) && (GET_LEVEL(ch) != 50))
     send_to_char(ch, "You need %s%d%s exp to reach your next level.\r\n",
-	CCCYN(ch, C_NRM), level_exp(GET_CLASS(ch), GET_LEVEL(ch) + 1) - GET_EXP(ch), CCNRM(ch, C_NRM));
+	  CCCYN(ch, C_NRM), level_exp(GET_CLASS(ch), GET_LEVEL(ch) + 1) - GET_EXP(ch), CCNRM(ch, C_NRM));
 	
   if (GET_LEVEL(ch) == 50)
     send_to_char(ch, "You have reached maximum mortal level.\r\n");
@@ -1150,110 +1144,30 @@ sprinttype(ch->player.chclass, class_types, buf3, sizeof(buf3));
 	
   if (GET_LEVEL(ch) < LVL_IMMORT)
      send_to_char(ch, "You have walked into a death trap %s%d%s time%s.\r\n", 
-	  CCCYN(ch, C_NRM), GET_DT_CNT(ch), CCNRM(ch, C_NRM), GET_DT_CNT(ch) == 1 ? "" : "s");
+	   CCCYN(ch, C_NRM), GET_DT_CNT(ch), CCNRM(ch, C_NRM), GET_DT_CNT(ch) == 1 ? "" : "s");
 	
-  send_to_char(ch, "You have earned %s%d%s quest points.\r\n", CCCYN(ch, C_NRM), GET_QUESTPOINTS(ch), CCNRM(ch, C_NRM));
+  send_to_char(ch, "You have earned %s%d%s quest points.\r\n", 
+    CCCYN(ch, C_NRM), GET_QUESTPOINTS(ch), CCNRM(ch, C_NRM));
   
   send_to_char(ch, "You have completed %s%d%s quest%s, ",
-       CCCYN(ch, C_NRM),GET_NUM_QUESTS(ch), CCNRM(ch, C_NRM),
-       GET_NUM_QUESTS(ch) == 1 ? "" : "s");
+    CCCYN(ch, C_NRM),GET_NUM_QUESTS(ch), CCNRM(ch, C_NRM),
+    GET_NUM_QUESTS(ch) == 1 ? "" : "s");
 	   
   if ((GET_QUEST(ch) == NOTHING))
     send_to_char(ch, "and you are not on a quest at the moment.\r\n");
-  else
-  {
+  else {
     send_to_char(ch, "and your current quest is: %s%s%s", 
-        CCCYN(ch, C_NRM), QST_NAME(real_quest(GET_QUEST(ch))), CCNRM(ch, C_NRM));
+      CCCYN(ch, C_NRM), QST_NAME(real_quest(GET_QUEST(ch))), CCNRM(ch, C_NRM));
 
     if (!IS_NPC(ch) && PRF_FLAGGED(ch, PRF_SHOWVNUMS))
-        send_to_char(ch, " [%d]\r\n", GET_QUEST(ch));
+      send_to_char(ch, " [%d]\r\n", GET_QUEST(ch));
     else
-        send_to_char(ch, "\r\n");
+      send_to_char(ch, "\r\n");
   }
 
   send_to_char(ch, "You are known as %s%s%s%s%s.\r\n",
-	  CCYEL(ch, C_NRM), GET_NAME(ch), (*GET_TITLE(ch) ? " " : ""), GET_TITLE(ch), CCNRM(ch, C_NRM));
-	  
-  send_to_char(ch, "You carry %s%d%s gold coins.\r\n", CCCYN(ch, C_NRM), GET_GOLD(ch), CCNRM(ch, C_NRM));
-
-  switch (GET_POS(ch)) {
-  case POS_DEAD:
-    send_to_char(ch, "You are DEAD!\r\n");
-    break;
-  case POS_MORTALLYW:
-    send_to_char(ch, "You are mortally wounded!  You should seek help!\r\n");
-    break;
-  case POS_INCAP:
-    send_to_char(ch, "You are incapacitated, slowly fading away...\r\n");
-    break;
-  case POS_STUNNED:
-    send_to_char(ch, "You are stunned!  You can't move!\r\n");
-    break;
-  case POS_SLEEPING:
-    send_to_char(ch, "You are sleeping.\r\n");
-    break;
-  case POS_RESTING:
-    send_to_char(ch, "You are resting.\r\n");
-    break;
-  case POS_SITTING:
-    if (!SITTING(ch))
-      send_to_char(ch, "You are sitting.\r\n");
-    else {
-      struct obj_data *furniture = SITTING(ch);
-      send_to_char(ch, "You are sitting upon %s.\r\n", furniture->short_description);
-    }
-    break;
-  case POS_FIGHTING:
-    send_to_char(ch, "You are fighting %s.\r\n", FIGHTING(ch) ? PERS(FIGHTING(ch), ch) : "thin air");
-    break;
-  case POS_STANDING:
-    send_to_char(ch, "You are standing.\r\n");
-    break;
-  default:
-    send_to_char(ch, "You are floating.\r\n");
-    break;
-  }
-
-  if (GET_COND(ch, DRUNK) > 10)
-    send_to_char(ch, "You are intoxicated.\r\n");
-
-  if (GET_COND(ch, HUNGER) == 0)
-    send_to_char(ch, "You are hungry.\r\n");
-
-  if (GET_COND(ch, THIRST) == 0)
-    send_to_char(ch, "You are thirsty.\r\n");
-	
- if (!PRF_FLAGGED(ch, PRF_NO_AFF))
- {
-
-  if (AFF_FLAGGED(ch, AFF_BLIND) && GET_LEVEL(ch) < LVL_IMMORT)
-    send_to_char(ch, "You have been blinded!\r\n");
-
-  if (AFF_FLAGGED(ch, AFF_INVISIBLE))
-    send_to_char(ch, "You are invisible.\r\n");
-
-  if (AFF_FLAGGED(ch, AFF_DETECT_INVIS))
-    send_to_char(ch, "You are sensitive to the presence of invisible things.\r\n");
-
-  if (AFF_FLAGGED(ch, AFF_SANCTUARY))
-    send_to_char(ch, "You are protected by Sanctuary.\r\n");
-
-  if (AFF_FLAGGED(ch, AFF_POISON))
-    send_to_char(ch, "You are poisoned!\r\n");
-
-  if (AFF_FLAGGED(ch, AFF_CHARM))
-    send_to_char(ch, "You have been charmed!\r\n");
-
-  if (affected_by_spell(ch, SPELL_ARMOR))
-    send_to_char(ch, "You feel protected.\r\n");
-
-  if (AFF_FLAGGED(ch, AFF_INFRAVISION))
-    send_to_char(ch, "Your eyes are glowing red.\r\n");
-
-  if (PRF_FLAGGED(ch, PRF_SUMMONABLE))
-    send_to_char(ch, "You are summonable by other players.\r\n");
- }
-	
+    CCYEL(ch, C_NRM), GET_NAME(ch), (*GET_TITLE(ch) ? " " : ""), GET_TITLE(ch), CCNRM(ch, C_NRM));
+    
   if (GET_LEVEL(ch) >= LVL_IMMORT) {
     if (POOFIN(ch))
       send_to_char(ch, "%sPOOFIN:  %s%s %s%s\r\n", QYEL, QCYN, GET_NAME(ch), POOFIN(ch), QNRM);
@@ -1271,8 +1185,61 @@ sprinttype(ch->player.chclass, class_types, buf3, sizeof(buf3));
         send_to_char(ch, "You are not currenty assigned a zone.\r\n");
     else
         send_to_char(ch, "You can currently edit zone %s%d%s.\r\n", CCCYN(ch, C_NRM), GET_OLC_ZONE(ch), CCNRM(ch, C_NRM));  
-
   }
+	  
+  send_to_char(ch, "You carry %s%d%s gold coins.\r\n", 
+    CCCYN(ch, C_NRM), GET_GOLD(ch), CCNRM(ch, C_NRM));
+
+  switch (GET_POS(ch)) {
+    case POS_DEAD:
+      send_to_char(ch, "You are DEAD!\r\n");
+      break;
+    case POS_MORTALLYW:
+      send_to_char(ch, "You are mortally wounded!  You should seek help!\r\n");
+      break;
+    case POS_INCAP:
+      send_to_char(ch, "You are incapacitated, slowly fading away...\r\n");
+      break;
+    case POS_STUNNED:
+      send_to_char(ch, "You are stunned!  You can't move!\r\n");
+      break;
+    case POS_SLEEPING:
+      send_to_char(ch, "You are sleeping.\r\n");
+      break;
+    case POS_RESTING:
+      send_to_char(ch, "You are resting.\r\n");
+      break;
+    case POS_SITTING:
+      if (!SITTING(ch))
+        send_to_char(ch, "You are sitting.\r\n");
+      else {
+        struct obj_data *furniture = SITTING(ch);
+        send_to_char(ch, "You are sitting upon %s.\r\n", furniture->short_description);
+      }
+      break;
+    case POS_FIGHTING:
+      send_to_char(ch, "You are fighting %s.\r\n", FIGHTING(ch) ? PERS(FIGHTING(ch), ch) : "thin air");
+      break;
+    case POS_STANDING:
+      send_to_char(ch, "You are standing.\r\n");
+      break;
+    default:
+      send_to_char(ch, "You are floating.\r\n");
+      break;
+  }
+	   
+  if (GET_COND(ch, DRUNK) > 10)
+    send_to_char(ch, "You are intoxicated.\r\n");
+  if (GET_COND(ch, HUNGER) == 0)
+    send_to_char(ch, "You are hungry.\r\n");
+  if (GET_COND(ch, THIRST) == 0)
+    send_to_char(ch, "You are thirsty.\r\n");
+
+  if (PRF_FLAGGED(ch, PRF_SUMMONABLE))
+    send_to_char(ch, "You are summonable by other players.\r\n");
+	
+  if (!PRF_FLAGGED(ch, PRF_NO_AFF))
+    list_affections_to_char(ch);
 }
 
 ACMD(do_inventory)
@@ -1289,32 +1256,23 @@ ACMD(do_equipment)
   one_argument(argument, arg);
 
   send_to_char(ch, "You are using:\r\n");
-  for (i = 0; i < NUM_WEARS; i++) 
-  {
-  
-    if (!str_cmp(arg, "a") || !str_cmp(arg, "al") || !str_cmp(arg, "all")) 
-    {	  
-      if (!GET_EQ(ch, i)) 
-      {
+  for (i = 0; i < NUM_WEARS; i++) {
+    if (!str_cmp(arg, "a") || !str_cmp(arg, "al") || !str_cmp(arg, "all")) {	  
+      if (!GET_EQ(ch, i)) {
         found = 1;
 	    send_to_char(ch, "%s", wear_where[i]);
 	    send_to_char(ch, "Nothing.\r\n");
       }
     }
-
-    if (GET_EQ(ch, i)) 
-    {
+    if (GET_EQ(ch, i)) {
       found = TRUE;
-      if (CAN_SEE_OBJ(ch, GET_EQ(ch, i))) 
-      {
+      if (CAN_SEE_OBJ(ch, GET_EQ(ch, i))) {
         send_to_char(ch, "%s", wear_where[i]);
         show_obj_to_char(GET_EQ(ch, i), ch, SHOW_OBJ_SHORT);
-      } 
-      else 
-      {
-        send_to_char(ch, "%s", wear_where[i]);
-        send_to_char(ch, "Something.\r\n");
-        found = TRUE;
+      } else {
+          send_to_char(ch, "%s", wear_where[i]);
+          send_to_char(ch, "Something.\r\n");
+          found = TRUE;
       }
     }
   }
@@ -1356,7 +1314,6 @@ ACMD(do_time)
       break;
     }
   }
-
   send_to_char(ch, "The %d%s Day of the %s, Year %d.\r\n",
 	  day, suf, month_name[time_info.month], time_info.year);
 }
@@ -1429,7 +1386,7 @@ ACMD(do_help)
   int mid = 0;
   int i, found = 0;
 
-    if (!ch->desc)
+  if (!ch->desc)
     return;
 
   skip_spaces(&argument);
@@ -1452,8 +1409,8 @@ ACMD(do_help)
   if ((mid = search_help(argument, GET_LEVEL(ch))) == NOWHERE) {
     send_to_char(ch, "There is no help on that word.\r\n");
     mudlog(NRM, MAX(LVL_IMPL, GET_INVIS_LEV(ch)), TRUE,
-      "%s tried to get help on %s", GET_NAME(ch), argument);
-    for (i = 0; i < top_of_helpt; i++)  {
+       "%s tried to get help on %s", GET_NAME(ch), argument);
+    for (i = 0; i < top_of_helpt; i++) {
       if (help_table[i].min_level > GET_LEVEL(ch))
         continue;
       /* To help narrow down results, if they don't start with the same letters, move on. */
@@ -1506,7 +1463,6 @@ ACMD(do_who)
     "  IMP  ",
   };
 
- 
   struct {
     char *disp;
     int min_level;
@@ -1520,7 +1476,6 @@ ACMD(do_who)
     { "\n", 0, 0, 0 }
   };
 
-  
   skip_spaces(&argument);
   strcpy(buf, argument);   /* strcpy: OK (sizeof: argument == buf) */
   name_search[0] = '\0';
@@ -1580,7 +1535,8 @@ ACMD(do_who)
     }
   }
   
-  send_to_char(ch, "%s-+-*-+-*-+-*-+-*- *  *  Visible Players of Aetas  *  * -*-+-*-+-*-+-*-+-%s\r\n\r\n", CBGRN(ch, C_SPR), CCNRM(ch, C_SPR));
+  send_to_char(ch, "%s-+-*-+-*-+-*-+-*- *  *  Visible Players of Aetas  *  * -*-+-*-+-*-+-*-+-%s\r\n\r\n", 
+    CBGRN(ch, C_SPR), CCNRM(ch, C_SPR));
   
   for (d = descriptor_list; d && !short_list; d = d->next) {
     if (d->original)
@@ -1618,14 +1574,14 @@ ACMD(do_who)
         if (GET_LEVEL(tch) >= rank[i].min_level && GET_LEVEL(tch) <= rank[i].max_level)
           rank[i].count++;
     }
-	}
+  }
 
   for (i = 0; *rank[i].disp != '\n'; i++) {
     if (!rank[i].count && !short_list)
       continue;
     
 	if (gods_can_see != 0)
-	send_to_char(ch, "%s", rank[i].disp);
+	  send_to_char(ch, "%s", rank[i].disp);
 
     for (d = descriptor_list; d; d = d->next) {
       if (d->original)
@@ -1633,12 +1589,12 @@ ACMD(do_who)
       else if (!(tch = d->character))
         continue;
 	
-	if (short_list) {
-     if (GET_LEVEL(tch) >= LVL_IMMORT)
-      total_gods++;
-     else
-      total_morts++;
-	}	
+	  if (short_list) {
+        if (GET_LEVEL(tch) >= LVL_IMMORT)
+          total_gods++;
+        else
+          total_morts++;
+	  }	
 
       if ((GET_LEVEL(tch) < rank[i].min_level || GET_LEVEL(tch) > rank[i].max_level) && !short_list)
         continue;
@@ -1664,152 +1620,148 @@ ACMD(do_who)
       if (showleader && (!GROUP(tch) || GROUP_LEADER(GROUP(tch)) != tch))
         continue;
 
-	if (!PRF_FLAGGED(tch, PRF_NOWHO) || GET_LEVEL(ch) >= LVL_IMMORT) {
-      if (short_list) {
-	   if (GET_LEVEL(tch) >= LVL_IMMORT) {
-        send_to_char(ch, "%s[%-7s] %-12.12s%s%s",
-		  CCYEL(ch, C_SPR),
-          GET_BADGE(tch) ? center_text(GET_BADGE(tch), 7) : godlevs[GET_LEVEL(tch)-LVL_IMMORT],
-          GET_NAME(tch),
-          CCNRM(ch, C_SPR), ((!(++num_can_see % 4)) ? "\r\n" : ""));
-		  gods_can_see++;
-		  }
-	   else {
-	   morts_can_see++;
-	    if (PRF_FLAGGED(tch, PRF_ANON) && GET_LEVEL(ch) < LVL_DEMI)
-		 send_to_char(ch, "[-- ");
-		 else
-		 send_to_char(ch, "[%2d ", GET_LEVEL(tch));
+	  if (!PRF_FLAGGED(tch, PRF_NOWHO) || GET_LEVEL(ch) >= LVL_IMMORT) {
+        if (short_list) {
+	      if (GET_LEVEL(tch) >= LVL_IMMORT) {
+            send_to_char(ch, "%s[%-7s] %-12.12s%s%s",
+		      CCYEL(ch, C_SPR),
+              GET_BADGE(tch) ? center_text(GET_BADGE(tch), 7) : godlevs[GET_LEVEL(tch)-LVL_IMMORT],
+              GET_NAME(tch),
+              CCNRM(ch, C_SPR), ((!(++num_can_see % 4)) ? "\r\n" : ""));
+		      gods_can_see++;
+		  } else {
+	        morts_can_see++;
+	        if (PRF_FLAGGED(tch, PRF_ANON) && GET_LEVEL(ch) < LVL_DEMI)
+		      send_to_char(ch, "[-- ");
+		    else
+		      send_to_char(ch, "[%2d ", GET_LEVEL(tch));
 		  
-		send_to_char(ch, "%s] %-12.12s%s%s",
-          CLASS_ABBR(tch), GET_NAME(tch),
-          CCNRM(ch, C_SPR), ((!(++num_can_see % 4)) ? "\r\n" : ""));
-         }
-		}
+		    send_to_char(ch, "%s] %-12.12s%s%s",
+              CLASS_ABBR(tch), GET_NAME(tch),
+              CCNRM(ch, C_SPR), ((!(++num_can_see % 4)) ? "\r\n" : ""));
+          }
+	    } else {
+          num_can_see++;
 		
-	  else {
-        num_can_see++;
-		
-		if (GET_LEVEL(tch) >= LVL_IMMORT) {
-		send_to_char(ch, "%s[%s%-7s%s]%s %s%s%s%s",
-            CBCYN(ch, C_SPR),
-			CCYEL(ch, C_SPR),
-			GET_BADGE(tch) ? center_text(GET_BADGE(tch), 7) : godlevs[GET_LEVEL(tch)-LVL_IMMORT],
-			CBCYN(ch, C_SPR),
-			CBGRN(ch, C_SPR),
-            GET_NAME(tch), (*GET_TITLE(tch) ? " " : ""), GET_TITLE(tch),
-            CCNRM(ch, C_SPR));
-		gods_can_see++;
-		} else {
-		morts_can_see++;
-		if (GET_LEVEL(ch) >= LVL_DEMI)
-		 send_to_char(ch, "%s[%s(%s%2d%s)%s%2d%s ", 
-		  CCGRN(ch, C_SPR), CCCYN(ch, C_SPR), CCNRM(ch, C_SPR), GET_GEN(tch), CCCYN(ch, C_SPR),
-		  PRF_FLAGGED(tch, PRF_ANON) ? CCRED(ch, C_SPR) : CCNRM(ch, C_SPR), GET_LEVEL(tch), CCNRM(ch, C_SPR));
-		else if (PRF_FLAGGED(tch, PRF_ANON))
-		 send_to_char(ch, "%s[%s--%s ", CCGRN(ch, C_SPR), CBBLK(ch, C_SPR), CCNRM(ch, C_SPR));
-		else
-		 send_to_char(ch, "%s[%s%2d ", CCGRN(ch, C_SPR), CCNRM(ch, C_SPR), GET_LEVEL(tch));
+		  if (GET_LEVEL(tch) >= LVL_IMMORT) {
+		    send_to_char(ch, "%s[%s%-7s%s]%s %s%s%s%s",
+              CBCYN(ch, C_SPR),
+			  CCYEL(ch, C_SPR),
+			  GET_BADGE(tch) ? center_text(GET_BADGE(tch), 7) : godlevs[GET_LEVEL(tch)-LVL_IMMORT],
+			  CBCYN(ch, C_SPR),
+			  CBGRN(ch, C_SPR),
+              GET_NAME(tch), (*GET_TITLE(tch) ? " " : ""), GET_TITLE(tch),
+              CCNRM(ch, C_SPR));
+		    gods_can_see++;
+		  } else {
+		    morts_can_see++;
+		    if (GET_LEVEL(ch) >= LVL_DEMI)
+		      send_to_char(ch, "%s[%s(%s%2d%s)%s%2d%s ", 
+		        CCGRN(ch, C_SPR), CCCYN(ch, C_SPR), CCNRM(ch, C_SPR), GET_GEN(tch), CCCYN(ch, C_SPR),
+		        PRF_FLAGGED(tch, PRF_ANON) ? CCRED(ch, C_SPR) : CCNRM(ch, C_SPR), 
+                GET_LEVEL(tch), CCNRM(ch, C_SPR));
+		    else if (PRF_FLAGGED(tch, PRF_ANON))
+		      send_to_char(ch, "%s[%s--%s ", CCGRN(ch, C_SPR), CBBLK(ch, C_SPR), CCNRM(ch, C_SPR));
+		    else
+		      send_to_char(ch, "%s[%s%2d ", CCGRN(ch, C_SPR), CCNRM(ch, C_SPR), GET_LEVEL(tch));
 		 
-		send_to_char(ch, "%s%s%s]%s %s%s%s%s", 
-			(GET_CLASS(tch) == CLASS_MAGE ? CCMAG(ch, C_SPR) :
-			 GET_CLASS(tch) == CLASS_BARBARIAN ? CCCYN(ch, C_SPR) :
-			 GET_CLASS(tch) == CLASS_NECROMANCER ? CBBLK(ch, C_SPR) :
-			 GET_CLASS(tch) == CLASS_THIEF ? CBGRN(ch, C_SPR) :
-			 GET_CLASS(tch) == CLASS_PSIONICIST ? CCWHT(ch, C_SPR) :
+		    send_to_char(ch, "%s%s%s]%s %s%s%s%s", 
+		      (GET_CLASS(tch) == CLASS_MAGE ? CCMAG(ch, C_SPR) :
+			   GET_CLASS(tch) == CLASS_BARBARIAN ? CCCYN(ch, C_SPR) :
+			   GET_CLASS(tch) == CLASS_NECROMANCER ? CBBLK(ch, C_SPR) :
+			   GET_CLASS(tch) == CLASS_THIEF ? CBGRN(ch, C_SPR) :
+			   GET_CLASS(tch) == CLASS_PSIONICIST ? CCWHT(ch, C_SPR) :
 			
-			GET_CLASS(tch) == CLASS_KNIGHT && IS_GOOD(tch) ? CCBLU(ch, C_SPR) : 
-			GET_CLASS(tch) == CLASS_KNIGHT && IS_EVIL(tch) ? CCRED(ch, C_SPR) : 
-			GET_CLASS(tch) == CLASS_KNIGHT && IS_NEUTRAL(tch) ? CCYEL(ch, C_SPR) :
+			   GET_CLASS(tch) == CLASS_KNIGHT && IS_GOOD(tch) ? CCBLU(ch, C_SPR) : 
+			   GET_CLASS(tch) == CLASS_KNIGHT && IS_EVIL(tch) ? CCRED(ch, C_SPR) : 
+			   GET_CLASS(tch) == CLASS_KNIGHT && IS_NEUTRAL(tch) ? CCYEL(ch, C_SPR) :
 			
-			GET_CLASS(tch) == CLASS_CLERIC && IS_GOOD(tch) ? CBBLU(ch, C_SPR) : 
-			GET_CLASS(tch) == CLASS_CLERIC && IS_EVIL(tch) ? CBRED(ch, C_SPR) : 
-			GET_CLASS(tch) == CLASS_CLERIC && IS_NEUTRAL(tch) ? CCYEL(ch, C_SPR) :
+			   GET_CLASS(tch) == CLASS_CLERIC && IS_GOOD(tch) ? CBBLU(ch, C_SPR) : 
+			   GET_CLASS(tch) == CLASS_CLERIC && IS_EVIL(tch) ? CBRED(ch, C_SPR) : 
+			   GET_CLASS(tch) == CLASS_CLERIC && IS_NEUTRAL(tch) ? CCYEL(ch, C_SPR) :
 			
-			GET_CLASS(tch) == CLASS_DRUID && IS_NEUTRAL(tch) ? CBYEL(ch, C_SPR) : 
-			GET_CLASS(tch) == CLASS_DRUID && IS_EVIL(tch) ? CCYEL(ch, C_SPR) : 
-			GET_CLASS(tch) == CLASS_DRUID && IS_GOOD(tch) ? CCYEL(ch, C_SPR) :
+			   GET_CLASS(tch) == CLASS_DRUID && IS_NEUTRAL(tch) ? CBYEL(ch, C_SPR) : 
+			   GET_CLASS(tch) == CLASS_DRUID && IS_EVIL(tch) ? CCYEL(ch, C_SPR) : 
+			   GET_CLASS(tch) == CLASS_DRUID && IS_GOOD(tch) ? CCYEL(ch, C_SPR) :
 			
-			GET_CLASS(tch) == CLASS_MONK && IS_NEUTRAL(tch) ? CBWHT(ch, C_SPR) : 
-			GET_CLASS(tch) == CLASS_MONK && IS_EVIL(tch) ? CCYEL(ch, C_SPR) : 
-			GET_CLASS(tch) == CLASS_MONK && IS_GOOD(tch) ? CCYEL(ch, C_SPR) :
-			 ""),
-			CLASS_ABBR(tch),
-			CCGRN(ch, C_SPR), CCNRM(ch, C_SPR),
-            GET_NAME(tch), (*GET_TITLE(tch) ? " " : ""), GET_TITLE(tch),
-            CCNRM(ch, C_SPR));
-			}
+			   GET_CLASS(tch) == CLASS_MONK && IS_NEUTRAL(tch) ? CBWHT(ch, C_SPR) : 
+			   GET_CLASS(tch) == CLASS_MONK && IS_EVIL(tch) ? CCYEL(ch, C_SPR) : 
+			   GET_CLASS(tch) == CLASS_MONK && IS_GOOD(tch) ? CCYEL(ch, C_SPR) : ""),
+			   CLASS_ABBR(tch),
+			   CCGRN(ch, C_SPR), CCNRM(ch, C_SPR),
+               GET_NAME(tch), (*GET_TITLE(tch) ? " " : ""), GET_TITLE(tch),
+               CCNRM(ch, C_SPR));
+	      }
 
-		if (GET_LEVEL(ch) >= LVL_IMMORT && PRF_FLAGGED(tch, PRF_NOWHO))
-		  send_to_char(ch, " %s(nowho)%s", CCRED(ch, C_SPR), CCNRM(ch, C_SPR));
+		  if (GET_LEVEL(ch) >= LVL_IMMORT && PRF_FLAGGED(tch, PRF_NOWHO))
+		    send_to_char(ch, " %s(nowho)%s", CCRED(ch, C_SPR), CCNRM(ch, C_SPR));
 		
-		if (GET_CLAN_RANK(tch) > 0)
-		 send_to_char(ch, " %s%s%s", CCCYN(ch, C_SPR), get_clan_name(GET_CLAN(tch)), CCNRM(ch, C_SPR));
+		  if (GET_CLAN_RANK(tch) > 0)
+		   send_to_char(ch, " %s%s%s", CCCYN(ch, C_SPR), get_clan_name(GET_CLAN(tch)), CCNRM(ch, C_SPR));
 			
-        if (GET_INVIS_LEV(tch))
-          send_to_char(ch, " %s(%si%d%s)%s", CCBLU(ch, C_SPR), CCMAG(ch, C_SPR),
-		  GET_INVIS_LEV(tch), CCBLU(ch, C_SPR), CCNRM(ch, C_SPR));
-        else if (AFF_FLAGGED(tch, AFF_INVISIBLE))
-          send_to_char(ch, " %s(invis)%s", CCCYN(ch, C_SPR), CCNRM(ch, C_SPR));
+          if (GET_INVIS_LEV(tch))
+            send_to_char(ch, " %s(%si%d%s)%s", CCBLU(ch, C_SPR), CCMAG(ch, C_SPR),
+		      GET_INVIS_LEV(tch), CCBLU(ch, C_SPR), CCNRM(ch, C_SPR));
+          else if (AFF_FLAGGED(tch, AFF_INVISIBLE))
+            send_to_char(ch, " %s(invis)%s", CCCYN(ch, C_SPR), CCNRM(ch, C_SPR));
 
-        if (PLR_FLAGGED(tch, PLR_MAILING))
-          send_to_char(ch, " (mailing)");
-        else if (d->olc)
-          send_to_char(ch, " (creating)");
-        else if (PLR_FLAGGED(tch, PLR_WRITING))
-          send_to_char(ch, " (writing)");
+          if (PLR_FLAGGED(tch, PLR_MAILING))
+            send_to_char(ch, " (mailing)");
+          else if (d->olc)
+            send_to_char(ch, " (creating)");
+          else if (PLR_FLAGGED(tch, PLR_WRITING))
+            send_to_char(ch, " (writing)");
 
-      if (d->original)
-        send_to_char(ch, " (out of body)");
+          if (d->original)
+            send_to_char(ch, " (out of body)");
 
-	  if (GET_LEVEL(ch) >= LVL_IMMORT) {
-        if (d->connected == CON_OEDIT)
-          send_to_char(ch, " (Object Edit)");
-        if (d->connected == CON_MEDIT)
-          send_to_char(ch, " (Mobile Edit)");
-        if (d->connected == CON_ZEDIT)
-          send_to_char(ch, " (Zone Edit)");
-        if (d->connected == CON_SEDIT)
-          send_to_char(ch, " (Shop Edit)");
-        if (d->connected == CON_REDIT)
-          send_to_char(ch, " (Room Edit)");
-        if (d->connected == CON_TEDIT)
-          send_to_char(ch, " (Text Edit)");
-        if (d->connected == CON_TRIGEDIT)
-          send_to_char(ch, " (Trigger Edit)");
-        if (d->connected == CON_AEDIT)
-          send_to_char(ch, " (Social Edit)");
-        if (d->connected == CON_CEDIT)
-          send_to_char(ch, " (Configuration Edit)");
-        if (d->connected == CON_HEDIT)
-          send_to_char(ch, " (Help edit)");
-        if (d->connected == CON_QEDIT)
-          send_to_char(ch, " (Quest Edit)");
-        if (PRF_FLAGGED(tch, PRF_BUILDWALK))
-          send_to_char(ch, " (Buildwalking)");
-		}  
+	      if (GET_LEVEL(ch) >= LVL_IMMORT) {
+            if (d->connected == CON_OEDIT)
+              send_to_char(ch, " (Object Edit)");
+            if (d->connected == CON_MEDIT)
+              send_to_char(ch, " (Mobile Edit)");
+            if (d->connected == CON_ZEDIT)
+              send_to_char(ch, " (Zone Edit)");
+            if (d->connected == CON_SEDIT)
+              send_to_char(ch, " (Shop Edit)");
+            if (d->connected == CON_REDIT)
+              send_to_char(ch, " (Room Edit)");
+            if (d->connected == CON_TEDIT)
+              send_to_char(ch, " (Text Edit)");
+            if (d->connected == CON_TRIGEDIT)
+              send_to_char(ch, " (Trigger Edit)");
+            if (d->connected == CON_AEDIT)
+              send_to_char(ch, " (Social Edit)");
+            if (d->connected == CON_CEDIT)
+              send_to_char(ch, " (Configuration Edit)");
+            if (d->connected == CON_HEDIT)
+              send_to_char(ch, " (Help edit)");
+            if (d->connected == CON_QEDIT)
+              send_to_char(ch, " (Quest Edit)");
+            if (PRF_FLAGGED(tch, PRF_BUILDWALK))
+              send_to_char(ch, " (Buildwalking)");
+		  }  
 		  
-        if (PRF_FLAGGED(tch, PRF_AFK))
-          send_to_char(ch, " (AFK)");
-        if (PRF_FLAGGED(tch, PRF_NOGOSS))
-          send_to_char(ch, " (nogos)");
-        if (PRF_FLAGGED(tch, PRF_NOWIZ))
-          send_to_char(ch, " (nowiz)");
-        if (PRF_FLAGGED(tch, PRF_NOSHOUT))
-          send_to_char(ch, " (noshout)");
-        if (PRF_FLAGGED(tch, PRF_NOTELL))
-          send_to_char(ch, " (notell)");
-        if (PRF_FLAGGED(tch, PRF_QUEST))
-          send_to_char(ch, " %s(quest)%s", CBYEL(ch, C_SPR), CCNRM(ch, C_SPR));
-        if (PLR_FLAGGED(tch, PLR_THIEF))
-          send_to_char(ch, " %s(THIEF)%s", CCRED(ch, C_SPR), CCNRM(ch, C_SPR));
-        if (PLR_FLAGGED(tch, PLR_KILLER))
-          send_to_char(ch, " %s(KILLER)%s", CCRED(ch, C_SPR), CCNRM(ch, C_SPR));
-        send_to_char(ch, "\r\n");
+          if (PRF_FLAGGED(tch, PRF_AFK))
+            send_to_char(ch, " (AFK)");
+          if (PRF_FLAGGED(tch, PRF_NOGOSS))
+            send_to_char(ch, " (nogos)");
+          if (PRF_FLAGGED(tch, PRF_NOWIZ))
+            send_to_char(ch, " (nowiz)");
+          if (PRF_FLAGGED(tch, PRF_NOSHOUT))
+            send_to_char(ch, " (noshout)");
+          if (PRF_FLAGGED(tch, PRF_NOTELL))
+            send_to_char(ch, " (notell)");
+          if (PRF_FLAGGED(tch, PRF_QUEST))
+            send_to_char(ch, " %s(quest)%s", CBYEL(ch, C_SPR), CCNRM(ch, C_SPR));
+          if (PLR_FLAGGED(tch, PLR_THIEF))
+            send_to_char(ch, " %s(THIEF)%s", CCRED(ch, C_SPR), CCNRM(ch, C_SPR));
+          if (PLR_FLAGGED(tch, PLR_KILLER))
+            send_to_char(ch, " %s(KILLER)%s", CCRED(ch, C_SPR), CCNRM(ch, C_SPR));
+          send_to_char(ch, "\r\n");
+        }
       }
-    }
 	}
-	
     if (short_list)
       break;
   }
@@ -1822,9 +1774,7 @@ ACMD(do_who)
 		    CBGRN(ch, C_SPR), gods_can_see, total_gods, morts_can_see, total_morts, CCNRM(ch, C_SPR));
   
   if (IS_HAPPYHOUR > 0)
-  {
     send_to_char(ch, "It's a Happy Hour! Type \tRhappyhour\tW to see the current bonuses.\r\n");
-  }
 }
 
 #define USERS_FORMAT \
@@ -1853,40 +1803,40 @@ ACMD(do_users)
       switch (mode) {
       case 'o':
       case 'k':
-	outlaws = 1;
-	playing = 1;
-	strcpy(buf, buf1);	/* strcpy: OK (sizeof: buf1 == buf) */
-	break;
+	    outlaws = 1;
+	    playing = 1;
+	    strcpy(buf, buf1);	/* strcpy: OK (sizeof: buf1 == buf) */
+	    break;
       case 'p':
-	playing = 1;
-	strcpy(buf, buf1);	/* strcpy: OK (sizeof: buf1 == buf) */
-	break;
+	    playing = 1;
+	    strcpy(buf, buf1);	/* strcpy: OK (sizeof: buf1 == buf) */
+	    break;
       case 'd':
-	deadweight = 1;
-	strcpy(buf, buf1);	/* strcpy: OK (sizeof: buf1 == buf) */
-	break;
+	    deadweight = 1;
+	    strcpy(buf, buf1);	/* strcpy: OK (sizeof: buf1 == buf) */
+	    break;
       case 'l':
-	playing = 1;
-	half_chop(buf1, arg, buf);
-	sscanf(arg, "%d-%d", &low, &high);
-	break;
+	    playing = 1;
+	    half_chop(buf1, arg, buf);
+	    sscanf(arg, "%d-%d", &low, &high);
+	    break;
       case 'n':
-	playing = 1;
-	half_chop(buf1, name_search, buf);
-	break;
+	    playing = 1;
+	    half_chop(buf1, name_search, buf);
+	    break;
       case 'h':
-	playing = 1;
-	half_chop(buf1, host_search, buf);
-	break;
+	    playing = 1;
+	    half_chop(buf1, host_search, buf);
+	    break;
       case 'c':
-	playing = 1;
-	half_chop(buf1, arg, buf);
-	showclass = find_class_bitvector(arg);
-	break;
+	    playing = 1;
+	    half_chop(buf1, arg, buf);
+	    showclass = find_class_bitvector(arg);
+	    break;
       default:
-	send_to_char(ch, "%s", USERS_FORMAT);
-	return;
-      }				/* end of switch */
+	    send_to_char(ch, "%s", USERS_FORMAT);
+	    return;
+    }				/* end of switch */
 
     } else {			/* endif */
       send_to_char(ch, "%s", USERS_FORMAT);
@@ -1906,30 +1856,30 @@ ACMD(do_users)
       continue;
     if (IS_PLAYING(d)) {
       if (d->original)
-	tch = d->original;
+	    tch = d->original;
       else if (!(tch = d->character))
-	continue;
+	    continue;
 
       if (*host_search && !strstr(d->host, host_search))
-	continue;
+	    continue;
       if (*name_search && str_cmp(GET_NAME(tch), name_search))
-	continue;
+	    continue;
       if (!CAN_SEE(ch, tch) || GET_LEVEL(tch) < low || GET_LEVEL(tch) > high)
-	continue;
+	    continue;
       if (outlaws && !PLR_FLAGGED(tch, PLR_KILLER) &&
 	  !PLR_FLAGGED(tch, PLR_THIEF))
-	continue;
+	    continue;
       if (showclass && !(showclass & (1 << GET_CLASS(tch))))
-	continue;
+	    continue;
       if (GET_INVIS_LEV(tch) > GET_LEVEL(ch))
-	continue;
+	    continue;
 
       if (d->original)
-	sprintf(classname, "[%2d %s]", GET_LEVEL(d->original),
-		CLASS_ABBR(d->original));
+	    sprintf(classname, "[%2d %s]", GET_LEVEL(d->original),
+		  CLASS_ABBR(d->original));
       else
-	sprintf(classname, "[%2d %s]", GET_LEVEL(d->character),
-		CLASS_ABBR(d->character));
+	    sprintf(classname, "[%2d %s]", GET_LEVEL(d->character),
+		  CLASS_ABBR(d->character));
     } else
       strcpy(classname, "    -    ");
 
@@ -1949,10 +1899,10 @@ ACMD(do_users)
       strcpy(idletime, "     ");
 
     sprintf(line, "%3d %-7s %-12s %-14s %-3s %-8s ", d->desc_num, classname,
-	d->original && d->original->player.name ? d->original->player.name :
-	d->character && d->character->player.name ? d->character->player.name :
-	"UNDEFINED",
-	state, idletime, timeptr);
+	  d->original && d->original->player.name ? d->original->player.name :
+	  d->character && d->character->player.name ? d->character->player.name :
+	  "UNDEFINED",
+	  state, idletime, timeptr);
 
     if (d->host && *d->host)
       sprintf(line + strlen(line), "[%s]\r\n", d->host);
@@ -1968,7 +1918,6 @@ ACMD(do_users)
       num_can_see++;
     }
   }
-
   send_to_char(ch, "\r\n%d visible sockets connected.\r\n", num_can_see);
 }
 
@@ -2042,23 +1991,23 @@ static void perform_mortal_where(struct char_data *ch, char *arg)
     send_to_char(ch, "Players in %s\tn.\r\n--------------------\r\n", zone_table[j].name);
     for (d = descriptor_list; d; d = d->next) {
       if (STATE(d) != CON_PLAYING || d->character == ch)
-	continue;
+	    continue;
       if ((i = (d->original ? d->original : d->character)) == NULL)
-	continue;
+	    continue;
       if (IN_ROOM(i) == NOWHERE || !CAN_SEE(ch, i))
-	continue;
+	    continue;
       if (world[IN_ROOM(ch)].zone != world[IN_ROOM(i)].zone)
-	continue;
+	    continue;
       send_to_char(ch, "%-20s%s - %s%s\r\n", GET_NAME(i), QNRM, world[IN_ROOM(i)].name, QNRM);
     }
   } else {			/* print only FIRST char, not all. */
     for (i = character_list; i; i = i->next) {
       if (IN_ROOM(i) == NOWHERE || i == ch)
-	continue;
+	    continue;
       if (!CAN_SEE(ch, i) || world[IN_ROOM(i)].zone != world[IN_ROOM(ch)].zone)
-	continue;
+	    continue;
       if (!isname(arg, i->player.name))
-	continue;
+	    continue;
       send_to_char(ch, "%-25s%s - %s%s\r\n", GET_NAME(i), QNRM, world[IN_ROOM(i)].name, QNRM);
       return;
     }
@@ -2187,9 +2136,7 @@ ACMD(do_levels)
         min_lev = MAX(min_lev, 1);
         max_lev = MIN(max_lev + 1, LVL_IMMORT);
       }
-    }
-    else
-    {
+    } else {
       send_to_char(ch, "Usage: %slevels [<min>-<max> | <range>]%s\r\n\r\n", QYEL, QNRM);
       send_to_char(ch, "Displays exp required for levels.\r\n");
       send_to_char(ch, "%slevels       %s- shows all levels (1-%d)\r\n", QCYN, QNRM, (LVL_IMMORT-1));
@@ -2218,6 +2165,7 @@ ACMD(do_levels)
       nlen = snprintf(buf + len, sizeof(buf) - len, "Oh dear.  You seem to be sexless.\r\n");
       break;
     }
+    
     if (len + nlen >= sizeof(buf))
       break;
     len += nlen;
@@ -2307,107 +2255,107 @@ ACMD(do_toggle)
     char min_level;
     char *disable_msg;
     char *enable_msg;
-  } tog_messages[] = {
-    {"summonable", PRF_SUMMONABLE, 0,
-    "You are now safe from summoning by other players.\r\n",
-    "You may now be summoned by other players.\r\n"},
-    {"nohassle", PRF_NOHASSLE, LVL_IMMORT,
-    "Nohassle disabled.\r\n",
-    "Nohassle enabled.\r\n"},
-    {"brief", PRF_BRIEF, 0,
-    "Brief mode off.\r\n",
-    "Brief mode on.\r\n"},
-    {"compact", PRF_COMPACT, 0,
-    "Compact mode off.\r\n",
-    "Compact mode on.\r\n"},
-    {"notell", PRF_NOTELL, 0,
-    "You can now hear tells.\r\n",
-    "You are now deaf to tells.\r\n"},
-    {"noauction", PRF_NOAUCT, 0,
-    "You can now hear auctions.\r\n",
-    "You are now deaf to auctions.\r\n"},
-    {"noshout", PRF_NOSHOUT, 0,
-    "You can now hear shouts.\r\n",
-    "You are now deaf to shouts.\r\n"},
-    {"nogossip", PRF_NOGOSS, 0,
-    "You can now hear gossip.\r\n",
-    "You are now deaf to gossip.\r\n"},
-    {"nograts", PRF_NOGRATZ, 0,
-    "You can now hear gratz.\r\n",
-    "You are now deaf to gratz.\r\n"},
-    {"nowiz", PRF_NOWIZ, LVL_IMMORT,
-    "You can now hear the Wiz-channel.\r\n",
-    "You are now deaf to the Wiz-channel.\r\n"},
-    {"quest", PRF_QUEST, 0,
-    "You are no longer part of the Quest.\r\n",
-    "Okay, you are part of the Quest.\r\n"},
-    {"showvnums", PRF_SHOWVNUMS, LVL_IMMORT,
-    "You will no longer see the vnums.\r\n",
-    "You will now see the vnums.\r\n"},
-    {"norepeat", PRF_NOREPEAT, 0,
-    "You will now have your communication repeated.\r\n",
-    "You will no longer have your communication repeated.\r\n"},
-    {"holylight", PRF_HOLYLIGHT, LVL_IMMORT,
-    "HolyLight mode off.\r\n",
-    "HolyLight mode on.\r\n"},
-    {"slownameserver", 0, LVL_IMPL,
-    "Nameserver_is_slow changed to OFF; IP addresses will now be resolved.\r\n",
-    "Nameserver_is_slow changed to ON; sitenames will no longer be resolved.\r\n"},
-    {"autoexits", PRF_AUTOEXIT, 0,
-    "Autoexits disabled.\r\n",
-    "Autoexits enabled.\r\n"},
-    {"trackthru", 0, LVL_IMPL,
-    "Players can no longer track through doors.\r\n",
-    "Players can now track through doors.\r\n"},
-    {"clsolc", PRF_CLS, LVL_BUILDER,
-    "You will no longer clear screen in OLC.\r\n",
-    "You will now clear screen in OLC.\r\n"},
-    {"buildwalk", PRF_BUILDWALK, LVL_BUILDER,
-    "Buildwalk is now Off.\r\n",
-    "Buildwalk is now On.\r\n"},
-    {"afk", PRF_AFK, 0,
-    "AFK is now Off.\r\n",
-    "AFK is now On.\r\n"},
-    {"autoloot", PRF_AUTOLOOT, 0,
-    "Autoloot disabled.\r\n",
-    "Autoloot enabled.\r\n"},
-    {"autogold", PRF_AUTOGOLD, 0,
-    "Autogold disabled.\r\n",
-    "Autogold enabled.\r\n"},
-    {"autosplit", PRF_AUTOSPLIT, 0,
-    "Autosplit disabled.\r\n",
-    "Autosplit enabled.\r\n"},
-    {"autosac", PRF_AUTOSAC, 0,
-    "Autosac disabled.\r\n",
-    "Autosac enabled.\r\n"},
-    {"autoassist", PRF_AUTOASSIST, 0,
-    "Autoassist disabled.\r\n",
-    "Autoassist enabled.\r\n"},
-    {"automap", PRF_AUTOMAP, 1,
-    "You will no longer see the mini-map.\r\n",
-    "You will now see a mini-map at the side of room descriptions.\r\n"},
-    {"autokey", PRF_AUTOKEY, 0,
-    "You will now have to unlock doors manually before opening.\r\n",
-    "You will now automatically unlock doors when opening them (if you have the key).\r\n"},
-    {"autodoor", PRF_AUTODOOR, 0,
-    "You will now need to specify a door direction when opening, closing and unlocking.\r\n",
-    "You will now find the next available door when opening, closing or unlocking.\r\n"},
-	{"color", 0, 0, "\n", "\n"},
-    {"syslog", 0, LVL_IMMORT, "\n", "\n"},
-    {"wimpy", 0, 0, "\n", "\n"},
-    {"pagelength", 0, 0, "\n", "\n"},
-    {"screenwidth", 0, 0, "\n", "\n"},
-	{"autodiag", PRF_AUTODIAG, 0,
-    "You will no longer see opponent diagnosis during battle.\r\n",
-    "You will now see opponent diagnosis during battle.\r\n"},
-	{"noaff", PRF_NO_AFF, 0,
-    "You will now see your affections on score.\r\n",
-    "You will no longer see your affections on score.\r\n"},
-	{"anonymous", PRF_ANON, 0,
-	"Your level will now be shown on the who list.\r\n",
-	"Your level will no longer be shown on the who list.\r\n"},
-	{"\n", 0, -1, "\n", "\n"} /* must be last */
-  };
+    } tog_messages[] = {
+      {"summonable", PRF_SUMMONABLE, 0,
+      "You are now safe from summoning by other players.\r\n",
+      "You may now be summoned by other players.\r\n"},
+      {"nohassle", PRF_NOHASSLE, LVL_IMMORT,
+      "Nohassle disabled.\r\n",
+      "Nohassle enabled.\r\n"},
+      {"brief", PRF_BRIEF, 0,
+      "Brief mode off.\r\n",
+      "Brief mode on.\r\n"},
+      {"compact", PRF_COMPACT, 0,
+      "Compact mode off.\r\n",
+      "Compact mode on.\r\n"},
+      {"notell", PRF_NOTELL, 0,
+      "You can now hear tells.\r\n",
+      "You are now deaf to tells.\r\n"},
+      {"noauction", PRF_NOAUCT, 0,
+      "You can now hear auctions.\r\n",
+      "You are now deaf to auctions.\r\n"},
+      {"noshout", PRF_NOSHOUT, 0,
+      "You can now hear shouts.\r\n",
+      "You are now deaf to shouts.\r\n"},
+      {"nogossip", PRF_NOGOSS, 0,
+      "You can now hear gossip.\r\n",
+      "You are now deaf to gossip.\r\n"},
+      {"nograts", PRF_NOGRATZ, 0,
+      "You can now hear gratz.\r\n",
+      "You are now deaf to gratz.\r\n"},
+      {"nowiz", PRF_NOWIZ, LVL_IMMORT,
+      "You can now hear the Wiz-channel.\r\n",
+      "You are now deaf to the Wiz-channel.\r\n"},
+      {"quest", PRF_QUEST, 0,
+      "You are no longer part of the Quest.\r\n",
+      "Okay, you are part of the Quest.\r\n"},
+      {"showvnums", PRF_SHOWVNUMS, LVL_IMMORT,
+      "You will no longer see the vnums.\r\n",
+      "You will now see the vnums.\r\n"},
+      {"norepeat", PRF_NOREPEAT, 0,
+      "You will now have your communication repeated.\r\n",
+      "You will no longer have your communication repeated.\r\n"},
+      {"holylight", PRF_HOLYLIGHT, LVL_IMMORT,
+      "HolyLight mode off.\r\n",
+      "HolyLight mode on.\r\n"},
+      {"slownameserver", 0, LVL_IMPL,
+      "Nameserver_is_slow changed to OFF; IP addresses will now be resolved.\r\n",
+      "Nameserver_is_slow changed to ON; sitenames will no longer be resolved.\r\n"},
+      {"autoexits", PRF_AUTOEXIT, 0,
+      "Autoexits disabled.\r\n",
+      "Autoexits enabled.\r\n"},
+      {"trackthru", 0, LVL_IMPL,
+      "Players can no longer track through doors.\r\n",
+      "Players can now track through doors.\r\n"},
+      {"clsolc", PRF_CLS, LVL_BUILDER,
+      "You will no longer clear screen in OLC.\r\n",
+      "You will now clear screen in OLC.\r\n"},
+      {"buildwalk", PRF_BUILDWALK, LVL_BUILDER,
+      "Buildwalk is now Off.\r\n",
+      "Buildwalk is now On.\r\n"},
+      {"afk", PRF_AFK, 0,
+      "AFK is now Off.\r\n",
+      "AFK is now On.\r\n"},
+      {"autoloot", PRF_AUTOLOOT, 0,
+      "Autoloot disabled.\r\n",
+      "Autoloot enabled.\r\n"},
+      {"autogold", PRF_AUTOGOLD, 0,
+      "Autogold disabled.\r\n",
+      "Autogold enabled.\r\n"},
+      {"autosplit", PRF_AUTOSPLIT, 0,
+      "Autosplit disabled.\r\n",
+      "Autosplit enabled.\r\n"},
+      {"autosac", PRF_AUTOSAC, 0,
+      "Autosac disabled.\r\n",
+      "Autosac enabled.\r\n"},
+      {"autoassist", PRF_AUTOASSIST, 0,
+      "Autoassist disabled.\r\n",
+      "Autoassist enabled.\r\n"},
+      {"automap", PRF_AUTOMAP, 1,
+      "You will no longer see the mini-map.\r\n",
+      "You will now see a mini-map at the side of room descriptions.\r\n"},
+      {"autokey", PRF_AUTOKEY, 0,
+      "You will now have to unlock doors manually before opening.\r\n",
+      "You will now automatically unlock doors when opening them (if you have the key).\r\n"},
+      {"autodoor", PRF_AUTODOOR, 0,
+      "You will now need to specify a door direction when opening, closing and unlocking.\r\n",
+      "You will now find the next available door when opening, closing or unlocking.\r\n"},
+	  {"color", 0, 0, "\n", "\n"},
+      {"syslog", 0, LVL_IMMORT, "\n", "\n"},
+      {"wimpy", 0, 0, "\n", "\n"},
+      {"pagelength", 0, 0, "\n", "\n"},
+      {"screenwidth", 0, 0, "\n", "\n"},
+	  {"autodiag", PRF_AUTODIAG, 0,
+      "You will no longer see opponent diagnosis during battle.\r\n",
+      "You will now see opponent diagnosis during battle.\r\n"},
+	  {"noaff", PRF_NO_AFF, 0,
+      "You will now see your affections on score.\r\n",
+      "You will no longer see your affections on score.\r\n"},
+	  {"anonymous", PRF_ANON, 0,
+	  "Your level will now be shown on the who list.\r\n",
+	  "Your level will no longer be shown on the who list.\r\n"},
+	  {"\n", 0, -1, "\n", "\n"} /* must be last */
+    };
 
   if (IS_NPC(ch))
     return;
@@ -2424,11 +2372,10 @@ ACMD(do_toggle)
 	if (GET_LEVEL(ch) == LVL_IMPL) {
       send_to_char(ch,
         " SlowNameserver: %-3s   "
-	"                        "
-	" Trackthru Doors: %-3s\r\n",
-
-	ONOFF(CONFIG_NS_IS_SLOW),
-	ONOFF(CONFIG_TRACK_T_DOORS));
+	    "                        "
+	    " Trackthru Doors: %-3s\r\n",
+	      ONOFF(CONFIG_NS_IS_SLOW),
+	      ONOFF(CONFIG_TRACK_T_DOORS));
     }
 
     if (GET_LEVEL(ch) >= LVL_IMMORT) {
@@ -2440,14 +2387,13 @@ ACMD(do_toggle)
         "      Holylight: %-3s    "
         "      ShowVnums: %-3s\r\n"
         "         Syslog: %-3s\r\n",
-
-        ONOFF(PRF_FLAGGED(ch, PRF_BUILDWALK)),
-        ONOFF(PRF_FLAGGED(ch, PRF_NOWIZ)),
-        ONOFF(PRF_FLAGGED(ch, PRF_CLS)),
-        ONOFF(PRF_FLAGGED(ch, PRF_NOHASSLE)),
-        ONOFF(PRF_FLAGGED(ch, PRF_HOLYLIGHT)),
-        ONOFF(PRF_FLAGGED(ch, PRF_SHOWVNUMS)),
-        types[(PRF_FLAGGED(ch, PRF_LOG1) ? 1 : 0) + (PRF_FLAGGED(ch, PRF_LOG2) ? 2 : 0)]);
+          ONOFF(PRF_FLAGGED(ch, PRF_BUILDWALK)),
+          ONOFF(PRF_FLAGGED(ch, PRF_NOWIZ)),
+          ONOFF(PRF_FLAGGED(ch, PRF_CLS)),
+          ONOFF(PRF_FLAGGED(ch, PRF_NOHASSLE)),
+          ONOFF(PRF_FLAGGED(ch, PRF_HOLYLIGHT)),
+          ONOFF(PRF_FLAGGED(ch, PRF_SHOWVNUMS)),
+          types[(PRF_FLAGGED(ch, PRF_LOG1) ? 1 : 0) + (PRF_FLAGGED(ch, PRF_LOG2) ? 2 : 0)]);
     }
 
   send_to_char(ch,
@@ -2556,8 +2502,10 @@ ACMD(do_toggle)
     }
     REMOVE_BIT_AR(PRF_FLAGS(ch), PRF_COLOR_1);
     REMOVE_BIT_AR(PRF_FLAGS(ch), PRF_COLOR_2);
-    if (tp & 1) SET_BIT_AR(PRF_FLAGS(ch), PRF_COLOR_1);
-    if (tp & 2) SET_BIT_AR(PRF_FLAGS(ch), PRF_COLOR_2);
+    if (tp & 1)
+      SET_BIT_AR(PRF_FLAGS(ch), PRF_COLOR_1);
+    if (tp & 2) 
+      SET_BIT_AR(PRF_FLAGS(ch), PRF_COLOR_2);
 
     send_to_char(ch, "Your %scolor%s is now %s.\r\n", CCRED(ch, C_SPR), CCNRM(ch, C_OFF), types[tp]);
     return;
@@ -2573,8 +2521,10 @@ ACMD(do_toggle)
     }
     REMOVE_BIT_AR(PRF_FLAGS(ch), PRF_LOG1);
     REMOVE_BIT_AR(PRF_FLAGS(ch), PRF_LOG2);
-    if (tp & 1) SET_BIT_AR(PRF_FLAGS(ch), PRF_LOG1);
-    if (tp & 2) SET_BIT_AR(PRF_FLAGS(ch), PRF_LOG2);
+    if (tp & 1)
+      SET_BIT_AR(PRF_FLAGS(ch), PRF_LOG1);
+    if (tp & 2)
+      SET_BIT_AR(PRF_FLAGS(ch), PRF_LOG2);
 
     send_to_char(ch, "Your syslog is now %s.\r\n", types[tp]);
     return;
@@ -2590,8 +2540,7 @@ ACMD(do_toggle)
       return;
     }
     result = PRF_TOG_CHK(ch, PRF_BUILDWALK);
-    if (PRF_FLAGGED(ch, PRF_BUILDWALK)) 
-    {
+    if (PRF_FLAGGED(ch, PRF_BUILDWALK)) {
 	  for (i=0; *arg2 && *(sector_types[i]) != '\n'; i++)
         if (is_abbrev(arg2, sector_types[i]))
 		  break;
@@ -2909,7 +2858,10 @@ ACMD(do_whois)
         send_to_char(ch, "\r\n");
     
       if (PRF_FLAGGED(victim, PRF_AFK))
-        send_to_char(ch, "%s%s is afk right now, so %s may not respond to communication.%s\r\n", CBGRN(ch, C_NRM), GET_NAME(victim), GET_SEX(victim) == SEX_NEUTRAL ? "it" : (GET_SEX(victim) == SEX_MALE ? "he" : "she"), CCNRM(ch, C_NRM));
+        send_to_char(ch, "%s%s is afk right now, so %s may not respond to communication.%s\r\n", 
+          CBGRN(ch, C_NRM), GET_NAME(victim), 
+          GET_SEX(victim) == SEX_NEUTRAL ? "it" : (GET_SEX(victim) == SEX_MALE ? "he" : "she"), 
+          CCNRM(ch, C_NRM));
     }
     else if (hours > 0)
       send_to_char(ch, "Last Logon: %s (%d days & %d hours ago.)\r\n", buf, hours/24, hours%24);
@@ -3074,25 +3026,25 @@ distance, int door)
   int count = 0;
   *buf = '\0';
 
-/* this loop is a quick, easy way to help make a grammatical sentence
+  /* this loop is a quick, easy way to help make a grammatical sentence
    (i.e., "You see x, x, y, and z." with commas, "and", etc.) */
 
   for (i = list; i; i = i->next_in_room)
 
-/* put any other conditions for scanning someone in this if statement -
+  /* put any other conditions for scanning someone in this if statement -
    i.e., if (CAN_SEE(ch, i) && condition2 && condition3) or whatever */
 
-    if (CAN_SEE(ch, i))
-     count++;
+  if (CAN_SEE(ch, i))
+    count++;
 
   if (!count)
     return;
 
   for (i = list; i; i = i->next_in_room) {
 
-/* make sure to add changes to the if statement above to this one also, using
-   or's to join them.. i.e., 
-   if (!CAN_SEE(ch, i) || !condition2 || !condition3) */
+    /* make sure to add changes to the if statement above to this one also, using
+       or's to join them.. i.e., 
+       if (!CAN_SEE(ch, i) || !condition2 || !condition3) */
 
     if (!CAN_SEE(ch, i))
       continue; 
@@ -3108,7 +3060,6 @@ distance, int door)
       sprintf(buf2, " %s %s.", how_far[distance], dirs[door]);
       strcat(buf, buf2);      
     }
-    
   }
   send_to_char(ch, "\r\n%s", buf);
 }
@@ -3149,8 +3100,8 @@ ACMD(do_scan)
            list_scanned_chars(world[scanned_room].people, ch, range - 1, door);
             found=TRUE;
           }
-         }
-       }                  // end of if
+        }
+      } // end of if
       else
         break;
     }                    // end of range
@@ -3162,4 +3113,3 @@ ACMD(do_scan)
   else
     send_to_char(ch, "\r\n"); // so we can put the nothing message in
 } // end of do_scan
-
