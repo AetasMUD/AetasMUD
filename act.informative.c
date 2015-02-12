@@ -182,6 +182,10 @@ static void list_affections_to_char(struct char_data *ch)
     send_to_char(ch, "Your eyes are glowing red.\r\n");
 	count++;
   }
+  if (AFF_FLAGGED(ch, AFF_FLYING)) {
+    send_to_char(ch, "You have the ability to fly.\r\n");
+	count++;
+  }
   if (count == 0)
     send_to_char(ch, "You feel pretty normal.\r\n");
 }
@@ -466,7 +470,8 @@ static void list_one_char(struct char_data *i, struct char_data *ch)
     " is resting here.",
     " is sitting here.",
     "!FIGHTING!",
-    " is standing here."
+    " is standing here.",
+    " is hovering here."
   };
 
   if (!IS_NPC(ch) && PRF_FLAGGED(ch, PRF_SHOWVNUMS)) {
@@ -1220,6 +1225,9 @@ ACMD(do_score)
       break;
     case POS_STANDING:
       send_to_char(ch, "You are standing.\r\n");
+      break;
+    case POS_FLYING:
+      send_to_char(ch, "You are flying.\r\n");
       break;
     default:
       send_to_char(ch, "You are floating.\r\n");

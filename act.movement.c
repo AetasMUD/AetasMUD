@@ -44,7 +44,7 @@ static int has_boat(struct char_data *ch)
   if (GET_LEVEL(ch) > LVL_IMMORT)
     return (1);
 
-  if (AFF_FLAGGED(ch, AFF_WATERWALK) || AFF_FLAGGED(ch, AFF_FLYING))
+  if (AFF_FLAGGED(ch, AFF_WATERWALK) || (GET_POS(ch) == POS_FLYING))
     return (1);
 
   /* non-wearable boats in inventory will do it */
@@ -187,7 +187,7 @@ int do_simple_move(struct char_data *ch, int dir, int need_specials_check)
   /* Flying Required: Does lack of flying prevent movement? */
   if ((SECT(was_in) == SECT_FLYING) || (SECT(going_to) == SECT_FLYING))
   {
-    if (!has_flight(ch))
+    if (GET_POS(ch) != POS_FLYING)
     {
       send_to_char(ch, "You need to be flying to go there!\r\n");
       return (0);
@@ -270,8 +270,12 @@ int do_simple_move(struct char_data *ch, int dir, int need_specials_check)
   /* Begin: the leave operation. */
   /*---------------------------------------------------------------------*/
   /* If applicable, subtract movement cost. */
-  if (GET_LEVEL(ch) < LVL_IMMORT && !IS_NPC(ch))
-    GET_MOVE(ch) -= need_movement;
+  if (GET_LEVEL(ch) < LVL_IMMORT && !IS_NPC(ch)) {
+    if (GET_POS(ch) == POS_FLYING)
+      GET_MOVE(ch) -= need_movement / 2;
+    else
+      GET_MOVE(ch) -= need_movement;
+  }
 
   /* Generate the leave message and display to others in the was_in room. */
   if (!AFF_FLAGGED(ch, AFF_SNEAK))
@@ -728,11 +732,50 @@ ACMD(do_leave)
   }
 }
 
+ACMD(do_fly)
+{
+  if (!has_flight(ch))
+    send_to_char(ch, "You lack the ability to fly.\r\n");
+  else {
+    switch (GET_POS(ch)) {
+    case POS_FLYING:
+      send_to_char(ch, "You are already flying.\r\n");
+      break;
+    case POS_STANDING:
+      send_to_char(ch, "Your feet lift from the ground.\r\n");
+      act("$n begins to hover above the ground!", TRUE, ch, 0, 0, TO_ROOM);
+      GET_POS(ch) = POS_FLYING;
+      break;
+    case POS_SITTING:
+    case POS_RESTING:
+      send_to_char(ch, "You need to be standing first.\r\n");
+      break;
+    case POS_SLEEPING:
+      send_to_char(ch, "You have to wake up first!\r\n");
+      break;
+    case POS_FIGHTING:
+      send_to_char(ch, "You are busy fighting at the moment!\r\n");
+      break;
+    default:
+      send_to_char(ch, "You stop floating around, and put your feet on the ground.\r\n");
+      act("$n stops floating around, and puts $s feet on the ground.",
+	  TRUE, ch, 0, 0, TO_ROOM);
+      GET_POS(ch) = POS_STANDING;
+    break;
+    }
+  }
+}
+
 ACMD(do_stand)
 {
   switch (GET_POS(ch)) {
   case POS_STANDING:
     send_to_char(ch, "You are already standing.\r\n");
+    break;
+  case POS_FLYING:
+    send_to_char(ch, "You land on the ground.\r\n");
+    act("$n stops hovering, and settles to the ground.", TRUE, ch, 0, 0, TO_ROOM);
+    GET_POS(ch) = POS_STANDING;
     break;
   case POS_SITTING:
     send_to_char(ch, "You stand up.\r\n");

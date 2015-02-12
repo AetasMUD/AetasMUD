@@ -168,6 +168,7 @@ ACMD(do_rest);
 ACMD(do_sit);
 ACMD(do_sleep);
 ACMD(do_stand);
+ACMD(do_fly);
 ACMD(do_wake);
 /* Global variables from act.movement.c */
 #ifndef __ACT_MOVEMENT_C__
