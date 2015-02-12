@@ -691,11 +691,9 @@ void look_at_room(struct char_data *ch, int ignore_brief)
   if (!IS_NPC(ch) && PRF_FLAGGED(ch, PRF_SHOWVNUMS)) {
     char buf[MAX_STRING_LENGTH];
 
-	sprinttype(rm->sector_type, sector_types, buf, sizeof(buf));
+    sprintbitarray(ROOM_FLAGS(IN_ROOM(ch)), room_bits, RF_ARRAY_MAX, buf);
     send_to_char(ch, "[%5d] ", GET_ROOM_VNUM(IN_ROOM(ch)));
-    send_to_char(ch, "%s [%s] [ %s ]", world[IN_ROOM(ch)].name, buf, sector_types[world[IN_ROOM(ch)].sector_type]);
-	sprintbitarray(ROOM_FLAGS(IN_ROOM(ch)), room_bits, RF_ARRAY_MAX, buf);
-	send_to_char(ch, "[ %s] ", buf);
+    send_to_char(ch, "%s [ %s][ %s ]", world[IN_ROOM(ch)].name, buf, sector_types[world[IN_ROOM(ch)].sector_type]);
 
     if (SCRIPT(rm)) {
       send_to_char(ch, "[T");
