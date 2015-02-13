@@ -22,6 +22,7 @@
 #include "class.h"
 #include "fight.h"
 #include "mud_event.h"
+#include "act.h"
 
 
 /* local file scope function prototypes */
@@ -59,21 +60,33 @@ void affect_update(void)
 {
   struct affected_type *af, *next;
   struct char_data *i;
+  bool fly_wearoff = FALSE;
 
   for (i = character_list; i; i = i->next)
     for (af = i->affected; af; af = next) {
       next = af->next;
       if (af->duration >= 1)
-	af->duration--;
+	    af->duration--;
       else if (af->duration == -1)	/* No action */
 	;
       else {
-	if ((af->spell > 0) && (af->spell <= MAX_SPELLS))
-	  if (!af->next || (af->next->spell != af->spell) ||
-	      (af->next->duration > 0))
-	    if (spell_info[af->spell].wear_off_msg)
-	      send_to_char(i, "%s\r\n", spell_info[af->spell].wear_off_msg);
-	affect_remove(i, af);
+	    if ((af->spell > 0) && (af->spell <= MAX_SPELLS))
+	      if (!af->next || (af->next->spell != af->spell) ||
+	         (af->next->duration > 0))
+	           if (spell_info[af->spell].wear_off_msg) {
+	             send_to_char(i, "%s\r\n", spell_info[af->spell].wear_off_msg);
+                 fly_wearoff = FALSE; /* reset this every time */
+                 /* if FLY is wearing off, set it to check their position */
+                 if (af->spell == SPELL_FLY)
+                   fly_wearoff = TRUE;
+               }
+        affect_remove(i, af);
+        /* if FLY wore off, and they are flying, and they don't have FLY from something else */
+        if (fly_wearoff && (GET_POS(i) == POS_FLYING) && !has_flight(i)) {
+          send_to_char(i, "You land on the ground.\r\n");
+          act("$n stops hovering, and settles to the ground.", TRUE, i, 0, 0, TO_ROOM);
+          GET_POS(i) = POS_STANDING;
+        }
       }
     }
 }
@@ -308,7 +321,6 @@ void mag_affects(int level, struct char_data *ch, struct char_data *victim,
   const char *to_vict = NULL, *to_room = NULL;
   int i, j;
 
-
   if (victim == NULL || ch == NULL)
     return;
 
@@ -415,10 +427,12 @@ void mag_affects(int level, struct char_data *ch, struct char_data *victim,
     break;
     
   case SPELL_FLY:
-    af[0].duration = 24;
-    SET_BIT_AR(af[0].bitvector, AFF_FLYING);
+    af[0].duration = level;
+    SET_BIT_AR(af[0].bitvector, AFF_FLIGHT);
     accum_duration = TRUE;
-    to_vict = "You float above the ground.";
+    to_vict = "You begin to hover above the ground.";
+    to_room = "$n begins to hover above the ground!";
+    GET_POS(victim) = POS_FLYING;
     break;
 
   case SPELL_INFRAVISION:
@@ -652,7 +666,7 @@ void mag_areas(int level, struct char_data *ch, int spellnum, int savetype)
     if (!IS_NPC(tch) && spell_info[spellnum].violent && GROUP(tch) && GROUP(ch) && GROUP(ch) == GROUP(tch))
       continue;
       
-	if ((spellnum == SPELL_EARTHQUAKE) && AFF_FLAGGED(tch, AFF_FLYING))
+	if ((spellnum == SPELL_EARTHQUAKE) && (GET_POS(tch) == POS_FLYING))
 	  continue;
 
     /* Doesn't matter if they die here so we don't check. -gg 6/24/98 */

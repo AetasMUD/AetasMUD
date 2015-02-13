@@ -293,7 +293,7 @@ const char *affected_bits[] =
   "PROT-GOOD",
   "SLEEP",
   "NO_TRACK",
-  "FLY",
+  "FLIGHT",
   "SCUBA",
   "SNEAK",
   "HIDE",

@@ -238,6 +238,12 @@ ACMD(do_steal)
 	    obj_from_char(obj);
 	    obj_to_char(obj, ch);
 	    send_to_char(ch, "Got it!\r\n");
+        /* if the item that was allowing them to fly was stolen, put them on the ground */
+        if (OBJAFF_FLAGGED(obj, AFF_FLIGHT) && (GET_POS(vict) == POS_FLYING) && !has_flight(vict)) {
+          send_to_char(vict, "You land on the ground.\r\n");
+          act("$n stops hovering, and settles to the ground.", TRUE, vict, 0, 0, TO_ROOM);
+          GET_POS(vict) = POS_STANDING;
+        }
 	  }
 	} else
 	  send_to_char(ch, "You cannot carry that much.\r\n");

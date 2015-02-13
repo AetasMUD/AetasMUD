@@ -844,7 +844,7 @@ void mag_assign_spells(void)
     
   spello(SPELL_FLY, "fly", 40, 20, 2, POS_FIGHTING,
 	TAR_CHAR_ROOM, FALSE, MAG_AFFECTS,
-	"You drift slowly to the ground.");
+	"Your ability to fly fades.");
 
   spello(SPELL_GROUP_HEAL, "group heal", 80, 60, 5, POS_STANDING,
 	TAR_IGNORE, FALSE, MAG_GROUPS,

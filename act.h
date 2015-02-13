@@ -170,6 +170,8 @@ ACMD(do_sleep);
 ACMD(do_stand);
 ACMD(do_fly);
 ACMD(do_wake);
+/* Utility functions */
+int has_flight(struct char_data *ch);
 /* Global variables from act.movement.c */
 #ifndef __ACT_MOVEMENT_C__
 extern const char *cmd_door[];

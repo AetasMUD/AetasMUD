@@ -69,17 +69,17 @@ int has_flight(struct char_data *ch)
   if (GET_LEVEL(ch) > LVL_IMMORT)
     return (1);
 
-  if (AFF_FLAGGED(ch, AFF_FLYING))
+  if (AFF_FLAGGED(ch, AFF_FLIGHT))
     return (1);
 
   /* Non-wearable flying items in inventory will do it. */
   for (obj = ch->carrying; obj; obj = obj->next_content)
-    if (OBJAFF_FLAGGED(obj, AFF_FLYING) && OBJAFF_FLAGGED(obj, AFF_FLYING))
+    if (OBJAFF_FLAGGED(obj, AFF_FLIGHT) && (find_eq_pos(ch, obj, NULL) < 0) && !CAN_WEAR(obj, ITEM_WEAR_WIELD))
       return (1);
 
-  /* Any equipped objects with AFF_FLYING will do it too. */
+  /* Any equipped objects with AFF_FLIGHT will do it too. */
   for (i = 0; i < NUM_WEARS; i++)
-    if (GET_EQ(ch, i) && OBJAFF_FLAGGED(GET_EQ(ch, i), AFF_FLYING))
+    if (GET_EQ(ch, i) && OBJAFF_FLAGGED(GET_EQ(ch, i), AFF_FLIGHT))
       return (1);
 
   return (0);

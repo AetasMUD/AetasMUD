@@ -323,7 +323,7 @@
 #define AFF_PROTECT_GOOD   14   /**< Char protected from good */
 #define AFF_SLEEP          15   /**< (R) Char magically asleep */
 #define AFF_NOTRACK        16   /**< Char can't be tracked */
-#define AFF_FLYING         17   /**< Char is flying */
+#define AFF_FLIGHT         17   /**< Char can fly */
 #define AFF_SCUBA          18   /**< Room for future expansion */
 #define AFF_SNEAK          19   /**< Char can move quietly */
 #define AFF_HIDE           20   /**< Char is hidden */
