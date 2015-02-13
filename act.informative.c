@@ -182,7 +182,7 @@ static void list_affections_to_char(struct char_data *ch)
     send_to_char(ch, "Your eyes are glowing red.\r\n");
 	count++;
   }
-  if (AFF_FLAGGED(ch, AFF_FLYING)) {
+  if (AFF_FLAGGED(ch, AFF_FLIGHT)) {
     send_to_char(ch, "You have the ability to fly.\r\n");
 	count++;
   }
@@ -1227,7 +1227,7 @@ ACMD(do_score)
       send_to_char(ch, "You are standing.\r\n");
       break;
     case POS_FLYING:
-      send_to_char(ch, "You are flying.\r\n");
+      send_to_char(ch, "You are hovering.\r\n");
       break;
     default:
       send_to_char(ch, "You are floating.\r\n");
