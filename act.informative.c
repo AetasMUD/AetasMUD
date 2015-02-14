@@ -1119,8 +1119,12 @@ ACMD(do_score)
     CCYEL(ch, C_NRM), CBCYN(ch, C_NRM), GET_MOVE(ch), CCNRM(ch, C_NRM), CCCYN(ch, C_NRM), 
     GET_MAX_MOVE(ch), CCYEL(ch, C_NRM), CBGRN(ch, C_NRM), add_commas(GET_EXP(ch)), CCNRM(ch, C_NRM));
   
-  send_to_char(ch, "\r\n    \twKills \ty:  \tn%6s		\trDeaths \ty:  \tn%d\r\n", 
-    add_commas(GET_KILL_CNT(ch)), GET_RIP_CNT(ch));
+  send_to_char(ch, "\r\n %sKills %s:    Mob         PK      Arena"
+                  "     %sDeaths %s:    Mob         PK      Arena\r\n"
+                  "%s      %9s  %9s  %9s           %9s  %9s  %9s\r\n",
+                  CCWHT(ch, C_NRM), CCYEL(ch, C_NRM), CCRED(ch, C_NRM), CCYEL(ch, C_NRM), CCNRM(ch, C_NRM),
+                  add_commas(0), add_commas(GET_KILL_CNT(ch)), add_commas(GET_ARENA_KILL_CNT(ch)), 
+                  add_commas(0), add_commas(GET_RIP_CNT(ch)), add_commas(GET_ARENA_RIP_CNT(ch)));
   
   send_to_char(ch, "%s-------------------------------------------------------------------------------%s\r\n", 
     CCRED(ch, C_NRM), CCNRM(ch, C_NRM));

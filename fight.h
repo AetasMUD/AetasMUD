@@ -21,6 +21,7 @@ struct attack_hit_type {
 };
 
 /* Functions available in fight.c */
+bool is_arena_combat(struct char_data *ch, struct char_data *vict);
 void appear(struct char_data *ch);
 void check_killer(struct char_data *ch, struct char_data *vict);
 int compute_armor_class(struct char_data *ch);

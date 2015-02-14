@@ -583,6 +583,10 @@ do                                                              \
 #define GET_RIP_CNT(ch)     CHECK_PLAYER_SPECIAL((ch), ((ch)->player_specials->saved.rip_cnt))
 /* Number of kills for ch */
 #define GET_KILL_CNT(ch)    CHECK_PLAYER_SPECIAL((ch), ((ch)->player_specials->saved.kill_cnt))
+/* Number of arena deaths for ch */
+#define GET_ARENA_RIP_CNT(ch)     CHECK_PLAYER_SPECIAL((ch), ((ch)->player_specials->saved.arena_rip_cnt))
+/* Number of arena kills for ch */
+#define GET_ARENA_KILL_CNT(ch)    CHECK_PLAYER_SPECIAL((ch), ((ch)->player_specials->saved.arena_kill_cnt))
 /* Number of times hit DT for ch */
 #define GET_DT_CNT(ch)      CHECK_PLAYER_SPECIAL((ch), ((ch)->player_specials->saved.dt_cnt))
 /** Current invisibility level of ch. */
@@ -894,7 +898,7 @@ do                                                              \
 /* Returns TRUE if the direction is a diagonal one */
 #define IS_DIAGONAL(dir) (((dir) == NORTHWEST) || ((dir) == NORTHEAST) || \
 		((dir) == SOUTHEAST) || ((dir) == SOUTHWEST) )
-
+        
 /** Return the class abbreviation for ch. */
 #define CLASS_ABBR(ch) (IS_NPC(ch) ? "--" : class_abbrevs[(int)GET_CLASS(ch)])
 
