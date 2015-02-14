@@ -38,6 +38,8 @@
 #define PFDEF_KILL_CNT		0
 #define PFDEF_ARENA_RIP_CNT		0
 #define PFDEF_ARENA_KILL_CNT    0
+#define PFDEF_PK_RIP_CNT		0
+#define PFDEF_PK_KILL_CNT    0
 #define PFDEF_DT_CNT		0
 #define PFDEF_CLAN			0
 #define PFDEF_CLAN_RANK		0

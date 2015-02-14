@@ -1123,8 +1123,8 @@ ACMD(do_score)
                   "     %sDeaths %s:    Mob         PK      Arena\r\n"
                   "%s      %9s  %9s  %9s           %9s  %9s  %9s\r\n",
                   CCWHT(ch, C_NRM), CCYEL(ch, C_NRM), CCRED(ch, C_NRM), CCYEL(ch, C_NRM), CCNRM(ch, C_NRM),
-                  add_commas(0), add_commas(GET_KILL_CNT(ch)), add_commas(GET_ARENA_KILL_CNT(ch)), 
-                  add_commas(0), add_commas(GET_RIP_CNT(ch)), add_commas(GET_ARENA_RIP_CNT(ch)));
+                  add_commas(GET_KILL_CNT(ch)), add_commas(GET_PK_KILL_CNT(ch)), add_commas(GET_ARENA_KILL_CNT(ch)), 
+                  add_commas(GET_RIP_CNT(ch)), add_commas(GET_PK_RIP_CNT(ch)), add_commas(GET_ARENA_RIP_CNT(ch)));
   
   send_to_char(ch, "%s-------------------------------------------------------------------------------%s\r\n", 
     CCRED(ch, C_NRM), CCNRM(ch, C_NRM));

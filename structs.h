@@ -1126,6 +1126,8 @@ struct player_special_data_saved
   int soul_points;		  /* Number of soul points */
   int rip_cnt;		  	  /* Number of deaths */
   int kill_cnt;		  	  /* Number of kills */
+  int pk_rip_cnt;		  /* Number of PK deaths */
+  int pk_kill_cnt;		  /* Number of PK kills */
   int arena_rip_cnt;      /* Number of arena deaths */
   int arena_kill_cnt;     /* Number of arena kills */
   int dt_cnt;		  	  /* Number of DTs hit */
