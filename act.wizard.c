@@ -3444,7 +3444,7 @@ static int perform_set(struct char_data *ch, struct char_data *vict, int mode, c
   if (set_fields[mode].type == BINARY) {
     send_to_char(ch, "%s %s for %s.\r\n", set_fields[mode].cmd, ONOFF(on), GET_NAME(vict));
   } else if (set_fields[mode].type == NUMBER) {
-    send_to_char(ch, "%s's %s set to %d.\r\n", GET_NAME(vict), set_fields[mode].cmd, value);
+    send_to_char(ch, "%s's %s set to %s.\r\n", GET_NAME(vict), set_fields[mode].cmd, add_commas(value));
   } else
     send_to_char(ch, "%s", CONFIG_OK);
 

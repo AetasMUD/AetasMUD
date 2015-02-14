@@ -322,8 +322,8 @@ ASPELL(spell_identify)
 	sprintbitarray(GET_OBJ_NEEDCLASS(obj), need_class_bits, EF_ARRAY_MAX, bitbuf);
     send_to_char(ch, "Item is: %s\r\n", bitbuf);
 
-    send_to_char(ch, "Weight: %d, Value: %d, Rent: %d, Min. level: %d\r\n",
-                     GET_OBJ_WEIGHT(obj), GET_OBJ_COST(obj), GET_OBJ_RENT(obj), GET_OBJ_LEVEL(obj));
+    send_to_char(ch, "Weight: %d, Value: %s, Rent: %s, Min. level: %d\r\n",
+                     GET_OBJ_WEIGHT(obj), add_commas(GET_OBJ_COST(obj)), add_commas(GET_OBJ_RENT(obj)), GET_OBJ_LEVEL(obj));
 
     switch (GET_OBJ_TYPE(obj)) {
     case ITEM_SCROLL:
