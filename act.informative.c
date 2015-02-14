@@ -142,8 +142,8 @@ ACMD(do_experience)
   else if(GET_LEVEL(ch) == 50)
     send_to_char(ch, "You have reached maximum mortal level.\r\n");
   else
-    send_to_char(ch, "You need %s%d%s experience points to level.\r\n",
-      CCCYN(ch, C_NRM), level_exp(GET_CLASS(ch), GET_LEVEL(ch) + 1) - GET_EXP(ch), CCNRM(ch, C_NRM));
+    send_to_char(ch, "You need %s%s%s experience points to level.\r\n",
+      CCCYN(ch, C_NRM), add_commas(level_exp(GET_CLASS(ch), GET_LEVEL(ch) + 1) - GET_EXP(ch)), CCNRM(ch, C_NRM));
 }
 
 static void list_affections_to_char(struct char_data *ch)
@@ -1067,7 +1067,7 @@ ACMD(do_gold)
   else if (GET_GOLD(ch) == 1)
     send_to_char(ch, "You have one miserable little gold coin.\r\n");
   else
-    send_to_char(ch, "You have %d gold coins.\r\n", GET_GOLD(ch));
+    send_to_char(ch, "You have %s gold coins.\r\n", add_commas(GET_GOLD(ch)));
 }
 
 ACMD(do_score)
@@ -1115,12 +1115,12 @@ ACMD(do_score)
     (IS_EVIL(ch) ? CBRED(ch, C_SPR) :  IS_GOOD(ch) ? CBBLU(ch, C_SPR) : CCNRM(ch, C_NRM)), 
     GET_ALIGNMENT(ch), CCNRM(ch, C_NRM));
   
-  send_to_char(ch, "    %sMove  :  %s%4d%s/%s%4d		  %sExp  :  %s%d%s\r\n", 
+  send_to_char(ch, "    %sMove  :  %s%4d%s/%s%4d		  %sExp  :  %s%s%s\r\n", 
     CCYEL(ch, C_NRM), CBCYN(ch, C_NRM), GET_MOVE(ch), CCNRM(ch, C_NRM), CCCYN(ch, C_NRM), 
-    GET_MAX_MOVE(ch), CCYEL(ch, C_NRM), CBGRN(ch, C_NRM), GET_EXP(ch), CCNRM(ch, C_NRM));
+    GET_MAX_MOVE(ch), CCYEL(ch, C_NRM), CBGRN(ch, C_NRM), add_commas(GET_EXP(ch)), CCNRM(ch, C_NRM));
   
-  send_to_char(ch, "\r\n    \twKills \ty:  \tn%6d		\trDeaths \ty:  \tn%d\r\n", 
-    GET_KILL_CNT(ch), GET_RIP_CNT(ch));
+  send_to_char(ch, "\r\n    \twKills \ty:  \tn%6s		\trDeaths \ty:  \tn%d\r\n", 
+    add_commas(GET_KILL_CNT(ch)), GET_RIP_CNT(ch));
   
   send_to_char(ch, "-------------------------------------------------------------------------------\r\n");
 
@@ -1133,8 +1133,8 @@ ACMD(do_score)
 	CCCYN(ch, C_NRM), GET_WEIGHT(ch), CCNRM(ch, C_NRM));
 
   if ((GET_LEVEL(ch) < LVL_IMMORT) && (GET_LEVEL(ch) != 50))
-    send_to_char(ch, "You need %s%d%s exp to reach your next level.\r\n",
-	  CCCYN(ch, C_NRM), level_exp(GET_CLASS(ch), GET_LEVEL(ch) + 1) - GET_EXP(ch), CCNRM(ch, C_NRM));
+    send_to_char(ch, "You need %s%s%s exp to reach your next level.\r\n",
+	  CCCYN(ch, C_NRM), add_commas(level_exp(GET_CLASS(ch), GET_LEVEL(ch) + 1) - GET_EXP(ch)), CCNRM(ch, C_NRM));
 	
   if (GET_LEVEL(ch) == 50)
     send_to_char(ch, "You have reached maximum mortal level.\r\n");
@@ -1149,11 +1149,11 @@ ACMD(do_score)
      send_to_char(ch, "You have walked into a death trap %s%d%s time%s.\r\n", 
 	   CCCYN(ch, C_NRM), GET_DT_CNT(ch), CCNRM(ch, C_NRM), GET_DT_CNT(ch) == 1 ? "" : "s");
 	
-  send_to_char(ch, "You have earned %s%d%s quest points.\r\n", 
-    CCCYN(ch, C_NRM), GET_QUESTPOINTS(ch), CCNRM(ch, C_NRM));
+  send_to_char(ch, "You have earned %s%s%s quest points.\r\n", 
+    CCCYN(ch, C_NRM), add_commas(GET_QUESTPOINTS(ch)), CCNRM(ch, C_NRM));
   
-  send_to_char(ch, "You have completed %s%d%s quest%s, ",
-    CCCYN(ch, C_NRM),GET_NUM_QUESTS(ch), CCNRM(ch, C_NRM),
+  send_to_char(ch, "You have completed %s%s%s quest%s, ",
+    CCCYN(ch, C_NRM), add_commas(GET_NUM_QUESTS(ch)), CCNRM(ch, C_NRM),
     GET_NUM_QUESTS(ch) == 1 ? "" : "s");
 	   
   if ((GET_QUEST(ch) == NOTHING))
@@ -1185,13 +1185,13 @@ ACMD(do_score)
 	if (GET_OLC_ZONE(ch) == ALL_PERMISSION)
         send_to_char(ch, "You can currently edit %sALL%s zones.\r\n", CCCYN(ch, C_NRM), CCNRM(ch, C_NRM));
     else if (GET_OLC_ZONE(ch) == NOWHERE)
-        send_to_char(ch, "You are not currenty assigned a zone.\r\n");
+        send_to_char(ch, "You are not currently assigned a zone.\r\n");
     else
         send_to_char(ch, "You can currently edit zone %s%d%s.\r\n", CCCYN(ch, C_NRM), GET_OLC_ZONE(ch), CCNRM(ch, C_NRM));  
   }
 	  
-  send_to_char(ch, "You carry %s%d%s gold coins.\r\n", 
-    CCCYN(ch, C_NRM), GET_GOLD(ch), CCNRM(ch, C_NRM));
+  send_to_char(ch, "You carry %s%s%s gold coins.\r\n", 
+    CCCYN(ch, C_NRM), add_commas(GET_GOLD(ch)), CCNRM(ch, C_NRM));
 
   switch (GET_POS(ch)) {
     case POS_DEAD:
