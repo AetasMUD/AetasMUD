@@ -1122,7 +1122,8 @@ ACMD(do_score)
   send_to_char(ch, "\r\n    \twKills \ty:  \tn%6s		\trDeaths \ty:  \tn%d\r\n", 
     add_commas(GET_KILL_CNT(ch)), GET_RIP_CNT(ch));
   
-  send_to_char(ch, "-------------------------------------------------------------------------------\r\n");
+  send_to_char(ch, "%s-------------------------------------------------------------------------------%s\r\n", 
+    CCRED(ch, C_NRM), CCNRM(ch, C_NRM));
 
   send_to_char(ch, "You have %s%d%s practice point%s and %s%d%s soul point%s.\r\n", 
     CCCYN(ch, C_NRM), GET_PRACTICES(ch), CCNRM(ch, C_NRM), GET_PRACTICES(ch) == 1 ? "" : "s", 
