@@ -1035,17 +1035,25 @@ int damage(struct char_data *ch, struct char_data *victim, int dam, int attackty
       sprintf(local_buf,"%ld", (long)local_gold);
     }
 	
+    /* if a character kills a mob, increase character's kill count */
+    if (!IS_NPC(ch) && IS_NPC(victim))
+      GET_KILL_CNT(ch) += 1;
+    /* if a mob kills a character, increase character's death count */
+    if (IS_NPC(ch) && !IS_NPC(victim))
+      GET_RIP_CNT(victim) += 1;
+    /* if a character is killed by another character, increase his death count */
 	if (!IS_NPC(victim)) {
       if (is_arena_combat(ch, victim))
         GET_ARENA_RIP_CNT(victim) += 1;
       else
-        GET_RIP_CNT(victim) += 1;
+        GET_PK_RIP_CNT(victim) += 1;
     }
+    /* if a character kills another character, increase kill kill count */
     if (!IS_NPC(ch)) {
       if (is_arena_combat(ch, victim))
         GET_ARENA_KILL_CNT(ch) += 1;
       else
-        GET_KILL_CNT(ch) += 1;
+        GET_PK_KILL_CNT(ch) += 1;
     }
 	  
 	if (IS_NPC(victim) && (GET_RACE(victim) != RACE_UNDEAD)) 

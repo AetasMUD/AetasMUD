@@ -587,6 +587,10 @@ do                                                              \
 #define GET_ARENA_RIP_CNT(ch)     CHECK_PLAYER_SPECIAL((ch), ((ch)->player_specials->saved.arena_rip_cnt))
 /* Number of arena kills for ch */
 #define GET_ARENA_KILL_CNT(ch)    CHECK_PLAYER_SPECIAL((ch), ((ch)->player_specials->saved.arena_kill_cnt))
+/* Number of PK deaths for ch */
+#define GET_PK_RIP_CNT(ch)     CHECK_PLAYER_SPECIAL((ch), ((ch)->player_specials->saved.pk_rip_cnt))
+/* Number of PK kills for ch */
+#define GET_PK_KILL_CNT(ch)    CHECK_PLAYER_SPECIAL((ch), ((ch)->player_specials->saved.pk_kill_cnt))
 /* Number of times hit DT for ch */
 #define GET_DT_CNT(ch)      CHECK_PLAYER_SPECIAL((ch), ((ch)->player_specials->saved.dt_cnt))
 /** Current invisibility level of ch. */
