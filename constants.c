@@ -92,6 +92,7 @@ const char *room_bits[] = {
   "*",				/* The BFS Mark. */
   "WORLDMAP",
   "!TEL",
+  "ARENA",
   "\n"
 };
 
@@ -106,6 +107,7 @@ const char *zone_bits[] = {
   "NOBUILD",
   "!ASTRAL",
   "WORLDMAP",
+  "ARENA",
   "\n"
 };
 
@@ -189,11 +191,7 @@ const char *player_bits[] = {
   "IBT_BUG",
   "IBT_IDEA",
   "IBT_TYPO",
-  "UNUSED1",
-  "UNUSED2",
-  "UNUSED3",
-  "UNUSED4",
-  "UNUSED5",
+  "ARENA",
   "\n"
 };
 

@@ -96,9 +96,10 @@
 #define ROOM_OLC           14   /**< (R) Modifyable/!compress */
 #define ROOM_BFS_MARK      15   /**< (R) breath-first srch mrk */
 #define ROOM_WORLDMAP      16   /**< World-map style maps here */
-#define ROOM_NOTELEPORT	   17   // Room cannot be teleported into
+#define ROOM_NOTELEPORT	   17   /**< Room cannot be teleported into */
+#define ROOM_ARENA         18   /**< Deaths in this room are arena */
 /** The total number of Room Flags */
-#define NUM_ROOM_FLAGS    18
+#define NUM_ROOM_FLAGS     19
 
 /* Zone info: Used in zone_data.zone_flags */
 #define ZONE_CLOSED       0  /**< Zone is closed - players cannot enter */
@@ -107,9 +108,10 @@
 #define ZONE_GRID         3  /**< Zone is 'on the grid', connected, show on 'areas' */
 #define ZONE_NOBUILD      4  /**< Building is not allowed in the zone */
 #define ZONE_NOASTRAL     5  /**< No teleportation magic will work to or from this zone */
-#define ZONE_WORLDMAP     6 /**< Whole zone uses the WORLDMAP by default */
+#define ZONE_WORLDMAP     6  /**< Whole zone uses the WORLDMAP by default */
+#define ZONE_ARENA        7  /**< Deaths in zone are arena */
 /** The total number of Zone Flags */
-#define NUM_ZONE_FLAGS    7
+#define NUM_ZONE_FLAGS    8
 
 /* Exit info: used in room_data.dir_option.exit_info */
 #define EX_ISDOOR     (1 << 0)   /**< Exit is a door		*/
@@ -235,6 +237,7 @@
 #define PLR_BUG          17   /**< Player is writing a bug */
 #define PLR_IDEA         18   /**< Player is writing an idea */
 #define PLR_TYPO         19   /**< Player is writing a typo */
+#define PLR_ARENA        20   /**< Player is arena-saved */
 
 /* Mobile flags: used by char_data.char_specials.act */
 #define MOB_SPEC            0   /**< Mob has a callable spec-proc */
@@ -1123,6 +1126,8 @@ struct player_special_data_saved
   int soul_points;		  /* Number of soul points */
   int rip_cnt;		  	  /* Number of deaths */
   int kill_cnt;		  	  /* Number of kills */
+  int arena_rip_cnt;      /* Number of arena deaths */
+  int arena_kill_cnt;     /* Number of arena kills */
   int dt_cnt;		  	  /* Number of DTs hit */
   qst_vnum *completed_quests;   /**< Quests completed              */
   int    num_completed_quests;  /**< Number completed              */

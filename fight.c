@@ -71,6 +71,23 @@ static int compute_thaco(struct char_data *ch, struct char_data *vict);
 
 #define IS_WEAPON(type) (((type) >= TYPE_HIT) && ((type) < TYPE_SUFFERING))
 /* The Fight related routines */
+bool is_arena_combat(struct char_data *ch, struct char_data *vict)
+{
+  if (!ch || !ch->in_room)
+    return false;
+
+  if (!vict->in_room)
+    return false;
+
+  if (ROOM_FLAGGED(vict->in_room, ROOM_ARENA) || ROOM_FLAGGED(ch->in_room, ROOM_ARENA))
+    return true;
+
+  if (ZONE_FLAGGED(GET_ROOM_ZONE(vict->in_room), ZONE_ARENA) || ZONE_FLAGGED(GET_ROOM_ZONE(ch->in_room), ZONE_ARENA))
+    return true;
+
+  return false;
+}
+
 void appear(struct char_data *ch)
 {
   if (affected_by_spell(ch, SPELL_INVISIBLE))
@@ -117,6 +134,9 @@ void check_killer(struct char_data *ch, struct char_data *vict)
   if (PLR_FLAGGED(vict, PLR_KILLER) || PLR_FLAGGED(vict, PLR_THIEF))
     return;
   if (PLR_FLAGGED(ch, PLR_KILLER) || IS_NPC(ch) || IS_NPC(vict) || ch == vict)
+    return;
+
+  if (is_arena_combat(ch, vict))
     return;
 
   SET_BIT_AR(PLR_FLAGS(ch), PLR_KILLER);
@@ -222,7 +242,7 @@ static void make_corpse(struct char_data *ch)
       ((GET_KILLED_BY(ch, DEATH_ATTACKTYPE) == 302) && (GET_KILLED_BY(ch, DEATH_MSG_NO) == 2))) 
    make_head(ch);
 
-/*----NOW MAKE THE CORPSE---------------------*/
+  /*----NOW MAKE THE CORPSE---------------------*/
 
   corpse = create_obj();
 
@@ -327,7 +347,7 @@ static void make_corpse(struct char_data *ch)
   corpse->description = strdup(longdesc);
   corpse->short_description = strdup(shortdesc);
   
-/*-----CORPSE CREATION CONSTANTS-----------------*/
+  /*-----CORPSE CREATION CONSTANTS-----------------*/
 
   GET_OBJ_TYPE(corpse) = ITEM_CONTAINER;
   for(x = y = 0; x < EF_ARRAY_MAX || y < TW_ARRAY_MAX; x++, y++) {
@@ -340,43 +360,53 @@ static void make_corpse(struct char_data *ch)
   SET_BIT_AR(GET_OBJ_EXTRA(corpse), ITEM_NODONATE);
   GET_OBJ_VAL(corpse, 0) = 0;	/* You can't store stuff in a corpse */
   GET_OBJ_VAL(corpse, 3) = 1;	/* corpse identifier */
-  GET_OBJ_WEIGHT(corpse) = GET_WEIGHT(ch) + IS_CARRYING_W(ch);
   GET_OBJ_RENT(corpse) = 100000;
-  if (IS_NPC(ch))
+  
+  /* if the death occurs in an arena room or zone, the victim keeps his stuff */
+  /* normally we would have a ch and a vict, but here we just need to know the dead guy */
+  if (!IS_NPC(ch) && is_arena_combat(ch, ch)) {
+    GET_OBJ_WEIGHT(corpse) = GET_WEIGHT(ch);
     GET_OBJ_TIMER(corpse) = CONFIG_MAX_NPC_CORPSE_TIME;
-  else
-    GET_OBJ_TIMER(corpse) = CONFIG_MAX_PC_CORPSE_TIME;
+  /* else all of his stuff ends up in his corpse */
+  } else {
+    GET_OBJ_WEIGHT(corpse) = GET_WEIGHT(ch) + IS_CARRYING_W(ch);
+  
+    if (IS_NPC(ch))
+      GET_OBJ_TIMER(corpse) = CONFIG_MAX_NPC_CORPSE_TIME;
+    else
+      GET_OBJ_TIMER(corpse) = CONFIG_MAX_PC_CORPSE_TIME;
 
-  /* transfer character's inventory to the corpse */
-  corpse->contains = ch->carrying;
-  for (o = corpse->contains; o != NULL; o = o->next_content)
-    o->in_obj = corpse;
-  object_list_new_owner(corpse, NULL);
+    /* transfer character's inventory to the corpse */
+    corpse->contains = ch->carrying;
+    for (o = corpse->contains; o != NULL; o = o->next_content)
+      o->in_obj = corpse;
+  
+    object_list_new_owner(corpse, NULL);
 
-  /* transfer character's equipment to the corpse */
-  for (i = 0; i < NUM_WEARS; i++)
-    if (GET_EQ(ch, i)) {
-      remove_otrigger(GET_EQ(ch, i), ch);
-      obj_to_obj(unequip_char(ch, i), corpse);
+    /* transfer character's equipment to the corpse */
+    for (i = 0; i < NUM_WEARS; i++)
+      if (GET_EQ(ch, i)) {
+        remove_otrigger(GET_EQ(ch, i), ch);
+        obj_to_obj(unequip_char(ch, i), corpse);
+      }
+
+    /* transfer gold */
+    if (GET_GOLD(ch) > 0) {
+      /* following 'if' clause added to fix gold duplication loophole. The above
+       * line apparently refers to the old "partially log in, kill the game
+       * character, then finish login sequence" duping bug. The duplication has
+       * been fixed (knock on wood) but the test below shall live on, for a
+       * while. -gg 3/3/2002 */
+      if (IS_NPC(ch) || ch->desc) {
+        money = create_money(GET_GOLD(ch));
+        obj_to_obj(money, corpse);
+      }
+      GET_GOLD(ch) = 0;
     }
-
-  /* transfer gold */
-  if (GET_GOLD(ch) > 0) {
-    /* following 'if' clause added to fix gold duplication loophole. The above
-     * line apparently refers to the old "partially log in, kill the game
-     * character, then finish login sequence" duping bug. The duplication has
-     * been fixed (knock on wood) but the test below shall live on, for a
-     * while. -gg 3/3/2002 */
-    if (IS_NPC(ch) || ch->desc) {
-      money = create_money(GET_GOLD(ch));
-      obj_to_obj(money, corpse);
+    ch->carrying = NULL;
+    IS_CARRYING_N(ch) = 0;
+    IS_CARRYING_W(ch) = 0;
     }
-    GET_GOLD(ch) = 0;
-  }
-  ch->carrying = NULL;
-  IS_CARRYING_N(ch) = 0;
-  IS_CARRYING_W(ch) = 0;
-
   obj_to_room(corpse, IN_ROOM(ch));
 }
 
@@ -460,6 +490,11 @@ void raw_kill(struct char_data * ch, struct char_data * killer)
   update_pos(ch);
 
   make_corpse(ch);
+  
+  /* if the victim died in arena, crashsave him */
+  if (!IS_NPC(ch) && is_arena_combat(killer, ch))
+    Crash_rentsave(ch, 0);
+
   extract_char(ch);
 
   if (killer) {
@@ -501,6 +536,10 @@ static void perform_group_gain(struct char_data *ch, int base,
     share = MIN(CONFIG_MAX_EXP_GAIN, MAX(1, hap_share));
   }
 
+  /* if he is in arena, award only 1 exp */
+  if (is_arena_combat(ch, victim))
+    share = 1;
+  
   if (GET_LEVEL(ch) <= 49) {
    if (share > 1)
     send_to_char(ch, "\tYYou receive your share of experience -- %d points.\tn\r\n", share);
@@ -557,6 +596,10 @@ static void solo_gain(struct char_data *ch, struct char_data *victim)
     exp = MAX(happy_exp, 1);
   }
 
+  /* if he is in arena, award only 1 exp */
+  if (is_arena_combat(ch, victim))
+    exp = 1;
+  
   if (GET_LEVEL(ch) <= 49) {
    if (exp > 1)
     send_to_char(ch, "\tYYou receive %d experience points.\tn\r\n", exp);
@@ -885,7 +928,7 @@ int damage(struct char_data *ch, struct char_data *victim, int dam, int attackty
   GET_HIT(victim) -= dam;
 
   /* Gain exp for the hit */
-  if (ch != victim)
+  if (ch != victim && !is_arena_combat(ch, victim))
     gain_exp(ch, GET_LEVEL(victim) * dam);
 
   update_pos(victim);
@@ -974,9 +1017,12 @@ int damage(struct char_data *ch, struct char_data *victim, int dam, int attackty
     }
 
     if (!IS_NPC(victim)) {
-      mudlog(BRF, LVL_IMMORT, TRUE, "%s killed by %s at %s", GET_NAME(victim), GET_NAME(ch), world[IN_ROOM(victim)].name);
+      if (is_arena_combat(ch, victim))
+        mudlog(BRF, LVL_IMMORT, TRUE, "[ARENA] %s killed by %s at %s", GET_NAME(victim), GET_NAME(ch), world[IN_ROOM(victim)].name);
+      else
+        mudlog(BRF, LVL_IMMORT, TRUE, "%s killed by %s at %s", GET_NAME(victim), GET_NAME(ch), world[IN_ROOM(victim)].name);
       if (MOB_FLAGGED(ch, MOB_MEMORY))
-	forget(ch, victim);
+	    forget(ch, victim);
     }
     /* Cant determine GET_GOLD on corpse, so do now and store */
     if (IS_NPC(victim)) {
@@ -990,10 +1036,18 @@ int damage(struct char_data *ch, struct char_data *victim, int dam, int attackty
       sprintf(local_buf,"%ld", (long)local_gold);
     }
 	
-	if (!IS_NPC(victim))
-      GET_RIP_CNT(victim) += 1;
-     if (!IS_NPC(ch))
-      GET_KILL_CNT(ch) += 1;
+	if (!IS_NPC(victim)) {
+      if (is_arena_combat(ch, victim))
+        GET_ARENA_RIP_CNT(victim) += 1;
+      else
+        GET_RIP_CNT(victim) += 1;
+    }
+    if (!IS_NPC(ch)) {
+      if (is_arena_combat(ch, victim))
+        GET_ARENA_KILL_CNT(ch) += 1;
+      else
+        GET_KILL_CNT(ch) += 1;
+    }
 	  
 	if (IS_NPC(victim) && (GET_RACE(victim) != RACE_UNDEAD)) 
         increase_blood(victim->in_room);

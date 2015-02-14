@@ -285,6 +285,8 @@ int load_char(const char *name, struct char_data *ch)
 	GET_SOUL_POINTS(ch) = PFDEF_SOUL_POINTS;
 	GET_RIP_CNT(ch) = PFDEF_RIP_CNT;
 	GET_KILL_CNT(ch) = PFDEF_KILL_CNT;
+    GET_ARENA_RIP_CNT(ch) = PFDEF_ARENA_RIP_CNT;
+	GET_ARENA_KILL_CNT(ch) = PFDEF_ARENA_KILL_CNT;
 	GET_DT_CNT(ch) = PFDEF_DT_CNT;
 	GET_CLAN(ch) = PFDEF_CLAN;
 	GET_CLAN_RANK(ch) = PFDEF_CLAN_RANK;
@@ -353,6 +355,8 @@ int load_char(const char *name, struct char_data *ch)
 	if (!strcmp(tag, "Affs")) 	load_affects(fl, ch);
         else if (!strcmp(tag, "Alin"))	GET_ALIGNMENT(ch)	= atoi(line);
 	else if (!strcmp(tag, "Alis"))	read_aliases_ascii(fl, ch, atoi(line));
+    else if (!strcmp(tag, "ARip"))	GET_ARENA_RIP_CNT(ch)	= atoi(line);
+    else if (!strcmp(tag, "AKil"))	GET_ARENA_KILL_CNT(ch)	= atoi(line);
 	break;
 
       case 'B':
@@ -669,6 +673,8 @@ void save_char(struct char_data * ch)
   
   if (GET_RIP_CNT(ch)  != PFDEF_RIP_CNT)	fprintf(fl, "Rip : %d\n", GET_RIP_CNT(ch));
   if (GET_KILL_CNT(ch)  != PFDEF_KILL_CNT)	fprintf(fl, "Kill: %d\n", GET_KILL_CNT(ch));
+  if (GET_ARENA_RIP_CNT(ch)  != PFDEF_ARENA_RIP_CNT)	fprintf(fl, "ARip: %d\n", GET_ARENA_RIP_CNT(ch));
+  if (GET_ARENA_KILL_CNT(ch)  != PFDEF_ARENA_KILL_CNT)	fprintf(fl, "AKil: %d\n", GET_ARENA_KILL_CNT(ch));
   if (GET_DT_CNT(ch)  != PFDEF_DT_CNT)	fprintf(fl, "DTs : %d\n", GET_DT_CNT(ch));
 
   if (GET_COND(ch, HUNGER)   != PFDEF_HUNGER && GET_LEVEL(ch) < LVL_IMMORT) fprintf(fl, "Hung: %d\n", GET_COND(ch, HUNGER));
