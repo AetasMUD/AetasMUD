@@ -505,19 +505,18 @@ void raw_kill(struct char_data * ch, struct char_data * killer)
 
 void die(struct char_data * ch, struct char_data * killer)
 {
- int soul;
+  int soul;
  
-  gain_exp(ch, -(GET_EXP(ch) / 2));
-  if (!IS_NPC(ch)) {
-  
-  soul = (GET_SOUL_POINTS(ch) - (GET_LEVEL(ch) / 4));
+  if (!IS_NPC(ch) && !is_arena_combat(killer, ch)) {
+    gain_exp(ch, -(GET_EXP(ch) / 2));
+    soul = (GET_SOUL_POINTS(ch) - (GET_LEVEL(ch) / 4));
 
-  if ((soul < 0) && (GET_LEVEL(ch) > 15))
-    GET_MAX_HIT(ch) = MAX(50, (GET_MAX_HIT(ch) * .9));
+    if ((soul < 0) && (GET_LEVEL(ch) > 15))
+      GET_MAX_HIT(ch) = MAX(50, (GET_MAX_HIT(ch) * .9));
 
+    GET_SOUL_POINTS(ch) = MAX(0, soul);
     REMOVE_BIT_AR(PLR_FLAGS(ch), PLR_KILLER);
     REMOVE_BIT_AR(PLR_FLAGS(ch), PLR_THIEF);
-	GET_SOUL_POINTS(ch) = MAX(0, soul);
   }
   raw_kill(ch, killer);
 }
