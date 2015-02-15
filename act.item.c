@@ -203,7 +203,7 @@ static void get_check_money(struct char_data *ch, struct obj_data *obj)
   if (value == 1)
     send_to_char(ch, "There was 1 coin.\r\n");
   else
-    send_to_char(ch, "There were %d coins.\r\n", value);
+    send_to_char(ch, "There were %s coins.\r\n", add_commas(value));
 }
 
 static void perform_get_from_container(struct char_data *ch, struct obj_data *obj,
