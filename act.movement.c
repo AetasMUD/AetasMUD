@@ -142,6 +142,8 @@ int do_simple_move(struct char_data *ch, int dir, int need_specials_check)
   int need_movement = 0;
   /* Contains the "leave" message to display to the was_in room. */
   char leave_message[SMALL_BUFSIZE];
+  /* Contains the "arrive" message to display to the going_to room. */
+  char arrive_message[SMALL_BUFSIZE];
   /*---------------------------------------------------------------------*/
   /* End Local variable definitions */
 
@@ -278,9 +280,18 @@ int do_simple_move(struct char_data *ch, int dir, int need_specials_check)
   }
 
   /* Generate the leave message and display to others in the was_in room. */
-  if (!AFF_FLAGGED(ch, AFF_SNEAK))
-  {
-    snprintf(leave_message, sizeof(leave_message), "$n leaves %s.", dirs[dir]);
+  if (!AFF_FLAGGED(ch, AFF_SNEAK)) {
+    switch(GET_POS(ch)) {
+      case POS_FLYING:
+        snprintf(leave_message, sizeof(leave_message), "$n flies %s.", dirs[dir]);
+        break;
+      case POS_STANDING:
+        snprintf(leave_message, sizeof(leave_message), "$n walks %s.", dirs[dir]);
+        break;
+      default:
+        snprintf(leave_message, sizeof(leave_message), "$n leaves %s.", dirs[dir]);
+        break;
+    }
     act(leave_message, TRUE, ch, 0, 0, TO_ROOM);
   }
 
@@ -303,9 +314,21 @@ int do_simple_move(struct char_data *ch, int dir, int need_specials_check)
   }
 
   /* Display arrival information to anyone in the destination room... */
-  if (!AFF_FLAGGED(ch, AFF_SNEAK))
-    act("$n has arrived.", TRUE, ch, 0, 0, TO_ROOM);
-
+  if (!AFF_FLAGGED(ch, AFF_SNEAK)) {
+    switch(GET_POS(ch)) {
+      case POS_FLYING:
+        snprintf(arrive_message, sizeof(arrive_message), "$n flies in from %s.", from_dirs[dir]);
+        break;
+      case POS_STANDING:
+        snprintf(arrive_message, sizeof(arrive_message), "$n walks in from %s.", from_dirs[dir]);
+        break;
+      default:
+        snprintf(arrive_message, sizeof(arrive_message), "$n has arrived from %s.", from_dirs[dir]);
+        break;
+    }
+    act(arrive_message, TRUE, ch, 0, 0, TO_ROOM);
+  }
+    
   /* ... and the room description to the character. */
   if (ch->desc != NULL)
     look_at_room(ch, 0);
