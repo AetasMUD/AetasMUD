@@ -886,6 +886,20 @@ int rev_dir[] =
   NORTHEAST
 };
 
+const char *from_dirs[] = {
+    "the south",
+    "the west",
+    "the north",
+    "the east",
+    "below",
+    "above",
+    "the southeast",
+    "the southwest",
+    "the northwest",
+    "the northeast",
+    "\n"
+};
+
 /** How much movement is lost moving through a particular sector type. */
 int movement_loss[] =
 {
