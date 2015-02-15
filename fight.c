@@ -541,7 +541,7 @@ static void perform_group_gain(struct char_data *ch, int base,
   
   if (GET_LEVEL(ch) <= 49) {
    if (share > 1)
-    send_to_char(ch, "\tYYou receive your share of experience -- %d points.\tn\r\n", share);
+    send_to_char(ch, "\tYYou receive your share of experience -- %s points.\tn\r\n", add_commas(share));
    else
     send_to_char(ch, "\tYYou receive your share of experience -- one measly little point!\tn\r\n");
 	}
@@ -601,7 +601,7 @@ static void solo_gain(struct char_data *ch, struct char_data *victim)
   
   if (GET_LEVEL(ch) <= 49) {
    if (exp > 1)
-    send_to_char(ch, "\tYYou receive %d experience points.\tn\r\n", exp);
+    send_to_char(ch, "\tYYou receive %s experience points.\tn\r\n", add_commas(exp));
    else
     send_to_char(ch, "\tYYou receive one lousy experience point.\tn\r\n");
 }

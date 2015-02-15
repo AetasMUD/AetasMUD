@@ -263,7 +263,7 @@ ACMD(do_steal)
 		increase_gold(ch, gold);
 		decrease_gold(vict, gold);
         if (gold > 1)
-	  send_to_char(ch, "Bingo!  You got %d gold coins.\r\n", gold);
+	  send_to_char(ch, "Bingo!  You got %s gold coins.\r\n", add_commas(gold));
 	else
 	  send_to_char(ch, "You manage to swipe a solitary gold coin.\r\n");
       } else {
@@ -565,8 +565,8 @@ ACMD(do_split)
     decrease_gold(ch, share * (num - 1));
 
     /* Abusing signed/unsigned to make sizeof work. */
-    len = snprintf(buf, sizeof(buf), "%s splits %d coins; you receive %d.\r\n",
-		GET_NAME(ch), amount, share);
+    len = snprintf(buf, sizeof(buf), "%s splits %s coins; you receive %s.\r\n",
+		GET_NAME(ch), add_commas(amount), add_commas(share));
     if (rest && len < sizeof(buf)) {
       snprintf(buf + len, sizeof(buf) - len,
 		"%d coin%s %s not splitable, so %s keeps the money.\r\n", rest,
@@ -579,8 +579,8 @@ ACMD(do_split)
 	      send_to_char(k, "%s", buf);
 			}
 
-    send_to_char(ch, "You split %d coins among %d members -- %d coins each.\r\n",
-	    amount, num, share);
+    send_to_char(ch, "You split %s coins among %d members -- %s coins each.\r\n",
+	    add_commas(amount), num, add_commas(share));
 
     if (rest) {
       send_to_char(ch, "%d coin%s %s not splitable, so you keep the money.\r\n",
