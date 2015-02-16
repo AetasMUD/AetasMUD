@@ -246,11 +246,8 @@ static void make_corpse(struct char_data *ch, struct char_data *killer)
   struct obj_data *money;
   int i, x, y;
   int death_attacktype = 0;
-  int death_message = 0;
   
   death_attacktype = GET_KILLED_BY(ch, DEATH_ATTACKTYPE);
-  
-  death_message = GET_KILLED_BY(ch, DEATH_MSG_NO);
   
   /*---- MAKE THE CORPSE---------------------*/
 
@@ -269,8 +266,7 @@ static void make_corpse(struct char_data *ch, struct char_data *killer)
     snprintf(corpse_type, sizeof(corpse_type), "corpse");
     snprintf(is_are, sizeof(is_are), "is");
   }
-        mudlog(BRF, LVL_IMMORT, TRUE, "attacktype = %d, message number = %d.",
-	    death_attacktype, death_message);
+
   /* decide on the descriptions of the corpse */
   switch (death_attacktype) {
     /* weapon attack types -------------------------------------------- */
