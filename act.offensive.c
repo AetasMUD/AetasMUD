@@ -148,8 +148,9 @@ ACMD(do_backstab)
     send_to_char(ch, "You need to wield a weapon to make it a success.\r\n");
     return;
   }
-  if (GET_OBJ_VAL(GET_EQ(ch, WEAR_WIELD), 3) != TYPE_PIERCE - TYPE_HIT) {
-    send_to_char(ch, "Only piercing weapons can be used for backstabbing.\r\n");
+  if ((GET_OBJ_VAL(GET_EQ(ch, WEAR_WIELD), 3) != TYPE_PIERCE - TYPE_HIT) && 
+      (GET_OBJ_VAL(GET_EQ(ch, WEAR_WIELD), 3) != TYPE_STAB - TYPE_HIT)) {
+    send_to_char(ch, "Only stabbing or piercing weapons can be used for backstabbing.\r\n");
     return;
   }
   if (FIGHTING(vict)) {
