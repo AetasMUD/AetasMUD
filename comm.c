@@ -1121,6 +1121,7 @@ void echo_on(struct descriptor_data *d)
 static char *make_prompt(struct descriptor_data *d)
 {
   static char prompt[MAX_PROMPT_LENGTH];
+  int percent; /* for autodiagnose */
 
   /* Note, prompt is truncated at MAX_PROMPT_LENGTH chars (structs.h) */
 
@@ -1234,65 +1235,64 @@ static char *make_prompt(struct descriptor_data *d)
          len += count; 
      }
 
-	 
- if (PRF_FLAGGED(d->character, PRF_AUTODIAG) && !IS_NPC(d->character) && FIGHTING(d->character))
- {
-  int percent;
+  /* autodiagnose code */	 
+  if (PRF_FLAGGED(d->character, PRF_AUTODIAG) && !IS_NPC(d->character) && 
+     FIGHTING(d->character) && GET_POS(FIGHTING(d->character)) != POS_DEAD) {
   
-  if (GET_MAX_HIT(FIGHTING(d->character)) > 0)
-   percent = (100 * GET_HIT(FIGHTING(d->character)) / GET_MAX_HIT(FIGHTING(d->character)));
-  else
-   percent = -1;
+    if (GET_MAX_HIT(FIGHTING(d->character)) > 0)
+      percent = (100 * GET_HIT(FIGHTING(d->character)) / GET_MAX_HIT(FIGHTING(d->character)));
+    else
+      percent = -1;
 
-  if (percent >= 100) {
-   count = snprintf(prompt + len, sizeof(prompt) - len, "%s(excellent) %s",
-    CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
-	if (count >= 0)
-     len += count;
-  } else if (percent >= 90) {
-   count = snprintf(prompt + len, sizeof(prompt) - len, "%s(few scratches) %s",
-    CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
-	if (count >= 0)
-     len += count;
-  } else if (percent >= 75) {
-   count = snprintf(prompt + len, sizeof(prompt) - len, "%s(small wounds) %s",
-    CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
-	if (count >= 0)
-     len += count;
-  } else if (percent >= 50) {
-   count = snprintf(prompt + len, sizeof(prompt) - len, "%s(quite a few) %s",
-    CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
-	if (count >= 0)
-     len += count;
-  } else if (percent >= 30) {
-   count = snprintf(prompt + len, sizeof(prompt) - len, "%s(big nasty) %s",
-    CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
-	if (count >= 0)
-     len += count;
-  } else if (percent >= 15) {
-   count = snprintf(prompt + len, sizeof(prompt) - len, "%s(pretty hurt) %s",
-    CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
-	if (count >= 0)
-     len += count;
-  } else if (percent >= 0) {
-   count = snprintf(prompt + len, sizeof(prompt) - len, "%s(awful) %s",
-    CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
-	if (count >= 0)
-     len += count;
-   } else {
-   count = snprintf(prompt + len, sizeof(prompt) - len, "%s(bleeding profusely) %s",
-    CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
-	if (count >= 0)
-      len += count;
-   }
-  }
-	 
-    if (len < sizeof(prompt)) {
+    if (percent >= 100) {
+      count = snprintf(prompt + len, sizeof(prompt) - len, "%s(excellent) %s",
+        CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
+	  if (count >= 0)
+        len += count;
+    } else if (percent >= 90) {
+      count = snprintf(prompt + len, sizeof(prompt) - len, "%s(few scratches) %s",
+        CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
+	  if (count >= 0)
+        len += count;
+    } else if (percent >= 75) {
+      count = snprintf(prompt + len, sizeof(prompt) - len, "%s(small wounds) %s",
+        CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
+	  if (count >= 0)
+        len += count;
+    } else if (percent >= 50) {
+      count = snprintf(prompt + len, sizeof(prompt) - len, "%s(quite a few) %s",
+        CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
+	  if (count >= 0)
+        len += count;
+    } else if (percent >= 30) {
+      count = snprintf(prompt + len, sizeof(prompt) - len, "%s(big nasty) %s",
+        CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
+	  if (count >= 0)
+        len += count;
+    } else if (percent >= 15) {
+      count = snprintf(prompt + len, sizeof(prompt) - len, "%s(pretty hurt) %s",
+        CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
+	  if (count >= 0)
+        len += count;
+    } else if (percent >= 0) {
+      count = snprintf(prompt + len, sizeof(prompt) - len, "%s(awful) %s",
+        CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
+	  if (count >= 0)
+        len += count;
+    } else {
+      count = snprintf(prompt + len, sizeof(prompt) - len, "%s(bleeding profusely) %s",
+        CCRED(d->character, C_NRM), CCNRM(d->character, C_NRM));
+	  if (count >= 0)
+        len += count;
+    }
+  } /* end of autodiag */
+  
+  if (len < sizeof(prompt)) {
 	count = snprintf(prompt + len, sizeof(prompt) - len, "%s>%s ",
 	   CBWHT(d->character, C_NRM), CCNRM(d->character, C_NRM)); 
-       if (count >= 0) 
-         len += count; 
-     }
+    if (count >= 0) 
+      len += count; 
+  }
 	
   /*    strncat(prompt, "> ", sizeof(prompt) - len - 1);	 strncat: OK */
   } else if (STATE(d) == CON_PLAYING && IS_NPC(d->character))
@@ -1302,7 +1302,6 @@ static char *make_prompt(struct descriptor_data *d)
 
   return (prompt);
 }
-
 
 /* NOTE: 'txt' must be at most MAX_INPUT_LENGTH big. */
 void write_to_q(const char *txt, struct txt_q *queue, int aliased)
