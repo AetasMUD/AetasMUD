@@ -116,31 +116,41 @@ void list_skills(struct char_data *ch)
   size_t len = 0;
   char buf2[MAX_STRING_LENGTH];
 
-  send_to_char(ch, "You have \tG%d\tn practice session%s remaining.\r\n", GET_PRACTICES(ch),
-	GET_PRACTICES(ch) == 1 ? "" : "s");
+  send_to_char(ch, "You have %s%d%s practice session%s remaining.\r\n", 
+    CBGRN(ch, C_NRM), GET_PRACTICES(ch), CCNRM(ch, C_NRM), GET_PRACTICES(ch) == 1 ? "" : "s");
   
-  len = snprintf(buf2, sizeof(buf2), "\tYYou know of the following spells:\tn\r\n");
+  len = snprintf(buf2, sizeof(buf2), "%sYou know of the following spells:%s\r\n",
+    CBYEL(ch, C_NRM), CCNRM(ch, C_NRM));
 
   for (sortpos = 1; sortpos <= MAX_SPELLS; sortpos++) {
     i = spell_sort_info[sortpos];
-    if ((GET_LEVEL(ch) >= spell_info[i].min_level[(int) GET_CLASS(ch)]) ||
+    if (((GET_LEVEL(ch) >= spell_info[i].min_level[(int) GET_CLASS(ch)]) ||
 	    (GET_LEVEL(ch) >= spell_info[i].min_level[(int) GET_REMORT(ch)]) ||
-		(GET_SKILL(ch,i) > 0)) {
-    ret = snprintf(buf2 + len, sizeof(buf2) - len, "%-20s %s\r\n", spell_info[i].name, how_good(GET_SKILL(ch, i)));
-    if (ret < 0 || len + ret >= sizeof(buf2))
+		(GET_SKILL(ch,i) > 0)) && (spell_info[i].min_level[(int) GET_CLASS(ch)] <= LVL_IMPL)) {
+      ret = snprintf(buf2 + len, sizeof(buf2) - len, "%-20s %s%s%s\r\n", 
+      spell_info[i].name, CBGRN(ch, C_NRM), how_good(GET_SKILL(ch, i)), CCNRM(ch, C_NRM));
+
+      if (ret < 0 || len + ret >= sizeof(buf2))
         break;
+    
       len += ret;
     }
   }
   
-  len += snprintf(buf2 + len, sizeof(buf2) - len, "\r\n\tYYou know of the following skills:\tn\r\n");
+  len += snprintf(buf2 + len, sizeof(buf2) - len, "\r\n%sYou know of the following skills:%s\r\n",
+    CBYEL(ch, C_NRM), CCNRM(ch, C_NRM));
+  
   for (sortpos = MAX_SPELLS; sortpos <= MAX_SKILLS; sortpos++) {
     i = skill_sort_info[sortpos];
-    if ((GET_LEVEL(ch) >= spell_info[i].min_level[(int) GET_CLASS(ch)]) ||
-	   (GET_LEVEL(ch) >= spell_info[i].min_level[(int)GET_REMORT(ch)])) {
-      ret = snprintf(buf2 + len, sizeof(buf2) - len, "%-20s \tG%s\tn\r\n", spell_info[i].name, how_good(GET_SKILL(ch, i)));
-    if (ret < 0 || len + ret >= sizeof(buf2))
+    if (((GET_LEVEL(ch) >= spell_info[i].min_level[(int) GET_CLASS(ch)]) ||
+	   (GET_LEVEL(ch) >= spell_info[i].min_level[(int)GET_REMORT(ch)])) && 
+       (spell_info[i].min_level[(int) GET_CLASS(ch)] <= LVL_IMPL)) {
+      ret = snprintf(buf2 + len, sizeof(buf2) - len, "%-20s %s%s%s\r\n", 
+        spell_info[i].name, CBGRN(ch, C_NRM), how_good(GET_SKILL(ch, i)), CCNRM(ch, C_NRM));
+      
+      if (ret < 0 || len + ret >= sizeof(buf2))
         break;
+    
       len += ret;
     }
   }
