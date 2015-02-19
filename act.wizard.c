@@ -838,8 +838,9 @@ static void do_stat_character(struct char_data *ch, struct char_data *k)
     send_to_char(ch, "STL[%d]/per[%d]/NSTL[%d], Soul Points:[%d]\r\n",
 	    GET_PRACTICES(k), int_app[GET_INT(k)].learn,
 	    wis_app[GET_WIS(k)].bonus, GET_SOUL_POINTS(k));
-	send_to_char(ch, "Kills: [%d], Deaths: [%d], Dt's: [%d]\r\n",
-          GET_KILL_CNT(k), GET_RIP_CNT(k), GET_DT_CNT(k));
+	send_to_char(ch, "Kills: [%dM/ %dPK/ %dA], Deaths: [%dM/ %dPK/ %dA], Dt's: [%d]\r\n",
+          GET_KILL_CNT(k), GET_PK_KILL_CNT(k), GET_ARENA_KILL_CNT(k),
+          GET_RIP_CNT(k), GET_PK_RIP_CNT(k), GET_ARENA_RIP_CNT(k), GET_DT_CNT(k));
 
     /* Display OLC zone for immorts. */
     if (GET_LEVEL(k) >= LVL_BUILDER) {
