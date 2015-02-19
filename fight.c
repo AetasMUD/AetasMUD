@@ -1077,25 +1077,31 @@ int damage(struct char_data *ch, struct char_data *victim, int dam, int attackty
       sprintf(local_buf,"%ld", (long)local_gold);
     }
 	
-    /* if a character kills a mob, increase character's kill count */
+    /* death and kill counter math */
+    /* PLAYER kills MOB */
     if (!IS_NPC(ch) && IS_NPC(victim))
+      /* increase character's mob kill count, even if it's in arena */
       GET_KILL_CNT(ch) += 1;
-    /* if a mob kills a character, increase character's death count */
-    if (IS_NPC(ch) && !IS_NPC(victim))
-      GET_RIP_CNT(victim) += 1;
-    /* if a character is killed by another character, increase his death count */
-	if (!IS_NPC(victim)) {
+    /* MOB kills PLAYER */
+    if (IS_NPC(ch) && !IS_NPC(victim)) {
       if (is_arena_combat(ch, victim))
+        /* increase arena death count */
         GET_ARENA_RIP_CNT(victim) += 1;
       else
-        GET_PK_RIP_CNT(victim) += 1;
+        /* increase death by mob count */
+        GET_RIP_CNT(victim) += 1;
     }
-    /* if a character kills another character, increase kill kill count */
-    if (!IS_NPC(ch)) {
-      if (is_arena_combat(ch, victim))
+    /* PLAYER kills PLAYER */
+	if (!IS_NPC(ch) && !IS_NPC(victim)) {
+      if (is_arena_combat(ch, victim)) {
+        /* if in arena, add to the arena counters */
         GET_ARENA_KILL_CNT(ch) += 1;
-      else
+        GET_ARENA_RIP_CNT(victim) += 1;
+      } else {
+        /* otherwise add to the PK counters */
         GET_PK_KILL_CNT(ch) += 1;
+        GET_PK_RIP_CNT(victim) += 1;
+      }
     }
 	  
 	if (IS_NPC(victim) && (GET_RACE(victim) != RACE_UNDEAD)) 
