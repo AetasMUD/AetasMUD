@@ -183,25 +183,27 @@ const char *race_menu =
 "  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
 "  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
-"                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans, but\r\n"
+"                    intelligence and dexterity, but have reduced strength and\r\n"
+"                    constitution.\r\n"
+"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans,\r\n"
 "                    are rather stocky, and normally wear beards. They receive\r\n"
-"                    bonuses to strength and constitution, but have reduced dexterity\r\n"
-"                    and intelligence.\r\n"
+"                    bonuses to strength and constitution, but have reduced\r\n"
+"                    dexterity and intelligence.\r\n"
 "  \tcKender       \tc--\tn Kender are often mistaken for teenage humans, even\r\n"
-"                    with their pointy ears. They receive bonuses for dexterity, but\r\n"
-"                    have reduced intelligence and strength.\r\n" 
+"                    with their pointy ears. They receive bonuses for dexterity,\r\n"
+"                    but have reduced intelligence and strength.\r\n" 
 "  Half-\tcOrc     \tc--\tn Half-orcs are usually shorter than humans, with a face\r\n"
-"                    that resembles a pig, and skin that is green and brown. They receive\r\n"
-"                    bonuses to strength, but reductions to intelligence and charisma.\r\n"
-"  Half-O\tcgre    \tc--\tn Half-ogres usually stand a couple feet taller than\r\n"
-"                    humans, and have been described as over-sized neanderthals. They\r\n"
-"                    receive large bonuses to strength, but suffer with reduced wisdom,\r\n"
+"                    that resembles a pig, and skin that is green and brown.\r\n"
+"                    They receive bonuses to strength, but reductions to\r\n"
 "                    intelligence and charisma.\r\n"
+"  Half-\tcOgre    \tc--\tn Half-ogres usually stand a couple of feet taller than\r\n"
+"                    humans, and have been described as over-sized neanderthals.\r\n"
+"                    They receive large bonuses to strength, but suffer with\r\n"
+"                    reduced wisdom, intelligence and charisma.\r\n"
 "  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
-"                    bonuses to strength and constitution, but have reduced wisdom\r\n"
-"                    and charisma.\r\n";
+"                    bonuses to strength and constitution, but have reduced\r\n"
+"                    wisdom and charisma.\r\n";
 
 /* added class/race menus */
 
@@ -213,17 +215,19 @@ const char *race_mage_menu =
 "  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
 "  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
-"                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
+"                    intelligence and dexterity, but have reduced strength and\r\n"
+"                    constitution.\r\n"
 "  \tcKender       \tc--\tn Kender are often mistaken for teenage humans, even\r\n"
-"                    with their pointy ears. They receive bonuses for dexterity, but\r\n"
-"                    have reduced intelligence and strength.\r\n" 
-"  \tcHalf-Orc     \tc--\tn Half-orcs are usually shorter than humans, with a face\r\n"
-"                    that resembles a pig, and skin that is green and brown. They receive\r\n"
-"                    bonuses to strength, but reductions to intelligence and charisma.\r\n"
+"                    with their pointy ears. They receive bonuses for dexterity,\r\n"
+"                    but have reduced intelligence and strength.\r\n" 
+"  Half-\tcOrc     \tc--\tn Half-orcs are usually shorter than humans, with a face\r\n"
+"                    that resembles a pig, and skin that is green and brown.\r\n"
+"                    They receive bonuses to strength, but reductions to\r\n"
+"                    intelligence and charisma.\r\n"
 "  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
-"                    bonuses to strength and constitution, but have reduced wisdom\r\n"
-"                    and charisma.\r\n";
+"                    bonuses to strength and constitution, but have reduced\r\n"
+"                    wisdom and charisma.\r\n";
 
 
 const char *race_necro_menu =
@@ -235,14 +239,16 @@ const char *race_necro_menu =
 "  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
 "  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
-"                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  \tcHalf-Orc     \tc--\tn Half-orcs are usually shorter than humans, with a face\r\n"
-"                    that resembles a pig, and skin that is green and brown. They receive\r\n"
-"                    bonuses to strength, but reductions to intelligence and charisma.\r\n"
+"                    intelligence and dexterity, but have reduced strength and\r\n"
+"                    constitution.\r\n"
+"  Half-\tcOrc     \tc--\tn Half-orcs are usually shorter than humans, with a face\r\n"
+"                    that resembles a pig, and skin that is green and brown.\r\n"
+"                    They receive bonuses to strength, but reductions to\r\n"
+"                    intelligence and charisma.\r\n"
 "  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
-"                    bonuses to strength and constitution, but have reduced wisdom\r\n"
-"                    and charisma.\r\n";
+"                    bonuses to strength and constitution, but have reduced\r\n"
+"                    wisdom and charisma.\r\n";
 
 const char *race_monk_menu =
 "\r\n"
@@ -255,14 +261,15 @@ const char *race_monk_menu =
 "  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
 "  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
-"                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
+"                    intelligence and dexterity, but have reduced strength and\r\n"
+"                    constitution.\r\n"
 "  \tcKender       \tc--\tn Kender are often mistaken for teenage humans, even\r\n"
-"                    with their pointy ears. They receive bonuses for dexterity, but\r\n"
-"                    have reduced intelligence and strength.\r\n" 
+"                    with their pointy ears. They receive bonuses for dexterity,\r\n"
+"                    but have reduced intelligence and strength.\r\n" 
 "  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
-"                    bonuses to strength and constitution, but have reduced wisdom\r\n"
-"                    and charisma.\r\n";
+"                    bonuses to strength and constitution, but have reduced\r\n"
+"                    wisdom and charisma.\r\n";
 
 const char *race_knig_menu =
 "\r\n\r\n"
@@ -273,11 +280,12 @@ const char *race_knig_menu =
 "  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
 "  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
-"                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans, but\r\n"
+"                    intelligence and dexterity, but have reduced strength and\r\n"
+"                    constitution.\r\n"
+"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans,\r\n"
 "                    are rather stocky, and normally wear beards. They receive\r\n"
-"                    bonuses to strength and constitution, but have reduced dexterity\r\n"
-"                    and intelligence.\r\n";
+"                    bonuses to strength and constitution, but have reduced\r\n"
+"                    dexterity and intelligence.\r\n";
 
 const char *race_cler_menu =
 "\r\n\r\n"
@@ -288,11 +296,12 @@ const char *race_cler_menu =
 "  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
 "  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
-"                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans, but\r\n"
+"                    intelligence and dexterity, but have reduced strength and\r\n"
+"                    constitution.\r\n"
+"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans,\r\n"
 "                    are rather stocky, and normally wear beards. They receive\r\n"
-"                    bonuses to strength and constitution, but have reduced dexterity\r\n"
-"                    and intelligence.\r\n";
+"                    bonuses to strength and constitution, but have reduced\r\n"
+"                    dexterity and intelligence.\r\n";
 
 const char *race_barb_menu =
 "\r\n\r\n"
@@ -300,21 +309,22 @@ const char *race_barb_menu =
 "\r\n"
 "\tGSelect a race:\tn\r\n\r\n"
 "  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
-"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans, but\r\n"
+"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans,\r\n"
 "                    are rather stocky, and normally wear beards. They receive\r\n"
-"                    bonuses to strength and constitution, but have reduced dexterity\r\n"
-"                    and intelligence.\r\n"
-"  \tcHalf-Orc     \tc--\tn Half-orcs are usually shorter than humans, with a face\r\n"
-"                    that resembles a pig, and skin that is green and brown. They receive\r\n"
-"                    bonuses to strength, but reductions to intelligence and charisma.\r\n"
-"  \tcHalf-Ogre    \tc--\tn Half-ogres usually stand a couple feet taller than\r\n"
-"                    humans, and have been described as over-sized neanderthals. They\r\n"
-"                    receive large bonuses to strength, but suffer with reduced wisdom,\r\n"
+"                    bonuses to strength and constitution, but have reduced\r\n"
+"                    dexterity and intelligence.\r\n"
+"  Half-\tcOrc     \tc--\tn Half-orcs are usually shorter than humans, with a face\r\n"
+"                    that resembles a pig, and skin that is green and brown.\r\n"
+"                    They receive bonuses to strength, but reductions to\r\n"
 "                    intelligence and charisma.\r\n"
+"  Half-\tcOgre    \tc--\tn Half-ogres usually stand a couple of feet taller than\r\n"
+"                    humans, and have been described as over-sized neanderthals.\r\n"
+"                    They receive large bonuses to strength, but suffer with\r\n"
+"                    reduced wisdom, intelligence and charisma.\r\n"
 "  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
-"                    bonuses to strength and constitution, but have reduced wisdom\r\n"
-"                    and charisma.\r\n";
+"                    bonuses to strength and constitution, but have reduced\r\n"
+"                    wisdom and charisma.\r\n";
 
 const char *race_druid_menu =
 "\r\n"
@@ -327,15 +337,16 @@ const char *race_druid_menu =
 "  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
 "  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
-"                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
-"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans, but\r\n"
+"                    intelligence and dexterity, but have reduced strength and\r\n"
+"                    constitution.\r\n"
+"  \tcDwarf        \tc--\tn Dwarves are usually quite shorter than humans,\r\n"
 "                    are rather stocky, and normally wear beards. They receive\r\n"
-"                    bonuses to strength and constitution, but have reduced dexterity\r\n"
-"                    and intelligence.\r\n"
+"                    bonuses to strength and constitution, but have reduced\r\n"
+"                    dexterity and intelligence.\r\n"
 "  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
-"                    bonuses to strength and constitution, but have reduced wisdom\r\n"
-"                    and charisma.\r\n";
+"                    bonuses to strength and constitution, but have reduced\r\n"
+"                    wisdom and charisma.\r\n";
 
 const char *race_psio_menu =
 "\r\n\r\n"
@@ -346,14 +357,15 @@ const char *race_psio_menu =
 "  \tcHuman        \tc--\tn Humans have average attributes.\r\n"
 "  \tcElf          \tc--\tn Elves are usually shorter and lighter than humans\r\n"
 "                    with pointy ears and almond eyes. They receive bonuses to\r\n"
-"                    intelligence and dexterity, but have reduced strength and constitution.\r\n"
+"                    intelligence and dexterity, but have reduced strength and\r\n"
+"                    constitution.\r\n"
 "  \tcKender       \tc--\tn Kender are often mistaken for teenage humans, even\r\n"
-"                    with their pointy ears. They receive bonuses for dexterity, but\r\n"
-"                    have reduced intelligence and strength.\r\n" 
+"                    with their pointy ears. They receive bonuses for dexterity,\r\n"
+"                    but have reduced intelligence and strength.\r\n" 
 "  \tcBakali       \tc--\tn Bakali are a race of lizard type humanoids which\r\n"
 "                    stand a bit taller than humans, and weigh more. They receive\r\n"
-"                    bonuses to strength and constitution, but have reduced wisdom\r\n"
-"                    and charisma.\r\n";
+"                    bonuses to strength and constitution, but have reduced\r\n"
+"                    wisdom and charisma.\r\n";
 
 
 /* The code to interpret a class letter -- used in interpreter.c when a new 
@@ -437,9 +449,9 @@ int parse_race_by_abbrev(char *arg)
     return RACE_HUMAN;
   else if (is_abbrev(arg, "kender"))
     return RACE_KENDER;
-  else if (is_abbrev(arg, "half-orc") || is_abbrev(arg, "half orc") || is_abbrev(arg, "orc"))
+  else if (is_abbrev(arg, "half-orc") || is_abbrev(arg, "half orc") || is_abbrev(arg, "halforc") || is_abbrev(arg, "orc"))
     return RACE_HALF_ORC;
-  else if (is_abbrev(arg, "half-ogre") || is_abbrev(arg, "half ogre") || is_abbrev(arg, "ogre"))
+  else if (is_abbrev(arg, "half-ogre") || is_abbrev(arg, "half ogre") || is_abbrev(arg, "halfogre") || is_abbrev(arg, "ogre"))
     return RACE_HALF_OGRE;
   else if (is_abbrev(arg, "bakali"))
     return RACE_BAKALI;
@@ -457,7 +469,7 @@ int parse_mage_race(char *arg)
     return RACE_HUMAN;
   else if (is_abbrev(arg, "kender"))
     return RACE_KENDER;
-  else if (is_abbrev(arg, "half-orc") || is_abbrev(arg, "half orc") || is_abbrev(arg, "orc"))
+  else if (is_abbrev(arg, "half-orc") || is_abbrev(arg, "half orc") || is_abbrev(arg, "halforc") || is_abbrev(arg, "orc"))
     return RACE_HALF_ORC;
   else if (is_abbrev(arg, "bakali"))
     return RACE_BAKALI;
@@ -473,7 +485,7 @@ int parse_necro_race(char *arg)
     return RACE_ELF;
   else if (is_abbrev(arg, "human"))
     return RACE_HUMAN;
-  else if (is_abbrev(arg, "half-orc") || is_abbrev(arg, "half orc") || is_abbrev(arg, "orc"))
+  else if (is_abbrev(arg, "half-orc") || is_abbrev(arg, "half orc") || is_abbrev(arg, "halforc") || is_abbrev(arg, "orc"))
     return RACE_HALF_ORC;
   else if (is_abbrev(arg, "bakali"))
     return RACE_BAKALI;
@@ -533,9 +545,9 @@ int parse_barb_race(char *arg)
     return RACE_DWARF;
   else if (is_abbrev(arg, "human"))
     return RACE_HUMAN;
-  else if (is_abbrev(arg, "half-orc") || is_abbrev(arg, "half orc") || is_abbrev(arg, "orc"))
+  else if (is_abbrev(arg, "half-orc") || is_abbrev(arg, "half orc") || is_abbrev(arg, "halforc") || is_abbrev(arg, "orc"))
     return RACE_HALF_ORC;
-  else if (is_abbrev(arg, "half-ogre") || is_abbrev(arg, "half ogre") || is_abbrev(arg, "ogre"))
+  else if (is_abbrev(arg, "half-ogre") || is_abbrev(arg, "half ogre") || is_abbrev(arg, "halfogre") || is_abbrev(arg, "ogre"))
     return RACE_HALF_OGRE;
   else if (is_abbrev(arg, "bakali"))
     return RACE_BAKALI;
@@ -576,8 +588,6 @@ int parse_psio_race(char *arg)
 
   return RACE_UNDEFINED;
 }
-
-
 
 /* bitvectors (i.e., powers of two) for each class, mainly for use in do_who 
  * and do_users.  Add new classes at the end so that all classes use sequential
