@@ -157,6 +157,7 @@
 #define GROUP_NPC     (1 << 2)  /**< Group created by NPC and thus not listed */
 
 /* Classes */
+/* PC Classes */
 #define CLASS_UNDEFINED	  -1
 #define CLASS_KNIGHT       0
 #define CLASS_CLERIC       1
@@ -168,11 +169,14 @@
 #define CLASS_DRUID        7
 #define CLASS_THIEF        8
 #define CLASS_PSIONICIST   9
-#define CLASS_NONE		  10
-#define CLASS_MOBILE	  11 
-
-/** Total number of available Classes */
-#define NUM_CLASSES	  	  12
+/* Total number of PC Classes */
+#define NUM_PC_CLASSES    10
+/* Mobile Classes */
+#define FIRST_MOB_CLASS   50
+#define CLASS_NONE		  50
+#define CLASS_MOBILE	  51 
+/* Total number of available Classes */
+#define NUM_CLASSES	  	  52
 
 /* Races */
 #define RACE_UNDEFINED   	-1

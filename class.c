@@ -39,13 +39,22 @@ const char *class_abbrevs[] = {
   "Drui",
   "Thie",
   "Psio",
-  "None",
+  "Unsd",   /*  10 */
+  "Unsd", "Unsd", "Unsd", "Unsd", "Unsd", 
+  "Unsd", "Unsd", "Unsd", "Unsd", "Unsd",   /*  20 */
+  "Unsd", "Unsd", "Unsd", "Unsd", "Unsd", 
+  "Unsd", "Unsd", "Unsd", "Unsd", "Unsd",   /*  30 */
+  "Unsd", "Unsd", "Unsd", "Unsd", "Unsd", 
+  "Unsd", "Unsd", "Unsd", "Unsd", "Unsd",   /*  40 */
+  "Unsd", "Unsd", "Unsd", "Unsd", "Unsd", 
+  "Unsd", "Unsd", "Unsd", "Unsd",
+  "None",   /* 50 Start Mob Classes */
   "Mobl",
   "\n"
 };
 
 const char *class_types[] = {
-  "Knight",
+  "Knight",     /*   0 */
   "Cleric",
   "Barbarian",
   "Ranger",
@@ -55,7 +64,16 @@ const char *class_types[] = {
   "Druid",
   "Thief",
   "Psionicist",
-  "None",
+  "Unused",     /*  10 */
+  "Unused", "Unused", "Unused", "Unused", "Unused",
+  "Unused", "Unused", "Unused", "Unused", "Unused", /*  20 */
+  "Unused", "Unused", "Unused", "Unused", "Unused",
+  "Unused", "Unused", "Unused", "Unused", "Unused", /*  30 */
+  "Unused", "Unused", "Unused", "Unused", "Unused",
+  "Unused", "Unused", "Unused", "Unused", "Unused", /*  40 */
+  "Unused", "Unused", "Unused", "Unused", "Unused",
+  "Unused", "Unused", "Unused", "Unused",
+  "None",       /*  50 Start Mob Classes */
   "Mobile",
   "\n"
 };
@@ -71,7 +89,16 @@ const char *classplural_types[] = {
   "Druids",
   "Thieves",
   "Psionicists",
-  "Classless",
+  "Unused",     /*  10 */
+  "Unused", "Unused", "Unused", "Unused", "Unused",
+  "Unused", "Unused", "Unused", "Unused", "Unused", /*  20 */
+  "Unused", "Unused", "Unused", "Unused", "Unused",
+  "Unused", "Unused", "Unused", "Unused", "Unused", /*  30 */
+  "Unused", "Unused", "Unused", "Unused", "Unused",
+  "Unused", "Unused", "Unused", "Unused", "Unused", /*  40 */
+  "Unused", "Unused", "Unused", "Unused", "Unused",
+  "Unused", "Unused", "Unused", "Unused",
+  "Classless",  /*  50 Start Mob Classes */
   "Mobiles",
   "\n"
 };

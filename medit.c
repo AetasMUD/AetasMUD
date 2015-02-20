@@ -348,12 +348,20 @@ void medit_disp_class(struct descriptor_data *d)
   get_char_colors(d->character);
   clear_screen(d);
 
-  write_to_output(d, "\r\n Available npc classes: \r\n\r\n");
+  write_to_output(d, "\r\n Classes available to PCs: \r\n\r\n");
   
-  for (i = 0; i < NUM_CLASSES; i++) {
+  for (i = 0; i < NUM_PC_CLASSES; i++) {
     sprintf(flags, "  %s%2d%s) %s\r\n", grn, i, nrm, class_types[i]);
     write_to_output(d, "%s", flags);
   }
+  
+  write_to_output(d, "\r\n Classes available to NPCs: \r\n\r\n");
+  
+  for (i = FIRST_MOB_CLASS; i < NUM_CLASSES; i++) {
+    sprintf(flags, "  %s%2d%s) %s\r\n", grn, i, nrm, class_types[i]);
+    write_to_output(d, "%s", flags);
+  }
+  
   write_to_output(d, "\r\n Enter class number : ");
 }
 
@@ -366,12 +374,20 @@ void medit_disp_remort(struct descriptor_data *d)
   get_char_colors(d->character);
   clear_screen(d);
 
-  write_to_output(d, "\r\n Available npc classes: \r\n\r\n");
+  write_to_output(d, "\r\n Classes available to PCs: \r\n\r\n");
   
-  for (i = 0; i < NUM_CLASSES; i++) {
+  for (i = 0; i < NUM_PC_CLASSES; i++) {
     sprintf(flags, "  %s%2d%s) %s\r\n", grn, i, nrm, class_types[i]);
     write_to_output(d, "%s", flags);
   }
+  
+  write_to_output(d, "\r\n Classes available to NPCs: \r\n\r\n");
+  
+  for (i = FIRST_MOB_CLASS; i < NUM_CLASSES; i++) {
+    sprintf(flags, "  %s%2d%s) %s\r\n", grn, i, nrm, class_types[i]);
+    write_to_output(d, "%s", flags);
+  }
+  
   write_to_output(d, "\r\n Enter class number : ");
 }
 
@@ -1016,11 +1032,17 @@ void medit_parse(struct descriptor_data *d, char *arg)
     break;
 	
   case MEDIT_CLASS:
-    GET_CLASS(OLC_MOB(d)) = LIMIT(i, 0, NUM_CLASSES -1);
+    if ((i >= 0 && i < NUM_PC_CLASSES) || (i >= FIRST_MOB_CLASS && i < NUM_CLASSES))
+      GET_CLASS(OLC_MOB(d)) = i;
+    else
+      GET_CLASS(OLC_MOB(d)) = FIRST_MOB_CLASS;
     break;
 	
   case MEDIT_REMORT:
-    GET_REMORT(OLC_MOB(d)) = LIMIT(i, 0, NUM_CLASSES -1);
+    if ((i >= 0 && i < NUM_PC_CLASSES) || (i >= FIRST_MOB_CLASS && i < NUM_CLASSES))
+      GET_REMORT(OLC_MOB(d)) = i;
+    else
+      GET_REMORT(OLC_MOB(d)) = FIRST_MOB_CLASS;
     break;
 
   case MEDIT_SEX:
