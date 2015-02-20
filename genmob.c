@@ -334,7 +334,7 @@ int write_mobile_espec(mob_vnum mvnum, struct char_data *mob, FILE *fd)
   if (GET_CLASS(mob) != CLASS_MOBILE)
     fprintf(fd, "Class: %d\n", GET_CLASS(mob));
   if (GET_REMORT(mob) != CLASS_MOBILE)
-    fprintf(fd, "Rmort: %d\n", GET_CLASS(mob));
+    fprintf(fd, "Rmort: %d\n", GET_REMORT(mob));
   if (GET_GEN(mob) != 0)
     fprintf(fd, "Gen: %d\n", GET_GEN(mob));
   if (GET_HEIGHT(mob) != 65)
