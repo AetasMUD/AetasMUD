@@ -455,45 +455,45 @@ static void zedit_disp_menu(struct descriptor_data *d)
     write_to_output(d, "%s%d - %s", nrm, counter++, yel);
     switch (MYCMD.command) {
     case 'M':
-      write_to_output(d, "%sLoad %s [%s%d%s], Max : %d",
+      write_to_output(d, "%sLoad %s [%s%d%s], Max : %d, Chance: %d%%",
               MYCMD.if_flag ? " then " : "",
               mob_proto[MYCMD.arg1].player.short_descr, cyn,
-              mob_index[MYCMD.arg1].vnum, yel, MYCMD.arg2
+              mob_index[MYCMD.arg1].vnum, yel, MYCMD.arg2, MYCMD.arg4
               );
       break;
     case 'G':
-      write_to_output(d, "%sGive it %s [%s%d%s], Max : %d",
+      write_to_output(d, "%sGive it %s [%s%d%s], Max : %d, Chance: %d%%",
 	      MYCMD.if_flag ? " then " : "",
 	      obj_proto[MYCMD.arg1].short_description,
 	      cyn, obj_index[MYCMD.arg1].vnum, yel,
-	      MYCMD.arg2
+	      MYCMD.arg2, MYCMD.arg4
 	      );
       break;
     case 'O':
-      write_to_output(d, "%sLoad %s [%s%d%s], Max : %d",
+      write_to_output(d, "%sLoad %s [%s%d%s], Max : %d, Chance: %d%%",
 	      MYCMD.if_flag ? " then " : "",
 	      obj_proto[MYCMD.arg1].short_description,
 	      cyn, obj_index[MYCMD.arg1].vnum, yel,
-	      MYCMD.arg2
+	      MYCMD.arg2, MYCMD.arg4
 	      );
       break;
     case 'E':
-      write_to_output(d, "%sEquip with %s [%s%d%s], %s, Max : %d",
+      write_to_output(d, "%sEquip with %s [%s%d%s], %s, Max : %d, Chance: %d%%",
 	      MYCMD.if_flag ? " then " : "",
 	      obj_proto[MYCMD.arg1].short_description,
 	      cyn, obj_index[MYCMD.arg1].vnum, yel,
 	      equipment_types[MYCMD.arg3],
-	      MYCMD.arg2
+	      MYCMD.arg2, MYCMD.arg4
 	      );
       break;
     case 'P':
-      write_to_output(d, "%sPut %s [%s%d%s] in %s [%s%d%s], Max : %d",
+      write_to_output(d, "%sPut %s [%s%d%s] in %s [%s%d%s], Max : %d, Chance: %d%%",
 	      MYCMD.if_flag ? " then " : "",
 	      obj_proto[MYCMD.arg1].short_description,
 	      cyn, obj_index[MYCMD.arg1].vnum, yel,
 	      obj_proto[MYCMD.arg3].short_description,
 	      cyn, obj_index[MYCMD.arg3].vnum, yel,
-	      MYCMD.arg2
+	      MYCMD.arg2, MYCMD.arg4
 	      );
       break;
     case 'R':
@@ -682,6 +682,32 @@ static void zedit_disp_arg3(struct descriptor_data *d)
     return;
   }
   OLC_MODE(d) = ZEDIT_ARG3;
+}
+
+ /* Print the appropriate message for the command type for arg4 and set
+    up the input catch clause. */
+void zedit_disp_arg4(struct descriptor_data *d)
+{
+  write_to_output(d, "\r\n");
+  
+  switch (OLC_CMD(d).command) {
+  case 'M':
+  case 'O':
+  case 'E':
+  case 'P':
+  case 'G':
+    write_to_output(d, "Chance of the load occurring (100 is always): ");
+    break;
+  default:
+    /*
+     * We should never get here, but just in case...
+     */
+    cleanup_olc(d, CLEANUP_ALL);
+    mudlog(BRF, LVL_BUILDER, TRUE, "SYSERR: OLC: zedit_disp_arg4(): Help!");
+    write_to_output(d, "Oops...\r\n");
+    return;
+  }
+  OLC_MODE(d) = ZEDIT_ARG4;
 }
 
 /*-------------------------------------------------------------------*/
@@ -1026,11 +1052,11 @@ void zedit_parse(struct descriptor_data *d, char *arg)
     case 'O':
       OLC_CMD(d).arg2 = MIN(MAX_DUPLICATES, atoi(arg));
       OLC_CMD(d).arg3 = real_room(OLC_NUM(d));
-      zedit_disp_menu(d);
+      zedit_disp_arg4(d);
       break;
     case 'G':
       OLC_CMD(d).arg2 = MIN(MAX_DUPLICATES, atoi(arg));
-      zedit_disp_menu(d);
+      zedit_disp_arg4(d);
       break;
     case 'P':
     case 'E':
@@ -1089,26 +1115,26 @@ void zedit_parse(struct descriptor_data *d, char *arg)
       pos = atoi(arg) - 1;
       /* Count number of wear positions. */
       if (pos < 0 || pos >= NUM_WEARS)
-	write_to_output(d, "Try again : ");
+	    write_to_output(d, "Try again : ");
       else {
-	OLC_CMD(d).arg3 = pos;
-	zedit_disp_menu(d);
+	    OLC_CMD(d).arg3 = pos;
+	    zedit_disp_arg4(d);
       }
       break;
     case 'P':
       if ((pos = real_object(atoi(arg))) != NOTHING) {
-	OLC_CMD(d).arg3 = pos;
-	zedit_disp_menu(d);
+	    OLC_CMD(d).arg3 = pos;
+	    zedit_disp_arg4(d);
       } else
-	write_to_output(d, "That object does not exist, try again : ");
+	    write_to_output(d, "That object does not exist, try again : ");
       break;
     case 'D':
       pos = atoi(arg);
       if (pos < 0 || pos > 2)
-	write_to_output(d, "Try again : ");
+	    write_to_output(d, "Try again : ");
       else {
-	OLC_CMD(d).arg3 = pos;
-	zedit_disp_menu(d);
+	    OLC_CMD(d).arg3 = pos;
+	    zedit_disp_menu(d);
       }
       break;
     case 'M':
@@ -1126,6 +1152,39 @@ void zedit_parse(struct descriptor_data *d, char *arg)
     }
     break;
 
+/*-------------------------------------------------------------------*/
+  case ZEDIT_ARG4:
+    /* Parse the input for arg4, and go back to main menu. */
+    if (!isdigit(*arg)) {
+      write_to_output(d, "Must be a numeric value, try again : ");
+      return;
+    }
+    switch (OLC_CMD(d).command) {
+    case 'M':
+    case 'O':
+    case 'G':
+    case 'P':
+    case 'E':
+      pos = atoi(arg);
+      if (pos < 1 || pos > 100)
+        write_to_output(d, "Percentage must be between 1 and 100. Try again : ");
+      else {
+        OLC_CMD(d).arg4 = atoi(arg);
+        zedit_disp_menu(d);
+      }
+      break;
+    case 'R':
+    case 'T':
+    case 'V':
+    default:
+      /* We should never get here, but just in case. */
+      cleanup_olc(d, CLEANUP_ALL);
+      mudlog(BRF, LVL_BUILDER, TRUE, "SYSERR: OLC: zedit_parse(): case ARG4: Ack!");
+      write_to_output(d, "Oops...\r\n");
+      break;
+    }
+    break;
+    
 /*-------------------------------------------------------------------*/
   case ZEDIT_SARG1:
     if (strlen(arg)) {
