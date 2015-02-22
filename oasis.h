@@ -229,29 +229,30 @@ extern const char *nrm, *grn, *cyn, *yel;
 #define REDIT_COPY			18
 
 /* Submodes of ZEDIT connectedness. */
-#define ZEDIT_MAIN_MENU              	0
-#define ZEDIT_DELETE_ENTRY		1
-#define ZEDIT_NEW_ENTRY			2
-#define ZEDIT_CHANGE_ENTRY		3
-#define ZEDIT_COMMAND_TYPE		4
-#define ZEDIT_IF_FLAG			5
-#define ZEDIT_ARG1			6
-#define ZEDIT_ARG2			7
-#define ZEDIT_ARG3			8
-#define ZEDIT_ZONE_NAME			9
-#define ZEDIT_ZONE_LIFE			10
-#define ZEDIT_ZONE_BOT			11
-#define ZEDIT_ZONE_TOP			12
-#define ZEDIT_ZONE_RESET		13
-#define ZEDIT_CONFIRM_SAVESTRING	14
-#define ZEDIT_ZONE_BUILDERS		15
-#define ZEDIT_SARG1             20
-#define ZEDIT_SARG2             21
-#define ZEDIT_ZONE_FLAGS        22
-#define ZEDIT_LEVELS            23
-#define ZEDIT_LEV_MIN           24
-#define ZEDIT_LEV_MAX           25
-#define ZEDIT_ZONE_CLAIM        26
+#define ZEDIT_MAIN_MENU            0
+#define ZEDIT_DELETE_ENTRY		   1
+#define ZEDIT_NEW_ENTRY			   2
+#define ZEDIT_CHANGE_ENTRY		   3
+#define ZEDIT_COMMAND_TYPE		   4
+#define ZEDIT_IF_FLAG              5
+#define ZEDIT_ARG1			       6
+#define ZEDIT_ARG2			       7
+#define ZEDIT_ARG3			       8
+#define ZEDIT_ARG4			       9
+#define ZEDIT_ZONE_NAME			  10
+#define ZEDIT_ZONE_LIFE			  11
+#define ZEDIT_ZONE_BOT			  12
+#define ZEDIT_ZONE_TOP			  13
+#define ZEDIT_ZONE_RESET		  14
+#define ZEDIT_CONFIRM_SAVESTRING  15
+#define ZEDIT_ZONE_BUILDERS		  16
+#define ZEDIT_SARG1               20
+#define ZEDIT_SARG2               21
+#define ZEDIT_ZONE_FLAGS          22
+#define ZEDIT_LEVELS              23
+#define ZEDIT_LEV_MIN             24
+#define ZEDIT_LEV_MAX             25
+#define ZEDIT_ZONE_CLAIM          26
 
 /* Submodes of MEDIT connectedness. */
 #define MEDIT_MAIN_MENU            	0
