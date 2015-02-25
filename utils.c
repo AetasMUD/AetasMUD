@@ -65,6 +65,18 @@ int dice(int num, int size)
   return (sum);
 }
 
+/** Very simple function to return a number with either the range added
+ *  or subtracted from it. Does not return a negative number */
+int rand_value(int original, int range)
+{
+  /* 50/50 chance at adding or subtracting */
+  if (rand_number(0,1))
+    return (original + rand_number(0, range));
+  else
+    /* 0 is the lowest number returned */
+    return (MAX(0, original + rand_number(-range, 0)));
+}
+
 /** Return the smaller number. Original note: Be wary of sign issues with this.
  * @param a The first number.
  * @param b The second number.

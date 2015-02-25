@@ -154,6 +154,7 @@ static void free_extra_descriptions(struct extra_descr_data *edesc);
 static bitvector_t asciiflag_conv_aff(char *flag);
 static int hsort(const void *a, const void *b);
 void strip_car(char *string);
+void randomize_object(struct obj_data *obj);
 
 
 /* this is to strip the newline character at end of mob long_desc */
@@ -2230,8 +2231,8 @@ static void load_zones(FILE *fl, char *zonename)
         ZCMD.sarg2 = strdup(t2);
 	  }
     } else {
-      if (sscanf(ptr, " %d %d %d %d %d ", &tmp, &ZCMD.arg1, &ZCMD.arg2,
-		 &ZCMD.arg3, &ZCMD.arg4) != 5) 
+      if (sscanf(ptr, " %d %d %d %d %d %d ", &tmp, &ZCMD.arg1, &ZCMD.arg2,
+		 &ZCMD.arg3, &ZCMD.arg4, &ZCMD.arg5) != 6) 
 	    error = 1;
     }
 
@@ -2611,6 +2612,46 @@ static void log_zone_error(zone_rnum zone, int cmd_no, const char *message)
 	ZCMD.command, zone_table[zone].number, ZCMD.line);
 }
 
+/* this is used in reset_zone() to randomize objects flagged for such */
+void randomize_object(struct obj_data *obj)
+{
+  int i;
+  
+  /* randomize applies */
+  for (i = 0; i < MAX_OBJ_AFFECT; i++)
+    if (obj->affected[i].location != APPLY_NONE
+        && obj->affected[i].location != APPLY_CLASS
+        && obj->affected[i].location != APPLY_RACE) {
+      if (obj->affected[i].modifier > 0)
+        obj->affected[i].modifier = rand_number(0, obj->affected[i].modifier);
+      else if (obj->affected[i].modifier < 0)
+        obj->affected[i].modifier = -rand_number(0, -obj->affected[i].modifier);   
+    }
+    
+  /* randomize affects */
+  for (i = 0; i < NUM_AFF_FLAGS; i++)
+    if (OBJAFF_FLAGGED(obj, i))
+      if (!rand_number(0, 24))
+        REMOVE_BIT_AR(GET_OBJ_AFFECT(obj), i);
+  
+  /* randomize values */
+  switch (GET_OBJ_TYPE(obj)) {
+    case ITEM_WEAPON:
+      /* for weapons we adjust the number and size of the damage dice
+         range: zero to one quarter of the original value added or subtracted */
+      GET_OBJ_VAL(obj, 1) = rand_value(GET_OBJ_VAL(obj, 1), (GET_OBJ_VAL(obj, 1) / 4));
+      GET_OBJ_VAL(obj, 2) = rand_value(GET_OBJ_VAL(obj, 2), (GET_OBJ_VAL(obj, 2) / 4));
+      break;
+    case ITEM_ARMOR:
+    case ITEM_CONTAINER:
+    case ITEM_MONEY:
+      /* for armor, containers, and money we adjust the AC, max contains, and amount
+         range: zero to one quarter of the original value added or subtracted */
+      GET_OBJ_VAL(obj, 0) = rand_value(GET_OBJ_VAL(obj, 0), (GET_OBJ_VAL(obj, 0) / 4));
+      break;
+  }
+}
+
 #define ZONE_ERROR(message) \
 	{ log_zone_error(zone, cmd_no, message); last_cmd = 0; }
 
@@ -2656,6 +2697,8 @@ void reset_zone(zone_rnum zone)
           (rand_number(1, 100) <= ZCMD.arg4)) {
 	    if (ZCMD.arg3 != NOWHERE) {
 	      obj = read_object(ZCMD.arg1, REAL);
+          if (ZCMD.arg5) /* object set for random loads? */
+            randomize_object(obj);
 	      obj_to_room(obj, ZCMD.arg3);
 	      last_cmd = 1;
           load_otrigger(obj);
@@ -2680,6 +2723,8 @@ void reset_zone(zone_rnum zone)
 	      ZCMD.command = '*';
 	      break;
 	    }
+        if (ZCMD.arg5) /* object set for random loads? */
+            randomize_object(obj);
 	    obj_to_obj(obj, obj_to);
 	    last_cmd = 1;
         load_otrigger(obj);
@@ -2700,6 +2745,8 @@ void reset_zone(zone_rnum zone)
       if ((obj_index[ZCMD.arg1].number < ZCMD.arg2) && 
           (rand_number(1, 100) <= ZCMD.arg4)) {
 	    obj = read_object(ZCMD.arg1, REAL);
+        if (ZCMD.arg5) /* object set for random loads? */
+            randomize_object(obj);
 	    obj_to_char(obj, mob);
 	    last_cmd = 1;
         load_otrigger(obj);
@@ -2725,6 +2772,8 @@ void reset_zone(zone_rnum zone)
 	      ZONE_ERROR(error);
 	    } else {
 	      obj = read_object(ZCMD.arg1, REAL);
+          if (ZCMD.arg5) /* object set for random loads? */
+            randomize_object(obj);
           IN_ROOM(obj) = IN_ROOM(mob);
           load_otrigger(obj);
           if (wear_otrigger(obj, mob, ZCMD.arg3)) {

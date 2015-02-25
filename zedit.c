@@ -34,6 +34,8 @@ static void zedit_disp_comtype(struct descriptor_data *d);
 static void zedit_disp_arg1(struct descriptor_data *d);
 static void zedit_disp_arg2(struct descriptor_data *d);
 static void zedit_disp_arg3(struct descriptor_data *d);
+static void zedit_disp_arg4(struct descriptor_data *d);
+static void zedit_disp_arg5(struct descriptor_data *d);
 
 ACMD(do_oasis_zedit)
 {
@@ -462,38 +464,42 @@ static void zedit_disp_menu(struct descriptor_data *d)
               );
       break;
     case 'G':
-      write_to_output(d, "%sGive it %s [%s%d%s], Max : %d, Chance: %d%%",
+      write_to_output(d, "%sGive it %s [%s%d%s], Max : %d, Chance: %d%%, Random: %s",
 	      MYCMD.if_flag ? " then " : "",
 	      obj_proto[MYCMD.arg1].short_description,
 	      cyn, obj_index[MYCMD.arg1].vnum, yel,
-	      MYCMD.arg2, MYCMD.arg4
+	      MYCMD.arg2, MYCMD.arg4,
+          MYCMD.arg5 ? "Yes" : "No"
 	      );
       break;
     case 'O':
-      write_to_output(d, "%sLoad %s [%s%d%s], Max : %d, Chance: %d%%",
+      write_to_output(d, "%sLoad %s [%s%d%s], Max : %d, Chance: %d%%, Random: %s",
 	      MYCMD.if_flag ? " then " : "",
 	      obj_proto[MYCMD.arg1].short_description,
 	      cyn, obj_index[MYCMD.arg1].vnum, yel,
-	      MYCMD.arg2, MYCMD.arg4
+	      MYCMD.arg2, MYCMD.arg4,
+          MYCMD.arg5 ? "Yes" : "No"
 	      );
       break;
     case 'E':
-      write_to_output(d, "%sEquip with %s [%s%d%s], %s, Max : %d, Chance: %d%%",
+      write_to_output(d, "%sEquip with %s [%s%d%s], %s, Max : %d, Chance: %d%%, Random: %s",
 	      MYCMD.if_flag ? " then " : "",
 	      obj_proto[MYCMD.arg1].short_description,
 	      cyn, obj_index[MYCMD.arg1].vnum, yel,
 	      equipment_types[MYCMD.arg3],
-	      MYCMD.arg2, MYCMD.arg4
+	      MYCMD.arg2, MYCMD.arg4,
+          MYCMD.arg5 ? "Yes" : "No"
 	      );
       break;
     case 'P':
-      write_to_output(d, "%sPut %s [%s%d%s] in %s [%s%d%s], Max : %d, Chance: %d%%",
+      write_to_output(d, "%sPut %s [%s%d%s] in %s [%s%d%s], Max : %d, Chance: %d%%, Random: %s",
 	      MYCMD.if_flag ? " then " : "",
 	      obj_proto[MYCMD.arg1].short_description,
 	      cyn, obj_index[MYCMD.arg1].vnum, yel,
 	      obj_proto[MYCMD.arg3].short_description,
 	      cyn, obj_index[MYCMD.arg3].vnum, yel,
-	      MYCMD.arg2, MYCMD.arg4
+	      MYCMD.arg2, MYCMD.arg4,
+          MYCMD.arg5 ? "Yes" : "No"
 	      );
       break;
     case 'R':
@@ -684,9 +690,9 @@ static void zedit_disp_arg3(struct descriptor_data *d)
   OLC_MODE(d) = ZEDIT_ARG3;
 }
 
- /* Print the appropriate message for the command type for arg4 and set
-    up the input catch clause. */
-void zedit_disp_arg4(struct descriptor_data *d)
+/* Print the appropriate message for the command type for arg4 and set
+   up the input catch clause. */
+static void zedit_disp_arg4(struct descriptor_data *d)
 {
   write_to_output(d, "\r\n");
   
@@ -698,16 +704,46 @@ void zedit_disp_arg4(struct descriptor_data *d)
   case 'G':
     write_to_output(d, "Chance of the load occurring (100 is always): ");
     break;
+  case 'D':
+  case 'V':
+  case 'T':
+  case 'R':
   default:
-    /*
-     * We should never get here, but just in case...
-     */
+    /* We should never get here, just in case. */
     cleanup_olc(d, CLEANUP_ALL);
     mudlog(BRF, LVL_BUILDER, TRUE, "SYSERR: OLC: zedit_disp_arg4(): Help!");
     write_to_output(d, "Oops...\r\n");
     return;
   }
   OLC_MODE(d) = ZEDIT_ARG4;
+}
+
+/* Print the appropriate message for the command type for arg5 and set
+   up the input catch clause. */
+static void zedit_disp_arg5(struct descriptor_data *d)
+{
+  write_to_output(d, "\r\n");
+  
+  switch (OLC_CMD(d).command) {
+  case 'O':
+  case 'E':
+  case 'P':
+  case 'G':
+    write_to_output(d, "Randomize object stats? (Y or N): ");
+    break;
+  case 'M':
+  case 'D':
+  case 'V':
+  case 'T':
+  case 'R':
+  default:
+    /* We should never get here, just in case. */
+    cleanup_olc(d, CLEANUP_ALL);
+    mudlog(BRF, LVL_BUILDER, TRUE, "SYSERR: OLC: zedit_disp_arg5(): Help!");
+    write_to_output(d, "Oops...\r\n");
+    return;
+  }
+  OLC_MODE(d) = ZEDIT_ARG5;
 }
 
 /*-------------------------------------------------------------------*/
@@ -1161,6 +1197,14 @@ void zedit_parse(struct descriptor_data *d, char *arg)
     }
     switch (OLC_CMD(d).command) {
     case 'M':
+      pos = atoi(arg);
+      if (pos < 1 || pos > 100)
+        write_to_output(d, "Percentage must be between 1 and 100. Try again : ");
+      else {
+        OLC_CMD(d).arg4 = atoi(arg);
+        zedit_disp_menu(d);
+      }
+      break;
     case 'O':
     case 'G':
     case 'P':
@@ -1170,7 +1214,7 @@ void zedit_parse(struct descriptor_data *d, char *arg)
         write_to_output(d, "Percentage must be between 1 and 100. Try again : ");
       else {
         OLC_CMD(d).arg4 = atoi(arg);
-        zedit_disp_menu(d);
+        zedit_disp_arg5(d);
       }
       break;
     case 'R':
@@ -1183,6 +1227,25 @@ void zedit_parse(struct descriptor_data *d, char *arg)
       write_to_output(d, "Oops...\r\n");
       break;
     }
+    break;
+
+/*-------------------------------------------------------------------*/
+  case ZEDIT_ARG5:
+    /* Parse the input for the randomize object flag, and goto next quiz. */
+    switch (*arg) {
+    case 'y':
+    case 'Y':
+      OLC_CMD(d).arg5 = 1;
+      break;
+    case 'n':
+    case 'N':
+      OLC_CMD(d).arg5 = 0;
+      break;
+    default:
+      write_to_output(d, "Try again : ");
+      return;
+    }
+    zedit_disp_menu(d);
     break;
     
 /*-------------------------------------------------------------------*/
