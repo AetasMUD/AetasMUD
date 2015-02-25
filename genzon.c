@@ -326,8 +326,8 @@ void remove_room_zone_commands(zone_rnum zone, room_rnum room_num)
  * field is also there. */
 int save_zone(zone_rnum zone_num)
 {
-  int arg1 = -1, arg2 = -1, arg3 = -1, arg4 = -1, flag_tot = 0;
-  int subcmd, i;
+  int arg1 = -1, arg2 = -1, arg3 = -1, arg4 = -1, arg5 = -1;
+  int subcmd, i, flag_tot = 0;;
   char fname[128], oldname[128];
   const char *comment = NULL;
   FILE *zfile;
@@ -398,17 +398,17 @@ int save_zone(zone_rnum zone_num)
 
 	/* Handy Quick Reference Chart for Zone Values.
 	 *
-	 * Field #1    Field #3   Field #4  Field #5
-	 * -------------------------------------------------
-	 * M (Mobile)  Mob-Vnum   Wld-Max   Room-Vnum
-	 * O (Object)  Obj-Vnum   Wld-Max   Room-Vnum
-	 * G (Give)    Obj-Vnum   Wld-Max   Unused
-	 * E (Equip)   Obj-Vnum   Wld-Max   EQ-Position
-	 * P (Put)     Obj-Vnum   Wld-Max   Target-Obj-Vnum
-	 * D (Door)    Room-Vnum  Door-Dir  Door-State
-	 * R (Remove)  Room-Vnum  Obj-Vnum  Unused
-         * T (Trigger) Trig-type  Trig-Vnum Room-Vnum
-         * V (var)     Trig-type  Context   Room-Vnum Varname Value
+	 * Field #1    Field #3   Field #4  Field #5                 Field #6     Field #7
+	 * -------------------------------------------------------------------------------
+	 * M (Mobile)  Mob-Vnum   Wld-Max   Room-Vnum                Percentage   Unused
+	 * O (Object)  Obj-Vnum   Wld-Max   Room-Vnum                Percentage   Random
+	 * G (Give)    Obj-Vnum   Wld-Max   Unused                   Percentage   Random
+	 * E (Equip)   Obj-Vnum   Wld-Max   EQ-Position              Percentage   Random
+	 * P (Put)     Obj-Vnum   Wld-Max   Target-Obj-Vnum          Percentage   Random
+	 * D (Door)    Room-Vnum  Door-Dir  Door-State               Unused       Unused
+	 * R (Remove)  Room-Vnum  Obj-Vnum  Unused                   Unused       Unused
+     * T (Trigger) Trig-type  Trig-Vnum Room-Vnum                Unused       Unused
+     * V (var)     Trig-type  Context   Room-Vnum Varname Value  Unused       Unused
 	 * ------------------------------------------------- */
 
   for (subcmd = 0; ZCMD(zone_num, subcmd).command != 'S'; subcmd++) {
@@ -418,6 +418,7 @@ int save_zone(zone_rnum zone_num)
       arg2 = ZCMD(zone_num, subcmd).arg2;
       arg3 = world[ZCMD(zone_num, subcmd).arg3].number;
       arg4 = ZCMD(zone_num, subcmd).arg4;
+      arg5 = -1;
       comment = mob_proto[ZCMD(zone_num, subcmd).arg1].player.short_descr;
       break;
     case 'O':
@@ -425,6 +426,7 @@ int save_zone(zone_rnum zone_num)
       arg2 = ZCMD(zone_num, subcmd).arg2;
       arg3 = world[ZCMD(zone_num, subcmd).arg3].number;
       arg4 = ZCMD(zone_num, subcmd).arg4;
+      arg5 = ZCMD(zone_num, subcmd).arg5;
       comment = obj_proto[ZCMD(zone_num, subcmd).arg1].short_description;
       break;
     case 'G':
@@ -432,6 +434,7 @@ int save_zone(zone_rnum zone_num)
       arg2 = ZCMD(zone_num, subcmd).arg2;
       arg3 = -1;
       arg4 = ZCMD(zone_num, subcmd).arg4;
+      arg5 = ZCMD(zone_num, subcmd).arg5;
       comment = obj_proto[ZCMD(zone_num, subcmd).arg1].short_description;
       break;
     case 'E':
@@ -439,6 +442,7 @@ int save_zone(zone_rnum zone_num)
       arg2 = ZCMD(zone_num, subcmd).arg2;
       arg3 = ZCMD(zone_num, subcmd).arg3;
       arg4 = ZCMD(zone_num, subcmd).arg4;
+      arg5 = ZCMD(zone_num, subcmd).arg5;
       comment = obj_proto[ZCMD(zone_num, subcmd).arg1].short_description;
       break;
     case 'P':
@@ -446,6 +450,7 @@ int save_zone(zone_rnum zone_num)
       arg2 = ZCMD(zone_num, subcmd).arg2;
       arg3 = obj_index[ZCMD(zone_num, subcmd).arg3].vnum;
       arg4 = ZCMD(zone_num, subcmd).arg4;
+      arg5 = ZCMD(zone_num, subcmd).arg5;
       comment = obj_proto[ZCMD(zone_num, subcmd).arg1].short_description;
       break;
     case 'D':
@@ -453,6 +458,7 @@ int save_zone(zone_rnum zone_num)
       arg2 = ZCMD(zone_num, subcmd).arg2;
       arg3 = ZCMD(zone_num, subcmd).arg3;
       arg4 = -1;
+      arg5 = -1;
       comment = world[ZCMD(zone_num, subcmd).arg1].name;
       break;
     case 'R':
@@ -461,12 +467,14 @@ int save_zone(zone_rnum zone_num)
       comment = obj_proto[ZCMD(zone_num, subcmd).arg2].short_description;
       arg3 = -1;
       arg4 = -1;
+      arg5 = -1;
       break;
     case 'T':
       arg1 = ZCMD(zone_num, subcmd).arg1; /* trigger type */
       arg2 = trig_index[ZCMD(zone_num, subcmd).arg2]->vnum; /* trigger vnum */
       arg3 = world[ZCMD(zone_num, subcmd).arg3].number; /* room num */
       arg4 = -1;
+      arg5 = -1;
       comment = GET_TRIG_NAME(trig_index[real_trigger(arg2)]->proto);
       break;
     case 'V':
@@ -474,6 +482,7 @@ int save_zone(zone_rnum zone_num)
       arg2 = ZCMD(zone_num, subcmd).arg2; /* context */
       arg3 = world[ZCMD(zone_num, subcmd).arg3].number;
       arg4 = -1;
+      arg5 = -1;
       break;
     case '*':
       /* Invalid commands are replaced with '*' - Ignore them. */
@@ -483,11 +492,11 @@ int save_zone(zone_rnum zone_num)
       continue;
     }
     if (ZCMD(zone_num, subcmd).command != 'V')
-      fprintf(zfile, "%c %d %d %d %d %d \t(%s)\n",
-		ZCMD(zone_num, subcmd).command, ZCMD(zone_num, subcmd).if_flag, arg1, arg2, arg3, arg4, comment);
+      fprintf(zfile, "%c %d %d %d %d %d %d \t(%s)\n",
+		ZCMD(zone_num, subcmd).command, ZCMD(zone_num, subcmd).if_flag, arg1, arg2, arg3, arg4, arg5, comment);
     else
-      fprintf(zfile, "%c %d %d %d %d %d %s %s\n",
-              ZCMD(zone_num, subcmd).command, ZCMD(zone_num, subcmd).if_flag, arg1, arg2, arg3, arg4,
+      fprintf(zfile, "%c %d %d %d %d %d %d %s %s\n",
+              ZCMD(zone_num, subcmd).command, ZCMD(zone_num, subcmd).if_flag, arg1, arg2, arg3, arg4, arg5,
               ZCMD(zone_num, subcmd).sarg1, ZCMD(zone_num, subcmd).sarg2);
   }
   fputs("S\n$\n", zfile);

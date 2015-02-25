@@ -156,6 +156,7 @@ struct reset_com {
    int	arg2;		/* Arguments to the command             */
    int	arg3;		/*                                      */
    int	arg4;		/*                                      */
+   int	arg5;		/*                                      */
    int line;		/* line number this command appears on  */
    char *sarg1;		/* string argument                      */
    char *sarg2;		/* string argument                      */
