@@ -246,7 +246,8 @@ extern const char *nrm, *grn, *cyn, *yel;
 #define ZEDIT_ZONE_TOP			  14
 #define ZEDIT_ZONE_RESET		  15
 #define ZEDIT_CONFIRM_SAVESTRING  16
-#define ZEDIT_ZONE_BUILDERS		  17
+#define ZEDIT_ZONE_AUTHORS		  17
+#define ZEDIT_ZONE_BUILDERS		  18
 #define ZEDIT_SARG1               20
 #define ZEDIT_SARG2               21
 #define ZEDIT_ZONE_FLAGS          22

@@ -194,6 +194,7 @@ rznum = i;
   /* Ok, insert the new zone here. */
   zone->name = strdup("New Zone");
   zone->number = vzone_num;
+  zone->authors = strdup("None");
   zone->builders = strdup("None");
   zone->bot = bottom;
   zone->top = top;
@@ -359,8 +360,11 @@ int save_zone(zone_rnum zone_num)
     fprintf(zfile, "#%d\n"
                    "%s~\n"
                    "%s~\n"
+                   "%s~\n"
                    "%d %d %d %d\n",
            zone_table[zone_num].number,
+          (zone_table[zone_num].authors && *zone_table[zone_num].authors)
+                ? zone_table[zone_num].authors : "None.",
           (zone_table[zone_num].builders && *zone_table[zone_num].builders)
                 ? zone_table[zone_num].builders : "None.",
           (zone_table[zone_num].name && *zone_table[zone_num].name)
@@ -380,8 +384,11 @@ int save_zone(zone_rnum zone_num)
     fprintf(zfile, "#%d\n"
                    "%s~\n"
                    "%s~\n"
+                   "%s~\n"
                    "%d %d %d %d %s %s %s %s %d %d\n",       /* New tbaMUD data line */
            zone_table[zone_num].number,
+          (zone_table[zone_num].authors && *zone_table[zone_num].authors)
+                ? zone_table[zone_num].authors : "None.",
           (zone_table[zone_num].builders && *zone_table[zone_num].builders)
                 ? zone_table[zone_num].builders : "None.",
           (zone_table[zone_num].name && *zone_table[zone_num].name)

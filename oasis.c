@@ -116,6 +116,8 @@ void cleanup_olc(struct descriptor_data *d, byte cleanup_type)
 
   /* Check for a zone.  cleanup_type is irrelevant here, free() everything. */
   if (OLC_ZONE(d)) {
+    if (OLC_ZONE(d)->authors)
+      free(OLC_ZONE(d)->authors);
     if (OLC_ZONE(d)->builders)
       free(OLC_ZONE(d)->builders);
     if (OLC_ZONE(d)->name)
@@ -291,7 +293,7 @@ int can_edit_zone(struct char_data *ch, zone_rnum rnum)
   if (GET_LEVEL(ch) >= LVL_GRGOD && PRF_FLAGGED(ch, PRF_WORLD_WRITE))
     return (TRUE);
 
-  /* always access if a player helped build the zone in the first place */
+  /* always access if on the builders list */
   if (rnum != HEDIT_PERMISSION && rnum != AEDIT_PERMISSION)
     if (is_name(GET_NAME(ch), zone_table[rnum].builders))
       return (TRUE);

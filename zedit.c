@@ -199,6 +199,8 @@ static void zedit_setup(struct descriptor_data *d, int room_num)
 
   /* Copy all the zone header information over. */
   zone->name = strdup(zone_table[OLC_ZNUM(d)].name);
+  if (zone_table[OLC_ZNUM(d)].authors)
+    zone->authors = strdup(zone_table[OLC_ZNUM(d)].authors);
   if (zone_table[OLC_ZNUM(d)].builders)
     zone->builders = strdup(zone_table[OLC_ZNUM(d)].builders);
   zone->lifespan = zone_table[OLC_ZNUM(d)].lifespan;
@@ -340,9 +342,11 @@ static void zedit_save_internally(struct descriptor_data *d)
   /* Finally, if zone headers have been changed, copy over */
   if (OLC_ZONE(d)->number) {
     free(zone_table[OLC_ZNUM(d)].name);
+    free(zone_table[OLC_ZNUM(d)].authors);
     free(zone_table[OLC_ZNUM(d)].builders);
 
     zone_table[OLC_ZNUM(d)].name = strdup(OLC_ZONE(d)->name);
+    zone_table[OLC_ZNUM(d)].authors = strdup(OLC_ZONE(d)->authors);
     zone_table[OLC_ZNUM(d)].builders = strdup(OLC_ZONE(d)->builders);
     zone_table[OLC_ZNUM(d)].bot = OLC_ZONE(d)->bot;
     zone_table[OLC_ZNUM(d)].top = OLC_ZONE(d)->top;
@@ -427,8 +431,9 @@ static void zedit_disp_menu(struct descriptor_data *d)
   /* Menu header */
   send_to_char(d->character,
 	  "Room number: %s%d%s		Room zone: %s%d\r\n"
-	  "%s1%s) Builders       : %s%s\r\n"
-	  "%sZ%s) Zone name      : %s%s\r\n"
+      "%sZ%s) Zone name      : %s%s\r\n"
+      "%s1%s) Authors        : %s%s\r\n"
+	  "%s2%s) Builders       : %s%s\r\n"
 	  "%sL%s) Lifespan       : %s%d minutes\r\n"
 	  "%sB%s) Bottom of zone : %s%d\r\n"
 	  "%sT%s) Top of zone    : %s%d\r\n"
@@ -439,8 +444,9 @@ static void zedit_disp_menu(struct descriptor_data *d)
 
 	  cyn, OLC_NUM(d), nrm,
 	  cyn, zone_table[OLC_ZNUM(d)].number,
+      grn, nrm, yel, OLC_ZONE(d)->name ? OLC_ZONE(d)->name : "<NONE!>",
+      grn, nrm, yel, OLC_ZONE(d)->authors ? OLC_ZONE(d)->authors : "None.",
 	  grn, nrm, yel, OLC_ZONE(d)->builders ? OLC_ZONE(d)->builders : "None.",
-	  grn, nrm, yel, OLC_ZONE(d)->name ? OLC_ZONE(d)->name : "<NONE!>",
 	  grn, nrm, yel, OLC_ZONE(d)->lifespan,
 	  grn, nrm, yel, OLC_ZONE(d)->bot,
 	  grn, nrm, yel, OLC_ZONE(d)->top,
@@ -457,14 +463,14 @@ static void zedit_disp_menu(struct descriptor_data *d)
     write_to_output(d, "%s%d - %s", nrm, counter++, yel);
     switch (MYCMD.command) {
     case 'M':
-      write_to_output(d, "%sLoad %s [%s%d%s], Max : %d, Chance: %d%%",
+      write_to_output(d, "%sLoad %s [%s%d%s], Max: %d, Chance: %d%%",
               MYCMD.if_flag ? " then " : "",
               mob_proto[MYCMD.arg1].player.short_descr, cyn,
               mob_index[MYCMD.arg1].vnum, yel, MYCMD.arg2, MYCMD.arg4
               );
       break;
     case 'G':
-      write_to_output(d, "%sGive it %s [%s%d%s], Max : %d, Chance: %d%%, Random: %s",
+      write_to_output(d, "%sGive it %s [%s%d%s], Max: %d, Chance: %d%%, Random: %s",
 	      MYCMD.if_flag ? " then " : "",
 	      obj_proto[MYCMD.arg1].short_description,
 	      cyn, obj_index[MYCMD.arg1].vnum, yel,
@@ -473,7 +479,7 @@ static void zedit_disp_menu(struct descriptor_data *d)
 	      );
       break;
     case 'O':
-      write_to_output(d, "%sLoad %s [%s%d%s], Max : %d, Chance: %d%%, Random: %s",
+      write_to_output(d, "%sLoad %s [%s%d%s], Max: %d, Chance: %d%%, Random: %s",
 	      MYCMD.if_flag ? " then " : "",
 	      obj_proto[MYCMD.arg1].short_description,
 	      cyn, obj_index[MYCMD.arg1].vnum, yel,
@@ -482,7 +488,7 @@ static void zedit_disp_menu(struct descriptor_data *d)
 	      );
       break;
     case 'E':
-      write_to_output(d, "%sEquip with %s [%s%d%s], %s, Max : %d, Chance: %d%%, Random: %s",
+      write_to_output(d, "%sEquip with %s [%s%d%s], %s, Max: %d, Chance: %d%%, Random: %s",
 	      MYCMD.if_flag ? " then " : "",
 	      obj_proto[MYCMD.arg1].short_description,
 	      cyn, obj_index[MYCMD.arg1].vnum, yel,
@@ -492,7 +498,7 @@ static void zedit_disp_menu(struct descriptor_data *d)
 	      );
       break;
     case 'P':
-      write_to_output(d, "%sPut %s [%s%d%s] in %s [%s%d%s], Max : %d, Chance: %d%%, Random: %s",
+      write_to_output(d, "%sPut %s [%s%d%s] in %s [%s%d%s], Max: %d, Chance: %d%%, Random: %s",
 	      MYCMD.if_flag ? " then " : "",
 	      obj_proto[MYCMD.arg1].short_description,
 	      cyn, obj_index[MYCMD.arg1].vnum, yel,
@@ -848,6 +854,11 @@ void zedit_parse(struct descriptor_data *d, char *arg)
       OLC_MODE(d) = ZEDIT_ZONE_NAME;
       break;
     case '1':
+      /* Edit zone authors. */
+      write_to_output(d, "Enter new authors list : ");
+      OLC_MODE(d) = ZEDIT_ZONE_AUTHORS;
+      break;
+    case '2':
       /* Edit zone builders. */
       write_to_output(d, "Enter new builders list : ");
       OLC_MODE(d) = ZEDIT_ZONE_BUILDERS;
@@ -1276,6 +1287,20 @@ void zedit_parse(struct descriptor_data *d, char *arg)
       else
         log("SYSERR: OLC: ZEDIT_ZONE_NAME: no name to free!");
       OLC_ZONE(d)->name = strdup(arg);
+      OLC_ZONE(d)->number = 1;
+    }
+    zedit_disp_menu(d);
+    break;
+
+/*-------------------------------------------------------------------*/
+  case ZEDIT_ZONE_AUTHORS:
+    /* Add new authors list and return to main menu. */
+    if (genolc_checkstring(d, arg)) {
+      if (OLC_ZONE(d)->authors)
+        free(OLC_ZONE(d)->authors);
+      else
+        log("SYSERR: OLC: ZEDIT_ZONE_AUTHORS: no authors list to free!");
+      OLC_ZONE(d)->authors = strdup(arg);
       OLC_ZONE(d)->number = 1;
     }
     zedit_disp_menu(d);

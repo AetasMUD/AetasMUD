@@ -393,7 +393,7 @@ static int export_info_file(zone_rnum zrnum)
   }
 
   fprintf(info_file, "The files accompanying this info file contain the area: %s\n", zone_table[zrnum].name);
-  fprintf(info_file, "It was written by: %s.\n\n", zone_table[zrnum].builders);
+  fprintf(info_file, "It was written by: %s.\n\n", zone_table[zrnum].authors);
   fprintf(info_file, "The author has given permission to distribute the area, provided credit is\n");
   fprintf(info_file, "given. The area may be modified as you see fit, except you are not allowed to\n");
   fprintf(info_file, "remove the builder name or credits.\n\n");
@@ -627,8 +627,8 @@ static int export_save_zone(zone_rnum zrnum)
                  "%s~\n"
                  "%s~\n"
                  "QQ%02d QQ%02d %d %d\n",
-	  (zone_table[zrnum].builders && *zone_table[zrnum].builders)
-		? zone_table[zrnum].builders : "None.",
+	  (zone_table[zrnum].authors && *zone_table[zrnum].authors)
+		? zone_table[zrnum].authors : "None.",
 	  (zone_table[zrnum].name && *zone_table[zrnum].name)
 		? zone_table[zrnum].name : "undefined",
           genolc_zone_bottom(zrnum)%100,
