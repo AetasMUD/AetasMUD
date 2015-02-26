@@ -2473,6 +2473,11 @@ struct char_data *read_mobile(mob_vnum nr, int type) /* and mob_rnum */
   mob->player.time.birth = time(0);
   mob->player.time.played = 0;
   mob->player.time.logon = time(0);
+  
+  /* randomize mob gold
+     range: zero to .15 of the original value added or subtracted */
+  if (GET_GOLD(mob) > 0)
+    GET_GOLD(mob) = rand_value(GET_GOLD(mob), GET_GOLD(mob) * 0.15);
 
   mob_index[i].number++;
 
