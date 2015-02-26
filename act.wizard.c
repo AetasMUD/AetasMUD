@@ -2462,7 +2462,7 @@ static size_t print_zone_to_buf(char *bufptr, size_t left, zone_rnum zone, int l
 
     tmp = snprintf(bufptr, left,
 	"%3d %-30.30s%s By: %-10.10s%s Age: %3d; Reset: %3d (%s); Range: %5d-%5d\r\n",
-	zone_table[zone].number, zone_table[zone].name, KNRM, zone_table[zone].builders, KNRM,
+	zone_table[zone].number, zone_table[zone].name, KNRM, zone_table[zone].authors, KNRM,
 	zone_table[zone].age, zone_table[zone].lifespan,
         zone_table[zone].reset_mode ? ((zone_table[zone].reset_mode == 1) ? "Reset when no players are in zone" : "Normal reset") : "Never reset",
 	zone_table[zone].bot, zone_table[zone].top);
@@ -2511,7 +2511,7 @@ static size_t print_zone_to_buf(char *bufptr, size_t left, zone_rnum zone, int l
     return snprintf(bufptr, left,
         "%3d %-*s%s By: %-10.10s%s Range: %5d-%5d\r\n", zone_table[zone].number,
 	count_color_chars(zone_table[zone].name)+30, zone_table[zone].name, KNRM,
-	zone_table[zone].builders, KNRM, zone_table[zone].bot, zone_table[zone].top);
+	zone_table[zone].authors, KNRM, zone_table[zone].bot, zone_table[zone].top);
 }
 
 ACMD(do_show)
@@ -2597,7 +2597,7 @@ ACMD(do_show)
         builder = 1;
       for (len = zrn = 0; zrn <= top_of_zone_table; zrn++) {
         if (*value) {
-          buf2 = strtok(strdup(zone_table[zrn].builders), " ");
+          buf2 = strtok(strdup(zone_table[zrn].authors), " ");
           while (buf2) {
             if (!str_cmp(buf2, value)) {
               if (builder == 1)
@@ -4915,7 +4915,7 @@ ACMD(do_zlock)
 
         send_to_char(ch, "[%s%3d%s] %s%-*s %s%-1s%s\r\n",
           QGRN, zone_table[zn].number, QNRM, QCYN, count_color_chars(zone_table[zn].name)+30, zone_table[zn].name,
-          QYEL, zone_table[zn].builders ? zone_table[zn].builders : "None.", QNRM);
+          QYEL, zone_table[zn].authors ? zone_table[zn].authors : "None.", QNRM);
         counter++;
       }
     }
@@ -5009,7 +5009,7 @@ ACMD(do_zunlock)
 
         send_to_char(ch, "[%s%3d%s] %s%-*s %s%-1s%s\r\n",
           QGRN, zone_table[zn].number, QNRM, QCYN, count_color_chars(zone_table[zn].name)+30, zone_table[zn].name,
-          QYEL, zone_table[zn].builders ? zone_table[zn].builders : "None.", QNRM);
+          QYEL, zone_table[zn].authors ? zone_table[zn].authors : "None.", QNRM);
         counter++;
       }
     }

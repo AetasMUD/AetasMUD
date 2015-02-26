@@ -779,7 +779,7 @@ static void list_zones(struct char_data *ch, zone_rnum rnum, zone_vnum vmin, zon
   }
 
   len = snprintf(buf, sizeof(buf),
-  "VNum  Zone Name                      Builder(s)\r\n"
+  "VNum  Zone Name                      Author(s)\r\n"
   "----- ------------------------------ --------------------------------------\r\n");
 
   if (!top_of_zone_table)
@@ -787,12 +787,12 @@ static void list_zones(struct char_data *ch, zone_rnum rnum, zone_vnum vmin, zon
 
   for (i = 0; i <= top_of_zone_table; i++) {
     if (zone_table[i].number >= bottom && zone_table[i].number <= top) {
-      if ((!use_name) || (is_name(name, zone_table[i].builders))) {
+      if ((!use_name) || (is_name(name, zone_table[i].authors))) {
           counter++;
           
         tmp_len = snprintf(buf+len, sizeof(buf)-len, "[%s%3d%s] %s%-*s %s%-1s%s\r\n",
         QGRN, zone_table[i].number, QNRM, QCYN, count_color_chars(zone_table[i].name)+30, zone_table[i].name,
-        QYEL, zone_table[i].builders ? zone_table[i].builders : "None.", QNRM);
+        QYEL, zone_table[i].authors ? zone_table[i].authors : "None.", QNRM);
         len += tmp_len;
         if (len > sizeof(buf))
           break;
@@ -865,6 +865,7 @@ void print_zone(struct char_data *ch, zone_vnum vnum)
   send_to_char(ch,
     "%sVirtual Number = %s%d\r\n"
     "%sName of zone   = %s%s\r\n"
+    "%sAuthors        = %s%s\r\n"
     "%sBuilders       = %s%s\r\n"
     "%sLifespan       = %s%d\r\n"
     "%sAge            = %s%d\r\n"
@@ -883,6 +884,7 @@ void print_zone(struct char_data *ch, zone_vnum vnum)
     "%s   Quests      = %s%d%s\r\n",
     QGRN, QCYN, zone_table[rnum].number,
     QGRN, QCYN, zone_table[rnum].name,
+    QGRN, QCYN, zone_table[rnum].authors,
     QGRN, QCYN, zone_table[rnum].builders,
     QGRN, QCYN, zone_table[rnum].lifespan,
     QGRN, QCYN, zone_table[rnum].age,

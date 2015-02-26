@@ -609,6 +609,8 @@ void destroy_db(void)
   for (cnt = 0; cnt <= top_of_zone_table; cnt++) {
     if (zone_table[cnt].name)
       free(zone_table[cnt].name);
+    if (zone_table[cnt].authors)
+      free(zone_table[cnt].authors);
     if (zone_table[cnt].builders)
       free(zone_table[cnt].builders);
     if (zone_table[cnt].cmd) {
@@ -2140,6 +2142,11 @@ static void load_zones(FILE *fl, char *zonename)
   }
   snprintf(buf2, sizeof(buf2), "beginning of zone #%d", Z.number);
 
+  line_num += get_line(fl, buf);
+  if ((ptr = strchr(buf, '~')) != NULL) /* take off the '~' if it's there */
+    *ptr = '\0';
+  Z.authors = strdup(buf);
+  
   line_num += get_line(fl, buf);
   if ((ptr = strchr(buf, '~')) != NULL) /* take off the '~' if it's there */
     *ptr = '\0';
